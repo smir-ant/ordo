@@ -1,6 +1,24 @@
+import { ComboBox } from "std-widgets.slint";
+
 export component GeneralWindow inherits Window {
-    Text {
-        text: "Hello, world!";
-        font-size: 20px;
+    in-out property <int> current_language_idx;
+    callback language_changed(int);
+
+    VerticalLayout {
+        alignment: center;
+        spacing: 20px;
+        width: 90%;
+        Text {
+            text: @tr("Hello, world!");
+            font-size: 20px;
+        }
+
+        ComboBox {
+            model: ["English", "Русский"];
+            current-index <=> root.current_language_idx;
+            selected => {
+                language_changed(root.current_language_idx);
+            }
+        }
     }
 }

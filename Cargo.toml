@@ -2,14 +2,15 @@ cargo-features = ["profile-rustflags", "trim-paths"]  # Special compiler feature
 
 [package]
 name = "ordo"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2024"
 
 [dependencies]
 slint = { version = "1.14.1", default-features = false, features = [
     "renderer-software",    # Software rendering without GPU
     "backend-winit",        # Engine for window and mouse handling
-    "compat-1-2"            # Compatibility
+    "compat-1-2",           # Compatibility
+    "gettext",              # i18n
 ]}
 
 [build-dependencies]
