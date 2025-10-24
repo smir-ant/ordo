@@ -1,0 +1,31 @@
+cargo-features = ["profile-rustflags", "trim-paths"]  # Special compiler features for customizing build
+
+[package]
+name = "ordo"
+version = "0.0.1"
+edition = "2024"
+
+[dependencies]
+slint = { version = "1.14.1", default-features = false, features = [
+    "renderer-software",    # Software rendering without GPU
+    "backend-winit",        # Engine for window and mouse handling
+    "compat-1-2"            # Compatibility
+]}
+
+[build-dependencies]
+slint-build = "1.14.1"
+
+
+
+# -------------------------
+[profile.dev]
+incremental = true              # Enable incremental compilation (only changed parts)
+rustflags = ["-Zthreads=8"]     # Compiler flags: use 8 threads for compilation
+
+[profile.release]
+codegen-units = 1   # How many program parts to compile simultaneously (less = less memory, more = faster)
+lto = true          # True: compiler sees entire program during final linking, allows more global optimizations
+opt-level = "z"     # Optimization level, z - minimum file size
+panic = "abort"     # Error behavior: "abort" - immediately stop the program
+strip = true        # Remove debug information from the executable
+trim-paths = "all"  # Remove excess paths from debug info
