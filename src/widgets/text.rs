@@ -5,6 +5,7 @@ live_design! {
     use makepad_widgets::theme_desktop_dark::*;
 
     pub Text = {{Text}} {
+        width: Fit, height: Fit
         draw_text: {
             color: #fff
             text_style: {
