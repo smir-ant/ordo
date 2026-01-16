@@ -24,6 +24,7 @@ live_design!{
     
     App = {{App}} {
         ui: <Window> {
+            window: {inner_size: vec2(1000, 800), min_size: vec2(600, 400)}
             body = <View> {
                 flow: Down,
                 align: {x: 0.5, y: 0.5},
