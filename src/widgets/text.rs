@@ -9,9 +9,7 @@ live_design! {
             color: #fff
             text_style: {
                 font_family: {
-                    base = {
-                        path: dep("font/Inter.ttf")
-                    }
+                    base = font("", 0.0, 0.0)
                 }
                 font_size: 32.0
             }

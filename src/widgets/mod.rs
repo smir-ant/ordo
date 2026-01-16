@@ -1,8 +1,5 @@
-use makepad_widgets::*;
-
 pub mod text;
 
-pub fn live_design(cx: &mut Cx) {
-    makepad_widgets::live_design(cx);
+pub fn live_design(cx: &mut makepad_widgets::Cx) {
     text::live_design(cx);
 }

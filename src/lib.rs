@@ -1,90 +1,14 @@
+pub mod app;
+pub mod widgets;
+
 use makepad_widgets::*;
 
-// pub mod widgets;
+use app::App;
 
-live_design!{
-    use makepad_widgets::base::*;
-    use makepad_widgets::theme_desktop_dark::*; 
-    use makepad_widgets::window::Window;
-    use makepad_widgets::view_ui::View;
-    
-    
-    pub Text = {{Text}} {
-        draw_text: {
-            color: #fff
-            text_style: {
-                font_family: {
-                    // MAKEPAD THEME CONVENTION:
-                    // "" (Empty String) = The default UI font (Base). 
-                    // "Sans"           = Standard sans-serif alias.
-                    // "Monospace"      = Standard monospace alias (for code).
-                    // We map ALL of these to the same optimized internal font (Inter) in builtins.rs.
-                    base = font("", 0.0, 0.0)
-                }
-                font_size: 32.0
-            }
-        }
-        text: "Hello"
-    }
-    
-    App = {{App}} {
-        ui: <Window> {
-            window: {inner_size: vec2(1000, 800), min_size: vec2(600, 400)}
-            body = <View> {
-                flow: Down,
-                align: {x: 0.5, y: 0.5},
-                show_bg: true,
-                draw_bg: {
-                    color: #1f1f1f
-                }
-                
-                <Text> {
-                    text: "Hello, мир!"
-                    draw_text: {
-                        color: #ffffff
-                        text_style: {
-                            font_size: 40.0
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-#[derive(Live, LiveHook)]
-pub struct App {
-    #[live] ui: WidgetRef,
-}
-
-impl LiveRegister for App {
-    fn live_register(cx: &mut Cx) {
-        makepad_widgets::live_design(cx);
-    }
-}
-
-impl AppMain for App {
-    fn handle_event(&mut self, cx: &mut Cx, event: &Event) {
-        self.ui.handle_event(cx, event, &mut Scope::empty());
-    }
-}
-
-#[derive(Live, LiveHook, Widget)]
-pub struct Text {
-    #[redraw] #[live] draw_text: DrawText,
-    #[live] text: String,
-    #[walk] walk: Walk,
-}
-
-impl Widget for Text {
-    fn handle_event(&mut self, _cx: &mut Cx, _event: &Event, _scope: &mut Scope) {
-        // No interaction needed for now
-    }
-
-    fn draw_walk(&mut self, cx: &mut Cx2d, _scope: &mut Scope, walk: Walk) -> DrawStep {
-        self.draw_text.draw_walk(cx, walk, Align::default(), &self.text);
-        DrawStep::done()
-    }
-}
-
+// Point app_main to the App struct
 app_main!(App);
+
+// Explicitly register the app module, as app_main! calls `live_design(cx)`
+fn live_design(cx: &mut Cx) {
+    crate::app::live_design(cx);
+}
