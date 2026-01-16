@@ -10,12 +10,22 @@ live_design! {
             color: #fff
             text_style: {
                 font_family: {
-                    base = font("", 0.0, 0.0)
+                    base = font("Sans", 0.0, 0.0)
                 }
                 font_size: 32.0
             }
         }
         text: "Hello"
+    }
+    
+    pub MonoText = <Text> {
+        draw_text: {
+            text_style: {
+                font_family: {
+                    base = font("UbuntuMono", 0.0, 0.0)
+                }
+            }
+        }
     }
 }
 

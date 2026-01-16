@@ -29,9 +29,14 @@ pip install fonttools
 #         0400-04FF : Cyrillic (Russian letters and other Cyrillic characters)
 #         2000-206F : General Punctuation (special quotes, dashes, etc.)
 #    - --output-file: Where to save the optimized font.
-pyftsubset Inter.ttf \
+# pyftsubset Inter.ttf \
+#   --unicodes="0020-007F,0400-04FF,2000-206F" \
+#   --output-file=Inter_opt.ttf
+
+# Optimize UbuntuMono
+pyftsubset UbuntuMono.ttf \
   --unicodes="0020-007F,0400-04FF,2000-206F" \
-  --output-file=Inter_opt.ttf
+  --output-file=UbuntuMono_opt.ttf
 
 # 5. Show the size of the generated file to confirm optimization.
 ls -lh Inter_opt.ttf

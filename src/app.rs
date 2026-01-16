@@ -7,6 +7,7 @@ live_design!{
     use makepad_widgets::scroll_bars::ScrollBars;
     use makepad_widgets::view_ui::View;
     use crate::widgets::text::Text;
+    use crate::widgets::text::MonoText;
     
     App = {{App}} {
         ui: <Window> {
@@ -23,40 +24,37 @@ live_design!{
                 
                 scroll_bars: <ScrollBars> {}
                 
-                // Text 1
+                // Typography Section
                 <Text> {
-                    text: "Hello, Scrollable World!"
+                    width: Fit, margin: {bottom: 10.0}
+                    text: "Typography System"
                     draw_text: {
-                        color: #ffffff
-                        text_style: { font_size: 24.0 }
-                    }
-                }
-                
-                // Text 2 (Long block)
-                <Text> {
-                    text: "This is a gallery view designed to test scrolling.\nWe need enough content to exceed the window height.\nMakepad handles scrolling automatically if we use ScrollBars."
-                    draw_text: {
-                        color: #cccccc
-                        text_style: { font_size: 16.0 }
+                        color: #9cb4d8
+                        text_style: { font_size: 14.0 }
                     }
                 }
 
-                // Text 3
-                <Text> { text: "Item 3" draw_text: { color: #fff } }
-                <Text> { text: "Item 4" draw_text: { color: #fff } }
-                <Text> { text: "Item 5" draw_text: { color: #fff } }
-                <Text> { text: "Item 6" draw_text: { color: #fff } }
-                <Text> { text: "Item 7" draw_text: { color: #fff } }
-                <Text> { text: "Item 8" draw_text: { color: #fff } }
-                <Text> { text: "Item 9" draw_text: { color: #fff } }
-                <Text> { text: "Item 10" draw_text: { color: #fff } }
-                
-                // Text 4 (Bottom marker)
                 <Text> {
-                    text: "Bottom of Value\nYou should see this only after scrolling."
+                    text: "Regular Text (Inter)"
+                    draw_text: {
+                        color: #ffffff
+                        text_style: { font_size: 20.0 }
+                    }
+                }
+                
+                <MonoText> {
+                    text: "Monospace Text (Ubuntu Mono)"
+                    draw_text: {
+                        color: #a3d9ff
+                        text_style: { font_size: 20.0 }
+                    }
+                }
+                
+                <MonoText> {
+                    text: "code_snippet = fn main() {}"
                     draw_text: {
                         color: #ffaa00
-                        text_style: { font_size: 20.0 }
+                        text_style: { font_size: 16.0 }
                     }
                 }
             }
