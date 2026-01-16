@@ -14,7 +14,12 @@ live_design!{
             color: #fff
             text_style: {
                 font_family: {
-                    base = font("crate://self/resources/font/Inter_opt.ttf", 0.0, 0.0)
+                    // MAKEPAD THEME CONVENTION:
+                    // "" (Empty String) = The default UI font (Base). 
+                    // "Sans"           = Standard sans-serif alias.
+                    // "Monospace"      = Standard monospace alias (for code).
+                    // We map ALL of these to the same optimized internal font (Inter) in builtins.rs.
+                    base = font("", 0.0, 0.0)
                 }
                 font_size: 32.0
             }
