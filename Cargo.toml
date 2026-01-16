@@ -18,5 +18,8 @@ strip = true # Ensures debug symbols are removed.
 trim-paths = "all" # Removes potentially privileged information from your binaries.
 rustflags = ["-Cdebuginfo=0", "-Zthreads=8"] # Better compile performance.
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
 makepad-widgets = { path = "makepad/widgets" }
