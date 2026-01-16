@@ -1,9 +1,26 @@
 use makepad_widgets::*;
 
+// pub mod widgets;
+
 live_design!{
+    use makepad_widgets::base::*;
+    use makepad_widgets::theme_desktop_dark::*; 
     use makepad_widgets::window::Window;
     use makepad_widgets::view_ui::View;
-    use makepad_widgets::theme_desktop_dark::*; 
+    
+    
+    pub Text = {{Text}} {
+        draw_text: {
+            color: #fff
+            text_style: {
+                font_family: {
+                    base = font("crate://self/resources/font/Inter_opt.ttf", 0.0, 0.0)
+                }
+                font_size: 32.0
+            }
+        }
+        text: "Hello"
+    }
     
     App = {{App}} {
         ui: <Window> {
@@ -15,10 +32,14 @@ live_design!{
                     color: #1f1f1f
                 }
                 
-                <View> {
-                    width: 50.0, height: 50.0
-                    show_bg: true
-                    draw_bg: {color: #ff0000}
+                <Text> {
+                    text: "Hello, мир!"
+                    draw_text: {
+                        color: #ffffff
+                        text_style: {
+                            font_size: 40.0
+                        }
+                    }
                 }
             }
         }
@@ -39,6 +60,24 @@ impl LiveRegister for App {
 impl AppMain for App {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event) {
         self.ui.handle_event(cx, event, &mut Scope::empty());
+    }
+}
+
+#[derive(Live, LiveHook, Widget)]
+pub struct Text {
+    #[redraw] #[live] draw_text: DrawText,
+    #[live] text: String,
+    #[walk] walk: Walk,
+}
+
+impl Widget for Text {
+    fn handle_event(&mut self, _cx: &mut Cx, _event: &Event, _scope: &mut Scope) {
+        // No interaction needed for now
+    }
+
+    fn draw_walk(&mut self, cx: &mut Cx2d, _scope: &mut Scope, walk: Walk) -> DrawStep {
+        self.draw_text.draw_walk(cx, walk, Align::default(), &self.text);
+        DrawStep::done()
     }
 }
 
