@@ -2,3 +2,4 @@
 	path = makepad
 	url = https://github.com/smir-ant/ordo.git
 	branch = makepad
+	ignore = all

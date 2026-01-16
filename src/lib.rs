@@ -2,7 +2,6 @@ use makepad_widgets::*;
 
 live_design!{
     use makepad_widgets::window::Window;
-    use makepad_widgets::label::Label;
     use makepad_widgets::view_ui::View;
     use makepad_widgets::theme_desktop_dark::*; 
     
@@ -16,12 +15,10 @@ live_design!{
                     color: #1f1f1f
                 }
                 
-                <Label> {
-                    text: "Hello, World!",
-                    draw_text: {
-                        color: #ffffff,
-                        text_style: {font_size: 32.0}
-                    }
+                <View> {
+                    width: 50.0, height: 50.0
+                    show_bg: true
+                    draw_bg: {color: #ff0000}
                 }
             }
         }
