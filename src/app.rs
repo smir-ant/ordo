@@ -70,6 +70,7 @@ live_design!{
                     width: Fill, height: Fit
                     empty_text: "Morning Routine"
                     is_numeric_only: true
+                    is_warning: true
                 }
             }
         }
