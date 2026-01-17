@@ -69,6 +69,7 @@ live_design!{
                 <TextInput> {
                     width: Fill, height: Fit
                     empty_text: "Morning Routine"
+                    is_numeric_only: true
                 }
             }
         }
