@@ -6,8 +6,9 @@ live_design!{
     use makepad_widgets::window::Window;
     use makepad_widgets::scroll_bars::ScrollBars;
     use makepad_widgets::view_ui::View;
+    use makepad_widgets::button::Button;
+    use makepad_widgets::text_input::TextInput;
     use crate::widgets::text::Text;
-    use crate::widgets::button::Button;
     use crate::theme::*;
     
     App = {{App}} {
@@ -63,6 +64,11 @@ live_design!{
                 <Button> {
                     width: Fill
                     text: "Create Activity" // Matches check.html text
+                }
+                
+                <TextInput> {
+                    width: Fill, height: Fit
+                    empty_text: "Morning Routine"
                 }
             }
         }
