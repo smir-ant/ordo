@@ -11,7 +11,7 @@ live_design!{
     
     App = {{App}} {
         ui: <Window> {
-            window: {inner_size: vec2(400, 800), min_size: vec2(300, 400)}
+            window: {inner_size: vec2(900, 700), min_size: vec2(600, 400)}
             body = <View> {
                 width: Fill, height: Fill,
                 flow: Down,
