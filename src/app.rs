@@ -7,6 +7,7 @@ live_design!{
     use makepad_widgets::scroll_bars::ScrollBars;
     use makepad_widgets::view_ui::View;
     use crate::widgets::text::Text;
+    use crate::widgets::button::Button;
     use crate::theme::*;
     
     App = {{App}} {
@@ -56,6 +57,11 @@ live_design!{
                         color: #ffaa00
                         text_style: <THEME_FONT_MONO> { font_size: 16.0 }
                     }
+                }
+                
+                <Button> {
+                    width: Fill
+                    text: "Create Activity" // Matches check.html text
                 }
             }
         }
