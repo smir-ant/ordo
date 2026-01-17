@@ -1,5 +1,6 @@
 pub mod app;
 pub mod widgets;
+pub mod theme;
 
 use makepad_widgets::*;
 
@@ -10,5 +11,8 @@ app_main!(App);
 
 // Explicitly register the app module, as app_main! calls `live_design(cx)`
 fn live_design(cx: &mut Cx) {
+    makepad_widgets::live_design(cx);
+    crate::theme::live_design(cx);
+    crate::widgets::live_design(cx);
     crate::app::live_design(cx);
 }

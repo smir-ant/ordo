@@ -7,7 +7,7 @@ live_design!{
     use makepad_widgets::scroll_bars::ScrollBars;
     use makepad_widgets::view_ui::View;
     use crate::widgets::text::Text;
-    use crate::widgets::text::MonoText;
+    use crate::theme::*;
     
     App = {{App}} {
         ui: <Window> {
@@ -42,19 +42,19 @@ live_design!{
                     }
                 }
                 
-                <MonoText> {
+                <Text> {
                     text: "Monospace Text (Ubuntu Mono)"
                     draw_text: {
                         color: #a3d9ff
-                        text_style: { font_size: 20.0 }
+                        text_style: <THEME_FONT_MONO> { font_size: 20.0 }
                     }
                 }
                 
-                <MonoText> {
+                <Text> {
                     text: "code_snippet = fn main() {}"
                     draw_text: {
                         color: #ffaa00
-                        text_style: { font_size: 16.0 }
+                        text_style: <THEME_FONT_MONO> { font_size: 16.0 }
                     }
                 }
             }
@@ -68,9 +68,7 @@ pub struct App {
 }
 
 impl LiveRegister for App {
-    fn live_register(cx: &mut Cx) {
-        makepad_widgets::live_design(cx);
-        crate::widgets::live_design(cx);
+    fn live_register(_cx: &mut Cx) {
     }
 }
 

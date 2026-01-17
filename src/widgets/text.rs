@@ -2,31 +2,20 @@ use makepad_widgets::*;
 
 live_design! {
     use makepad_widgets::base::*;
-    use makepad_widgets::theme_desktop_dark::*;
+    use makepad_widgets::theme_desktop_dark::*; 
+    use crate::theme::*;
 
     pub Text = {{Text}} {
         width: Fit, height: Fit
         draw_text: {
             color: #fff
-            text_style: {
-                font_family: {
-                    base = font("Sans", 0.0, 0.0)
-                }
-                font_size: 32.0
+            text_style: <THEME_FONT_REGULAR> {
+                font_size: (THEME_FONT_SIZE_BASE)
             }
         }
         text: "Hello"
     }
     
-    pub MonoText = <Text> {
-        draw_text: {
-            text_style: {
-                font_family: {
-                    base = font("UbuntuMono", 0.0, 0.0)
-                }
-            }
-        }
-    }
 }
 
 #[derive(Live, LiveHook, Widget)]
