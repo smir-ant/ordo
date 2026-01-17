@@ -1,5 +1,6 @@
 use makepad_widgets::*;
-use crate::widgets::input::{Input, InputAction, InputRef};
+use crate::widgets::input::Input;
+use crate::widgets::button::Button as Btn;
 
 live_design!{
     use makepad_widgets::base::*;
@@ -9,6 +10,7 @@ live_design!{
     use makepad_widgets::view_ui::View;
     use makepad_widgets::button::Button;
     use crate::widgets::input::Input;
+    use crate::widgets::button::Btn;
     use crate::widgets::text::Text;
     use crate::theme::*;
     
@@ -62,18 +64,13 @@ live_design!{
                     }
                 }
                 
-                <Button> {
-                    width: Fill
-                    text: "Create Activity" // Matches check.html text
-                }
-                
                 input1 = <Input> {
                     width: Fill, height: Fit
                     empty_text: "* Morning Routine"
                     is_numeric_only: true
                     is_required: true
                 }
-                submit_btn = <Button> {
+                submit_btn = <Btn> {
                     text: "Submit"
                 }
             }
@@ -97,15 +94,17 @@ impl AppMain for App {
         self.ui.handle_event(cx, event, scope);
         
         if let Event::Actions(actions) = event {
-            if self.ui.button(ids!(submit_btn)).clicked(&actions) {
+            if let Some(btn) = self.ui.widget(ids!(submit_btn)).borrow::<Btn>() {
+                if btn.clicked(&actions) {
                  // Using borrow_mut to access validate directly since helper trait might not be generated automatically
                  // actually standard convention is to assume helper exists or use ref pattern
                  // Let's rely on OrdoTextInputRef if available
                  if let Some(mut input) = self.ui.widget(ids!(input1)).borrow_mut::<Input>() {
                      let valid = input.validate(cx);
                      log!("Validation result: {}", valid);
-                 }
+                }
             }
+        }
         }
     }
 }
