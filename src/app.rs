@@ -66,11 +66,14 @@ live_design!{
                     text: "Create Activity" // Matches check.html text
                 }
                 
-                <TextInput> {
+                input1 = <TextInput> {
                     width: Fill, height: Fit
-                    empty_text: "Morning Routine"
+                    empty_text: "* Morning Routine"
                     is_numeric_only: true
                     is_required: true
+                }
+                submit_btn = <Button> {
+                    text: "Submit"
                 }
             }
         }
@@ -89,6 +92,14 @@ impl LiveRegister for App {
 
 impl AppMain for App {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event) {
-        self.ui.handle_event(cx, event, &mut Scope::empty());
+        let scope = &mut Scope::empty();
+        self.ui.handle_event(cx, event, scope);
+        
+        if let Event::Actions(actions) = event {
+            if self.ui.button(ids!(submit_btn)).clicked(&actions) {
+                 let valid = self.ui.text_input(ids!(input1)).validate(cx);
+                 log!("Validation result: {}", valid);
+            }
+        }
     }
 }
