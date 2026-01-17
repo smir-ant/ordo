@@ -56,6 +56,7 @@ live_design! {
                 cancel_button = <Btn> {
                     width: 100.0
                     text: "Cancel"
+                    reset_hover_on_click: true
                     draw_bg: {
                         color: #444 // Gray for cancel
                     }
@@ -64,6 +65,7 @@ live_design! {
                 ok_button = <Btn> {
                     width: 100.0
                     text: "OK"
+                    reset_hover_on_click: true
                     draw_bg: {
                          // Default accent? Or custom?
                          // Let's stick to default Btn style for now or customize

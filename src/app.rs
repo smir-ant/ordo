@@ -166,19 +166,13 @@ impl AppMain for App {
              }
              
              if open_modal {
-                 log!("Attempting to open modal...");
                  let mut opened = false;
                  if let Some(mut modal) = self.ui.widget(ids!(demo_modal)).borrow_mut::<Modal>() {
-                     log!("Modal borrowed successfully.");
                      modal.set_visible(cx, true);
                      opened = true;
-                     log!("Modal set visible.");
-                 } else {
-                     log!("Failed to borrow modal!");
                  }
                  if opened {
                      self.ui.redraw(cx);
-                     log!("Redraw called.");
                  }
              }
              
@@ -194,7 +188,6 @@ impl AppMain for App {
              }
              if let Some(btn) = inner.widget(ids!(ok_button)).borrow::<Btn>(){
                 if btn.clicked(&actions){
-                    log!("Modal OK Clicked");
                     close = true;
                 }
              }
