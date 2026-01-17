@@ -31,7 +31,7 @@ live_design! {
             uniform color_hover: (THEME_COLOR_LABEL_INNER_HOVER)
             uniform color_down: (THEME_COLOR_LABEL_INNER_DOWN)
             uniform color_focus: (THEME_COLOR_LABEL_INNER_FOCUS)
-            uniform color_disabled: #777  // Dull gray text
+            uniform color_disabled: #555  // Even duller text
 
             text_style: <THEME_FONT_REGULAR> {
                 font_size: (THEME_FONT_SIZE_P)
@@ -142,7 +142,7 @@ live_design! {
             uniform color_hover: (THEME_COLOR_OUTSET_HOVER)
             uniform color_down: (THEME_COLOR_OUTSET_DOWN)
             uniform color_focus: (THEME_COLOR_OUTSET_FOCUS)
-            uniform color_disabled: #333  // Dark dull background
+            uniform color_disabled: #292929  // Darker, flat background
 
             uniform color_2: vec4(-1.0, -1.0, -1.0, -1.0)
             uniform color_2_hover: (THEME_COLOR_OUTSET_2_HOVER)
@@ -158,7 +158,7 @@ live_design! {
             uniform border_color_hover: (THEME_COLOR_BEVEL_HOVER)
             uniform border_color_down: (THEME_COLOR_BEVEL_DOWN)
             uniform border_color_focus: (THEME_COLOR_BEVEL_FOCUS)
-            uniform border_color_disabled: #333 // Same as bg for flat look
+            uniform border_color_disabled: #292929 // Match bg for complete flatness
 
             uniform border_color_2: vec4(-1.0, -1.0, -1.0, -1.0)
             uniform border_color_2_hover: (THEME_COLOR_BEVEL_OUTSET_2_HOVER)
@@ -395,13 +395,13 @@ live_design! {
             border_color_hover: (THEME_COLOR_BEVEL_OUTSET_1_HOVER)
             border_color_down: (THEME_COLOR_BEVEL_OUTSET_1_DOWN)
             border_color_focus: (THEME_COLOR_BEVEL_OUTSET_1_FOCUS)
-            border_color_disabled: (THEME_COLOR_BEVEL_OUTSET_1_DISABLED)
+            border_color_disabled: #292929 // Override to flat
 
             border_color_2: (THEME_COLOR_BEVEL_OUTSET_2)
             border_color_2_hover: (THEME_COLOR_BEVEL_OUTSET_2_HOVER)
             border_color_2_down: (THEME_COLOR_BEVEL_OUTSET_2_DOWN)
             border_color_2_focus: (THEME_COLOR_BEVEL_OUTSET_2_FOCUS)
-            border_color_2_disabled: (THEME_COLOR_BEVEL_OUTSET_2_DISABLED)
+            border_color_2_disabled: #292929 // Override to flat
         }
         
     }
