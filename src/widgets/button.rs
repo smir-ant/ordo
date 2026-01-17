@@ -27,7 +27,11 @@ live_design! {
             uniform color_hover: (THEME_COLOR_LABEL_INNER_HOVER)
             uniform color_down: (THEME_COLOR_LABEL_INNER_DOWN)
             uniform color_focus: (THEME_COLOR_LABEL_INNER_FOCUS)
-            uniform color_disabled: (THEME_COLOR_LABEL_INNER_DISABLED)
+            color: (THEME_COLOR_LABEL_INNER)
+            uniform color_hover: (THEME_COLOR_LABEL_INNER_HOVER)
+            uniform color_down: (THEME_COLOR_LABEL_INNER_DOWN)
+            uniform color_focus: (THEME_COLOR_LABEL_INNER_FOCUS)
+            uniform color_disabled: #777  // Dull gray text
 
             text_style: <THEME_FONT_REGULAR> {
                 font_size: (THEME_FONT_SIZE_P)
@@ -134,7 +138,11 @@ live_design! {
             uniform color_hover: (THEME_COLOR_OUTSET_HOVER)
             uniform color_down: (THEME_COLOR_OUTSET_DOWN)
             uniform color_focus: (THEME_COLOR_OUTSET_FOCUS)
-            uniform color_disabled: (THEME_COLOR_OUTSET_DISABLED)
+            uniform color: (THEME_COLOR_OUTSET)
+            uniform color_hover: (THEME_COLOR_OUTSET_HOVER)
+            uniform color_down: (THEME_COLOR_OUTSET_DOWN)
+            uniform color_focus: (THEME_COLOR_OUTSET_FOCUS)
+            uniform color_disabled: #333  // Dark dull background
 
             uniform color_2: vec4(-1.0, -1.0, -1.0, -1.0)
             uniform color_2_hover: (THEME_COLOR_OUTSET_2_HOVER)
@@ -146,7 +154,11 @@ live_design! {
             uniform border_color_hover: (THEME_COLOR_BEVEL_HOVER)
             uniform border_color_down: (THEME_COLOR_BEVEL_DOWN)
             uniform border_color_focus: (THEME_COLOR_BEVEL_FOCUS)
-            uniform border_color_disabled: (THEME_COLOR_BEVEL_DISABLED)
+            uniform border_color: (THEME_COLOR_BEVEL)
+            uniform border_color_hover: (THEME_COLOR_BEVEL_HOVER)
+            uniform border_color_down: (THEME_COLOR_BEVEL_DOWN)
+            uniform border_color_focus: (THEME_COLOR_BEVEL_FOCUS)
+            uniform border_color_disabled: #333 // Same as bg for flat look
 
             uniform border_color_2: vec4(-1.0, -1.0, -1.0, -1.0)
             uniform border_color_2_hover: (THEME_COLOR_BEVEL_OUTSET_2_HOVER)
@@ -609,6 +621,12 @@ impl Widget for Button {
         }
 
         self.draw_bg.begin(cx, walk, self.layout);
+        if self.enabled {
+             self.animator_cut(cx, ids!(disabled.off));
+        }
+        else {
+             self.animator_cut(cx, ids!(disabled.on));
+        }
         self.draw_icon.draw_walk(cx, self.icon_walk);
         self.draw_text
             .draw_walk(cx, self.label_walk, Align::default(), self.text.as_ref());

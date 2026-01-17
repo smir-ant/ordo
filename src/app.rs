@@ -1,5 +1,5 @@
 use makepad_widgets::*;
-use crate::widgets::input::Input;
+use crate::widgets::input::{Input, InputAction};
 use crate::widgets::button::Button as Btn;
 
 live_design!{
@@ -73,6 +73,21 @@ live_design!{
                 submit_btn = <Btn> {
                     text: "Submit"
                 }
+                
+                <View> {
+                    width: Fill, height: Fit
+                    flow: Right
+                    spacing: 20.0
+                    align: {y: 0.5}
+                    
+                    <Btn> {
+                        text: "Demo Enabled"
+                    }
+                    <Btn> {
+                        text: "Demo Disabled"
+                        enabled: false
+                    }
+                }
             }
         }
     }
@@ -94,17 +109,37 @@ impl AppMain for App {
         self.ui.handle_event(cx, event, scope);
         
         if let Event::Actions(actions) = event {
-            if let Some(btn) = self.ui.widget(ids!(submit_btn)).borrow::<Btn>() {
-                if btn.clicked(&actions) {
-                 // Using borrow_mut to access validate directly since helper trait might not be generated automatically
-                 // actually standard convention is to assume helper exists or use ref pattern
-                 // Let's rely on OrdoTextInputRef if available
-                 if let Some(mut input) = self.ui.widget(ids!(input1)).borrow_mut::<Input>() {
+            let submit_clicked = self.ui.widget(ids!(submit_btn))
+                .borrow::<Btn>()
+                .map(|btn| btn.clicked(&actions))
+                .unwrap_or(false);
+
+            if submit_clicked {
+                if let Some(mut input) = self.ui.widget(ids!(input1)).borrow_mut::<Input>() {
                      let valid = input.validate(cx);
-                     log!("Validation result: {}", valid);
+                     if let Some(mut btn) = self.ui.widget(ids!(submit_btn)).borrow_mut::<Btn>() {
+                        btn.set_disabled(cx, !valid);
+                     }
+                     
+                     if valid {
+                         log!("Submitted successfully!");
+                     } else {
+                         log!("Validation failed");
+                     }
+                }
+            }
+        
+            if let Some(mut input) = self.ui.widget(ids!(input1)).borrow_mut::<Input>() {
+                if let Some(action) = actions.find_widget_action(input.widget_uid()) {
+                    if let InputAction::Changed(_) = action.cast() {
+                        let valid = input.validate(cx);
+                        if let Some(mut btn) = self.ui.widget(ids!(submit_btn)).borrow_mut::<Btn>() {
+                            btn.set_disabled(cx, !valid);
+                        }
+                    }
                 }
             }
         }
-        }
+
     }
 }
