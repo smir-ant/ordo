@@ -1,11 +1,17 @@
+use makepad_widgets::*;
+
 pub mod input;
 pub mod button;
 pub mod text;
 pub mod view;
 
-pub fn live_design(cx: &mut makepad_widgets::Cx) {
-    input::live_design(cx);
-    button::live_design(cx);
+pub mod modal;
+
+pub fn live_design(cx: &mut Cx) {
     text::live_design(cx);
+    button::live_design(cx);
+    input::live_design(cx);
     view::live_design(cx);
+    modal::live_design(cx);
+    // ...
 }
