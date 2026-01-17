@@ -1,10 +1,34 @@
 use makepad_widgets::*;
+use crate::widgets::card::Card;
 
 live_design! {
     use makepad_widgets::base::*;
     use makepad_widgets::theme_desktop_dark::*;
+    use makepad_draw::shader::std::*;
     use crate::widgets::button::Btn;
     use crate::widgets::text::Text;
+    
+    Card = <View> {
+        draw_bg: {
+            instance color: #2a2a2a
+            instance radius: 8.0
+            instance border_width: 0.0
+            instance inset: vec4(0.0, 0.0, 0.0, 0.0)
+            
+            fn pixel(self) -> vec4 {
+                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                sdf.box(
+                    self.inset.x + self.border_width,
+                    self.inset.y + self.border_width,
+                    self.rect_size.x - (self.inset.x + self.inset.z + self.border_width * 2.0),
+                    self.rect_size.y - (self.inset.y + self.inset.w + self.border_width * 2.0),
+                    max(1.0, self.radius)
+                );
+                sdf.fill_keep(self.color);
+                return sdf.result
+            }
+        }
+    }
     
     pub Modal = {{Modal}} {
         width: Fill, height: Fill
@@ -19,15 +43,16 @@ live_design! {
         }
         
         // The dialog window
-        modal_inner = {{View}} {
-            width: 400.0, height: Fit
-            flow: Down
-            spacing: 20.0
-            padding: 20.0
+        modal_inner = <Card> {
+            walk: {width: 400.0, height: Fit}
+            layout: {
+                flow: Down
+                spacing: 20.0
+                padding: {top: 20.0, right: 20.0, bottom: 20.0, left: 20.0}
+            }
             
-            show_bg: true
             draw_bg: {
-                color: #2a2a2a
+                radius: 12.0
             }
             
             title = <Text> {
@@ -84,10 +109,29 @@ pub struct Modal {
 
 
 
+#[derive(Clone, DefaultNone, Debug)]
+pub enum ModalAction {
+    None,
+    Dismissed,
+}
+
 impl Widget for Modal {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event, scope: &mut Scope) {
+        let uid = self.widget_uid();
         if self.view.visible() {
              self.view.handle_event(cx, event, scope);
+             match event.hits(cx, self.view.area()) {
+                 Hit::FingerDown(fe) => {
+                       // We hit the overlay (Modal)
+                       // Check if we hit the inner card?
+                       // Since we hit the overlay, we need to know if the point is ALSO inside the inner card.
+                       let inner = self.view.widget(ids!(modal_inner));
+                       if !inner.area().rect(cx).contains(fe.abs) {
+                           cx.widget_action(uid, &scope.path, ModalAction::Dismissed);
+                       }
+                 }
+                 _ => ()
+             }
         }
     }
     
@@ -104,13 +148,4 @@ impl Widget for Modal {
 
 }
 
-impl Modal {
-    pub fn ok_clicked(&self, actions: &Actions) -> bool {
-        // Helper to check OK button inside content
-        // This requires knowing the ID path.
-        // Assuming user assigns `ok_button` id in usage or we traverse.
-        // Better to let the user do `self.ui.widget(ids!(my_modal, ok_button))`?
-        // For now, let's keep it simple.
-        false
-    }
-}
+

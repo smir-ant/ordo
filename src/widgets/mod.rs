@@ -6,6 +6,7 @@ pub mod text;
 pub mod view;
 
 pub mod modal;
+pub mod card;
 
 pub fn live_design(cx: &mut Cx) {
     text::live_design(cx);
@@ -13,5 +14,6 @@ pub fn live_design(cx: &mut Cx) {
     input::live_design(cx);
     view::live_design(cx);
     modal::live_design(cx);
+    card::live_design(cx);
     // ...
 }

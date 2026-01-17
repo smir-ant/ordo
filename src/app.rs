@@ -192,6 +192,12 @@ impl AppMain for App {
                 }
              }
              
+             if let Some(action) = actions.find_widget_action(modal.widget_uid()) {
+                if let crate::widgets::modal::ModalAction::Dismissed = action.cast() {
+                    close = true;
+                }
+             }
+             
              if close {
                  let mut closed = false;
                  if let Some(mut modal) = modal.borrow_mut::<Modal>() {
