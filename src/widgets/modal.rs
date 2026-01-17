@@ -1,5 +1,4 @@
 use makepad_widgets::*;
-use crate::widgets::card::Card;
 
 live_design! {
     use makepad_widgets::base::*;
@@ -8,9 +7,10 @@ live_design! {
     use crate::widgets::button::Btn;
     use crate::widgets::text::Text;
     
-    Card = <View> {
+    Card = {{View}} {
+        show_bg: true
         draw_bg: {
-            instance color: #2a2a2a
+            color: #2a2a2a
             instance radius: 8.0
             instance border_width: 0.0
             instance inset: vec4(0.0, 0.0, 0.0, 0.0)
@@ -36,6 +36,7 @@ live_design! {
         align: {x: 0.5, y: 0.5}
         
         show_bg: true
+        grab_key_focus: true
         draw_bg: {
             fn pixel(self) -> vec4 {
                 return vec4(0.0, 0.0, 0.0, 0.8) // Dark dimmed background
@@ -44,15 +45,13 @@ live_design! {
         
         // The dialog window
         modal_inner = <Card> {
-            walk: {width: 400.0, height: Fit}
-            layout: {
-                flow: Down
-                spacing: 20.0
-                padding: {top: 20.0, right: 20.0, bottom: 20.0, left: 20.0}
-            }
+            width: 400.0, height: Fit
+            flow: Down
+            spacing: 20.0
+            padding: {top: 20.0, right: 20.0, bottom: 20.0, left: 20.0}
             
             draw_bg: {
-                radius: 12.0
+                radius: 8.0
             }
             
             title = <Text> {
@@ -120,6 +119,14 @@ impl Widget for Modal {
         let uid = self.widget_uid();
         if self.view.visible() {
              self.view.handle_event(cx, event, scope);
+             
+             // Handle Escape key to dismiss
+             if let Event::KeyDown(ke) = event {
+                 if ke.key_code == KeyCode::Escape {
+                     cx.widget_action(uid, &scope.path, ModalAction::Dismissed);
+                 }
+             }
+             
              match event.hits(cx, self.view.area()) {
                  Hit::FingerDown(fe) => {
                        // We hit the overlay (Modal)
