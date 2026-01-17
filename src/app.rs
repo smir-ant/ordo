@@ -1,4 +1,5 @@
 use makepad_widgets::*;
+use crate::widgets::input::{Input, InputAction, InputRef};
 
 live_design!{
     use makepad_widgets::base::*;
@@ -7,7 +8,7 @@ live_design!{
     use makepad_widgets::scroll_bars::ScrollBars;
     use makepad_widgets::view_ui::View;
     use makepad_widgets::button::Button;
-    use makepad_widgets::text_input::TextInput;
+    use crate::widgets::input::Input;
     use crate::widgets::text::Text;
     use crate::theme::*;
     
@@ -66,7 +67,7 @@ live_design!{
                     text: "Create Activity" // Matches check.html text
                 }
                 
-                input1 = <TextInput> {
+                input1 = <Input> {
                     width: Fill, height: Fit
                     empty_text: "* Morning Routine"
                     is_numeric_only: true
@@ -97,8 +98,13 @@ impl AppMain for App {
         
         if let Event::Actions(actions) = event {
             if self.ui.button(ids!(submit_btn)).clicked(&actions) {
-                 let valid = self.ui.text_input(ids!(input1)).validate(cx);
-                 log!("Validation result: {}", valid);
+                 // Using borrow_mut to access validate directly since helper trait might not be generated automatically
+                 // actually standard convention is to assume helper exists or use ref pattern
+                 // Let's rely on OrdoTextInputRef if available
+                 if let Some(mut input) = self.ui.widget(ids!(input1)).borrow_mut::<Input>() {
+                     let valid = input.validate(cx);
+                     log!("Validation result: {}", valid);
+                 }
             }
         }
     }
