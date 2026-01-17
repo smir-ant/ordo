@@ -17,6 +17,7 @@ live_design!{
                 width: Fill, height: Fill,
                 flow: Down,
                 spacing: 20.0,
+                padding: 20.0,
                 
                 show_bg: true,
                 draw_bg: {
