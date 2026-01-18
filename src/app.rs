@@ -100,6 +100,51 @@ live_design!{
                         margin: {top: 20.0}
                         text: "Open Modal"
                     }
+
+                    <Text> {
+                        width: Fill, margin: {top: 20.0}
+                        text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."
+                        draw_text: {
+                            color: #888
+                            text_style: { font_size: 12.0 }
+                        }
+                    }
+                    
+                    <Text> {
+                        width: Fill, margin: {top: 10.0}
+                        text: "Съешь ещё этих мягких французских булок, да выпей чаю."
+                        draw_text: {
+                            color: #888
+                            text_style: { font_size: 12.0 }
+                        }
+                    }
+                    
+                    <Text> {
+                        width: Fill, margin: {top: 10.0}
+                        text: "!@#$%^&*()_+-=[]{}|;':\",./<>?`~№"
+                        draw_text: {
+                            color: #888
+                            text_style: { font_size: 14.0 }
+                        }
+                    }
+                    
+                    <Text> {
+                        width: Fill, margin: {top: 10.0}
+                        text: "A a B E e K M H O o P p C c T y X x (English)"
+                        draw_text: {
+                            color: #888
+                            text_style: { font_size: 14.0 }
+                        }
+                    }
+                    
+                    <Text> {
+                        width: Fill, margin: {top: 5.0}
+                        text: "А а В Е е К М Н О о Р р С с Т у Х х (Russian)"
+                        draw_text: {
+                            color: #888
+                            text_style: { font_size: 14.0 }
+                        }
+                    }
                 }
                 
                 demo_modal = <Modal> {

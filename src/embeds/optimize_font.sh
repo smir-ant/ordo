@@ -35,18 +35,7 @@ else
     echo "Inter.ttf source not found, skipping optimization."
 fi
 
-# Optimize UbuntuMono
-if [ -f "UbuntuMono.ttf" ]; then
-    echo "Optimizing UbuntuMono..."
-    pyftsubset UbuntuMono.ttf \
-      --unicodes="0020-007F,0400-04FF,2000-206F" \
-      --no-hinting \
-      --layout-features="" \
-      --drop-tables+=fvar,gvar,HVAR,MVAR,STAT,avar,cvar,DSIG,hdmx,LTSH,VDMX \
-      --output-file="$OUTPUT_DIR/UbuntuMono_opt.ttf"
-else
-    echo "UbuntuMono.ttf source not found, skipping optimization."
-fi
+
 
 # Show the size of the generated file to confirm optimization.
 ls -lh *_opt.ttf
