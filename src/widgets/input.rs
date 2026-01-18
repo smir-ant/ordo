@@ -894,10 +894,6 @@ impl Widget for Input {
                         ) {
                              self.set_cursor(cx, cursor, false);
                         }
-                         // Re-trigger clipboard logic on tap if needed
-                        let has_selection = !self.selected_text().is_empty();
-                        let selection_rect = self.get_selection_rect(cx);
-                        cx.show_clipboard_actions(has_selection, selection_rect, cx.keyboard_shift);
                     }
 
                 if fe.was_tap() {
