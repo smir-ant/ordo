@@ -14,6 +14,7 @@ live_design!{
     use crate::widgets::button::Btn;
     use crate::widgets::modal::Modal;
     use crate::widgets::text::Text;
+    use crate::widgets::wrapper::Wrapper;
     use crate::theme::*;
     use makepad_widgets::keyboard_view::KeyboardView;
     
@@ -166,10 +167,13 @@ live_design!{
                         empty_text: "Standard Text Input"
                     }
                     
-                    <Text> {
-                        width: Fill, margin: {top: 20.0}
-                        text: "--- Scroll Test Area ---"
-                        draw_text: { color: #555, text_style: { font_size: 10.0 } }
+                    <Wrapper> {
+                         width: Fill, height: Fit
+                        <Text> {
+                            width: Fill, margin: {top: 20.0}
+                            text: "--- Scroll Test Area ---"
+                            draw_text: { color: #FFF, text_style: { font_size: 14.0 } }
+                        }
                     }
                     <Text> { width: Fill, margin: {top: 10.0}, text: "Line 1: Testing scroll behavior..." }
                     <Text> { width: Fill, margin: {top: 10.0}, text: "Line 2: Swipe up to see more." }
