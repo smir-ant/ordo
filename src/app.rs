@@ -12,10 +12,10 @@ live_design!{
     use makepad_widgets::button::Button;
     use crate::widgets::input::Input;
     use crate::widgets::button::Btn;
-    use crate::widgets::button::Btn;
     use crate::widgets::modal::Modal;
     use crate::widgets::text::Text;
     use crate::theme::*;
+    use makepad_widgets::keyboard_view::KeyboardView;
     
     App = {{App}} {
         ui: <Window> {
@@ -24,7 +24,7 @@ live_design!{
                 width: Fill, height: Fill
                 flow: Overlay // Overlay allows stacking for modal
                 
-                main_content = <View> {
+                main_content = <KeyboardView> {
                     width: Fill, height: Fill,
                     flow: Down,
                     spacing: 20.0,
