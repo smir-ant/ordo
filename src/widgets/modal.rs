@@ -32,6 +32,57 @@ live_design! {
     }
     
 
+    pub TooltipContent = {{TooltipContent}} {
+        width: 300.0, height: Fit
+        flow: Down
+        spacing: 15.0
+        padding: {top: 15.0, right: 15.0, bottom: 15.0, left: 15.0}
+        
+        show_bg: true
+        draw_bg: {
+            color: #333
+            instance radius: 6.0
+            instance border_width: 0.0
+            instance inset: vec4(0.0, 0.0, 0.0, 0.0)
+            
+            fn pixel(self) -> vec4 {
+                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                sdf.box(
+                    self.inset.x + self.border_width,
+                    self.inset.y + self.border_width,
+                    self.rect_size.x - (self.inset.x + self.inset.z + self.border_width * 2.0),
+                    self.rect_size.y - (self.inset.y + self.inset.w + self.border_width * 2.0),
+                    max(1.0, self.radius)
+                );
+                sdf.fill_keep(self.color);
+                return sdf.result
+            }
+        }
+        
+        title = <Text> {
+            text: "Info"
+            draw_text: {
+                color: #fff
+                text_style: <THEME_FONT_BOLD> { font_size: 14.0 }
+            }
+        }
+        
+        text = <Text> {
+            width: Fill, height: Fit
+            text: "This is a simple tooltip modal."
+            draw_text: {
+                color: #ccc
+                text_style: <THEME_FONT_REGULAR> { font_size: 12.0 }
+            }
+        }
+        
+        ok_button = <Btn> {
+            width: Fill
+            text: "Got it"
+            reset_hover_on_click: true
+        }
+    }
+
     pub DialogContent = {{DialogContent}} {
         width: 400.0, height: Fit
         flow: Down
@@ -124,6 +175,31 @@ pub enum ModalAction {
 }
 
 #[derive(Live, LiveHook, Widget)]
+pub struct TooltipContent {
+    #[deref]
+    view: View,
+}
+
+impl Widget for TooltipContent {
+    fn handle_event(&mut self, cx: &mut Cx, event: &Event, scope: &mut Scope) {
+        let uid = self.widget_uid();
+        self.view.handle_event(cx, event, scope);
+        
+        if let Event::Actions(actions) = event {
+             if let Some(btn) = self.view.widget(ids!(ok_button)).borrow::<Button>() {
+                if btn.clicked(actions) {
+                    cx.widget_action(uid, &scope.path, ModalAction::Accepted);
+                }
+            }
+        }
+    }
+    
+    fn draw_walk(&mut self, cx: &mut Cx2d, scope: &mut Scope, walk: Walk) -> DrawStep {
+        self.view.draw_walk(cx, scope, walk)
+    }
+}
+
+#[derive(Live, LiveHook, Widget)]
 pub struct DialogContent {
     #[deref]
     view: View,
@@ -166,24 +242,59 @@ pub struct Modal {
 impl Widget for Modal {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event, scope: &mut Scope) {
         let uid = self.widget_uid();
+        
+        // 1. Forward child events (render/interaction)
         if self.view.visible() {
              self.view.handle_event(cx, event, scope);
-             
-             // Handle Escape key to dismiss and Return key to accept
+        }
+        
+        if self.view.visible() {
+             // 2. Handle Actions (Child -> Modal -> App)
+             if let Event::Actions(actions) = event {
+                 // Check if internal content emitted an action
+                 // We don't know the exact child ID easily without `ids!`, but we can iterate.
+                 // Better: Check if any action corresponds to a child widget?
+                 // Simple approach: Use ids!(content) if we know it used that name.
+                 // In previous steps I used `content = <DialogContent>`.
+                 // So the child ID is `content`.
+                 
+                 let content = self.view.widget(ids!(content));
+                 if let Some(action) = actions.find_widget_action(content.widget_uid()) {
+                     let modal_action: ModalAction = action.cast();
+                     match modal_action {
+                         ModalAction::Accepted | ModalAction::Dismissed => {
+                             // Close self
+                             self.view.set_visible(cx, false);
+                             self.view.redraw(cx);
+                             
+                             // Forward action to App (using Modal's UID)
+                             cx.widget_action(uid, &scope.path, modal_action);
+                         }
+                         _ => ()
+                     }
+                 }
+             }
+
+             // 3. Handle Global Keys (Esc/Enter)
              if let Event::KeyDown(ke) = event {
                  if ke.key_code == KeyCode::Escape {
+                     self.view.set_visible(cx, false);
+                     self.view.redraw(cx);
                      cx.widget_action(uid, &scope.path, ModalAction::Dismissed);
                  } else if ke.key_code == KeyCode::ReturnKey {
+                     self.view.set_visible(cx, false);
+                     self.view.redraw(cx);
                      cx.widget_action(uid, &scope.path, ModalAction::Accepted);
                  }
              }
              
-             // Handle click outside content
+             // 4. Handle Click Outside
              match event.hits(cx, self.view.area()) {
                  Hit::FingerDown(fe) => {
-                       // Check if we hit the content widget
                        let content = self.view.widget(ids!(content));
                        if !content.area().rect(cx).contains(fe.abs) {
+                            self.view.set_visible(cx, false);
+                            self.view.redraw(cx);
                             cx.widget_action(uid, &scope.path, ModalAction::Dismissed);
                        }
                  }
@@ -192,13 +303,15 @@ impl Widget for Modal {
         }
     }
     
-    fn draw_walk(&mut self, cx: &mut Cx2d, scope: &mut Scope, walk: Walk) -> DrawStep {
-        self.view.draw_walk(cx, scope, walk)
-    }
-    
     fn widget(&self, path: &[LiveId]) -> WidgetRef {
         self.view.widget(path)
     }
+
+    fn draw_walk(&mut self, cx: &mut Cx2d, scope: &mut Scope, walk: Walk) -> DrawStep {
+        self.view.draw_walk(cx, scope, walk)
+    }
 }
+
+
 
 

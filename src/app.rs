@@ -17,6 +17,7 @@ live_design!{
     use crate::widgets::button::Btn;
     use crate::widgets::modal::Modal;
     use crate::widgets::modal::DialogContent;
+    use crate::widgets::modal::TooltipContent;
     use crate::widgets::text::Text;
     use crate::widgets::wrapper::Wrapper;
     use crate::theme::*;
@@ -113,6 +114,11 @@ live_design!{
                         text: "Open Modal"
                     }
 
+                    open_tooltip_btn = <Btn> {
+                        margin: {top: 20.0, left: 10.0}
+                        text: "Open Tooltip"
+                    }
+
                     <Text> {
                         width: Fill, margin: {top: 20.0}
                         text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."
@@ -183,7 +189,6 @@ live_design!{
                     <Text> { width: Fill, margin: {top: 10.0}, text: "Line 2: Swipe up to see more." }
                     <Text> { width: Fill, margin: {top: 10.0}, text: "Line 3: Keyboard should push this up." }
                     <Text> { width: Fill, margin: {top: 10.0}, text: "Line 4: Bottom of the scrollable area." }
-                    <Text> { width: Fill, margin: {top: 10.0}, text: "Line 5: Use this to test edge bounce." }
                     <Text> { width: Fill, margin: {top: 10.0, bottom: 50.0}, text: "--- End of Content ---" }
                 }
                 
@@ -192,6 +197,14 @@ live_design!{
                     content = <DialogContent> {
                         title = { text: "Confirm Action" }
                         text = { text: "Are you sure you want to proceed?" }
+                    }
+                }
+                
+                tooltip_modal = <Modal> {
+                    visible: false
+                    content = <TooltipContent> {
+                        title = { text: "Scroll Area Info" }
+                        text = { text: "You interacted with the scroll test area." }
                     }
                 }
             }
@@ -323,28 +336,40 @@ impl AppMain for App {
 
              // Open Modal Logic
              let mut open_modal = false;
-             if let Some(btn) = self.ui.widget(ids!(open_modal_btn)).borrow::<Btn>() {
+             if let Some(btn) = self.ui.widget(&[live_id!(body), live_id!(open_modal_btn)]).borrow::<Btn>() {
                  if let Some(action) = actions.find_widget_action(btn.widget_uid()) {
                       if let ButtonAction::Clicked(_) = action.cast() {
+                           log!("Open Modal Button Clicked");
                            open_modal = true;
                        }
                  }
+             } else {
+                 log!("Error: open_modal_btn not found via ids!(body, open_modal_btn)");
+             }
+
+             // Open Tooltip Logic
+             let mut open_tooltip = false;
+             if let Some(btn) = self.ui.widget(&[live_id!(body), live_id!(open_tooltip_btn)]).borrow::<Btn>() {
+                 if let Some(action) = actions.find_widget_action(btn.widget_uid()) {
+                      if let ButtonAction::Clicked(_) = action.cast() {
+                           log!("Open Tooltip Button Clicked");
+                           open_tooltip = true;
+                       }
+                 }
+             } else {
+                 log!("Error: open_tooltip_btn not found via ids!(body, open_tooltip_btn)");
              }
              
-             if open_modal {
-                  if let Some(mut modal) = self.ui.widget(ids!(demo_modal)).borrow_mut::<Modal>() {
-                      modal.set_visible(cx, true);
-                  }
-                  self.ui.redraw(cx);
-             }
+
              
              // Check for Wrapper Actions (Right Click / Long Press)
              for action in actions { // This will re-iterate over the actions if `actions` is a slice or reference
-                 if let WrapperAction::RightClick = action.as_widget_action().cast() {
-                     open_modal = true;
-                 }
+                  if let WrapperAction::RightClick = action.as_widget_action().cast() {
+                      log!("Wrapper Right Click Detected");
+                      open_tooltip = true;
+                  }
                  if let WrapperAction::LongPress = action.as_widget_action().cast() {
-                     open_modal = true;
+                     open_tooltip = true; // Use tooltip for long press for variety?
                  }
                  if let WrapperAction::Scroll(delta) = action.as_widget_action().cast() {
                     // Manually scroll main_content if the wrapper captured the touch
@@ -358,44 +383,54 @@ impl AppMain for App {
              }
              
              if open_modal {
-                  let mut opened = false;
-                 if let Some(mut modal) = self.ui.widget(ids!(demo_modal)).borrow_mut::<Modal>() {
-                     modal.set_visible(cx, true);
-                     opened = true;
-                 }
-                 if opened {
-                     self.ui.redraw(cx);
-                 }
+                  log!("Attempting to open demo_modal");
+                  if let Some(mut modal) = self.ui.widget(&[live_id!(body), live_id!(demo_modal)]).borrow_mut::<Modal>() {
+                      log!("Found demo_modal, setting visible true");
+                      modal.set_visible(cx, true);
+                  } else {
+                      log!("Error: demo_modal not found via ids!(body, demo_modal)");
+                  }
+                  self.ui.redraw(cx);
              }
+
+             if open_tooltip {
+                  log!("Attempting to open tooltip_modal");
+                  if let Some(mut modal) = self.ui.widget(&[live_id!(body), live_id!(tooltip_modal)]).borrow_mut::<Modal>() {
+                      log!("Found tooltip_modal, setting visible true");
+                      modal.set_visible(cx, true);
+                  } else {
+                      log!("Error: tooltip_modal not found via ids!(body, tooltip_modal)");
+                  }
+                  self.ui.redraw(cx);
+             }
+
              
-             // Modal Actions
-             let modal = self.ui.widget(ids!(demo_modal));
-             let mut close = false;
+             // Modal Actions (Main Dialog)
+             let modal = self.ui.widget(&[live_id!(body), live_id!(demo_modal)]);
              
-             // Listen for Modal Actions (Emitted by DialogContent or Modal wrapper)
              if let Some(action) = actions.find_widget_action(modal.widget_uid()) {
                  match action.cast() {
-                     crate::widgets::modal::ModalAction::Dismissed => {
-                         close = true;
-                     }
                      crate::widgets::modal::ModalAction::Accepted => {
-                         close = true;
+                         log!("Dialog Accepted");
                      }
                      _ => ()
                  }
             }
              
-             if close {
-                 let mut closed = false;
-                 if let Some(mut modal) = modal.borrow_mut::<Modal>() {
-                     modal.set_visible(cx, false);
-                     closed = true;
+             // Tooltip Actions
+             let tooltip = self.ui.widget(&[live_id!(body), live_id!(tooltip_modal)]);
+             
+             if let Some(action) = actions.find_widget_action(tooltip.widget_uid()) {
+                 match action.cast() {
+                     crate::widgets::modal::ModalAction::Accepted => {
+                         log!("Tooltip Accepted");
+                     }
+                     _ => ()
                  }
-                 if closed {
-                     self.ui.redraw(cx);
-                 }
-             }
+            }
         }
 
     }
+
+
 }
