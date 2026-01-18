@@ -19,7 +19,7 @@ pub enum WrapperAction {
     RightClick,
     LongPress,
     Scroll(Vec2d),
-    ShowTooltip(String),
+    ShowTooltip{title: String, text: String},
 }
 
 #[derive(Live, LiveHook, Widget)]
@@ -28,6 +28,7 @@ pub struct Wrapper {
     #[rust] last_abs: Option<Vec2d>,
     #[live] blocked: bool,
     #[live] tooltip_text: String,
+    #[live] tooltip_title: String,
 }
 
 impl Widget for Wrapper {
@@ -55,7 +56,8 @@ impl Widget for Wrapper {
                  self.last_abs = None;
                  if fe.mouse_button() == Some(MouseButton::SECONDARY) {
                      if !self.tooltip_text.is_empty() {
-                         cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::ShowTooltip(self.tooltip_text.clone()));
+                         let title = if self.tooltip_title.is_empty() { "Info".to_string() } else { self.tooltip_title.clone() };
+                         cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::ShowTooltip{title, text: self.tooltip_text.clone()});
                      } else {
                          cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::RightClick);
                      }
@@ -63,7 +65,8 @@ impl Widget for Wrapper {
             }
             Hit::FingerLongPress(_fe) => {
                  if !self.tooltip_text.is_empty() {
-                     cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::ShowTooltip(self.tooltip_text.clone()));
+                     let title = if self.tooltip_title.is_empty() { "Info".to_string() } else { self.tooltip_title.clone() };
+                     cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::ShowTooltip{title, text: self.tooltip_text.clone()});
                  } else {
                      cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::LongPress);
                  }

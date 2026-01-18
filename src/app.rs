@@ -182,7 +182,8 @@ live_design!{
                         
                         scroll_wrapper = <Wrapper> {
                              width: Fill, height: Fit
-                             tooltip_text: "Scroll Area Action detected"
+                             tooltip_title: "Scroll Info"
+                             tooltip_text: "Scroll Area Action detected\nLine breaks are supported!"
                             <Text> {
                                 width: Fill, margin: {top: 20.0}
                                 text: "--- Scroll Test Area ---"
@@ -323,20 +324,34 @@ impl AppMain for App {
             if let Some(btn) = self.ui.widget(ids!(open_modal_btn)).borrow::<Btn>() {
                 if btn.clicked(&actions) {
                    open_modal = true;
+                   // Set Dynamic Title for Dialog
+                   if let Some(mut title_widget) = self.ui.widget(&[live_id!(demo_modal), live_id!(content), live_id!(title)]).borrow_mut::<Text>() {
+                       title_widget.set_text(cx, "Dynamic Dialog Title");
+                   }
                 }
             }
             
              if let Some(btn) = self.ui.widget(ids!(open_tooltip_btn)).borrow::<Btn>() {
                 if btn.clicked(&actions) {
                    open_tooltip = true;
+                   // Set Default Title/Text for button-triggered tooltip
+                   if let Some(mut title_widget) = self.ui.widget(&[live_id!(tooltip_modal), live_id!(content), live_id!(title)]).borrow_mut::<Text>() {
+                       title_widget.set_text(cx, "Button Triggered");
+                   }
+                   if let Some(mut text_widget) = self.ui.widget(&[live_id!(tooltip_modal), live_id!(content), live_id!(text)]).borrow_mut::<Text>() {
+                       text_widget.set_text(cx, "This tooltip was opened via button click.");
+                   }
                 }
             }
             
              // Check for generic ShowTooltip action
              for action in actions {
-                 if let WrapperAction::ShowTooltip(text) = action.as_widget_action().cast() {
+                 if let WrapperAction::ShowTooltip{title, text} = action.as_widget_action().cast() {
                      open_tooltip = true;
-                     // Update tooltip text
+                     // Update tooltip title and text
+                      if let Some(mut title_widget) = self.ui.widget(&[live_id!(tooltip_modal), live_id!(content), live_id!(title)]).borrow_mut::<Text>() {
+                           title_widget.set_text(cx, &title);
+                       }
                       if let Some(mut text_widget) = self.ui.widget(&[live_id!(tooltip_modal), live_id!(content), live_id!(text)]).borrow_mut::<Text>() {
                            text_widget.set_text(cx, &text);
                        }
