@@ -35,7 +35,14 @@ live_design!{
                         color: #1f1f1f
                     }
                     
-                    scroll_bars: <ScrollBars> {}
+                    scroll_bars: <ScrollBars> {
+                        show_scroll_x: false
+                        show_scroll_y: true
+                        scroll_bar_y: {
+                            drag_scrolling: true 
+                            smoothing: 0.15
+                        }
+                    }
                     
                     // Typography Section
                     <Text> {
@@ -105,6 +112,7 @@ live_design!{
                         width: Fill, margin: {top: 20.0}
                         text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."
                         draw_text: {
+                            wrapping: Word
                             color: #888
                             text_style: { font_size: 12.0 }
                         }
@@ -114,6 +122,7 @@ live_design!{
                         width: Fill, margin: {top: 10.0}
                         text: "Съешь ещё этих мягких французских булок, да выпей чаю."
                         draw_text: {
+                            wrapping: Word
                             color: #888
                             text_style: { font_size: 12.0 }
                         }
@@ -156,6 +165,18 @@ live_design!{
                         width: Fill, height: Fit, margin: {top: 10.0}
                         empty_text: "Standard Text Input"
                     }
+                    
+                    <Text> {
+                        width: Fill, margin: {top: 20.0}
+                        text: "--- Scroll Test Area ---"
+                        draw_text: { color: #555, text_style: { font_size: 10.0 } }
+                    }
+                    <Text> { width: Fill, margin: {top: 10.0}, text: "Line 1: Testing scroll behavior..." }
+                    <Text> { width: Fill, margin: {top: 10.0}, text: "Line 2: Swipe up to see more." }
+                    <Text> { width: Fill, margin: {top: 10.0}, text: "Line 3: Keyboard should push this up." }
+                    <Text> { width: Fill, margin: {top: 10.0}, text: "Line 4: Bottom of the scrollable area." }
+                    <Text> { width: Fill, margin: {top: 10.0}, text: "Line 5: Use this to test edge bounce." }
+                    <Text> { width: Fill, margin: {top: 10.0, bottom: 50.0}, text: "--- End of Content ---" }
                 }
                 
                 demo_modal = <Modal> {
