@@ -112,6 +112,7 @@ pub struct Modal {
 pub enum ModalAction {
     None,
     Dismissed,
+    Accepted,
 }
 
 impl Widget for Modal {
@@ -120,10 +121,12 @@ impl Widget for Modal {
         if self.view.visible() {
              self.view.handle_event(cx, event, scope);
              
-             // Handle Escape key to dismiss
+             // Handle Escape key to dismiss and Return key to accept
              if let Event::KeyDown(ke) = event {
                  if ke.key_code == KeyCode::Escape {
                      cx.widget_action(uid, &scope.path, ModalAction::Dismissed);
+                 } else if ke.key_code == KeyCode::ReturnKey {
+                     cx.widget_action(uid, &scope.path, ModalAction::Accepted);
                  }
              }
              

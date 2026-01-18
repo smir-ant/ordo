@@ -371,10 +371,16 @@ impl AppMain for App {
              }
              
              if let Some(action) = actions.find_widget_action(modal.widget_uid()) {
-                if let crate::widgets::modal::ModalAction::Dismissed = action.cast() {
-                    close = true;
+                match action.cast() {
+                    crate::widgets::modal::ModalAction::Dismissed => {
+                        close = true;
+                    }
+                    crate::widgets::modal::ModalAction::Accepted => {
+                        close = true;
+                    }
+                    _ => ()
                 }
-             }
+            }
              
              if close {
                  let mut closed = false;
