@@ -1,6 +1,6 @@
 use makepad_widgets::*;
 use crate::widgets::input::{Input, InputAction};
-use crate::widgets::button::Button as Btn;
+use crate::widgets::button::{Button as Btn, ButtonAction};
 use crate::widgets::modal::Modal;
 use crate::widgets::wrapper::{Wrapper, WrapperAction};
 use makepad_widgets::view::View;
@@ -212,6 +212,69 @@ impl AppMain for App {
         self.ui.handle_event(cx, event, scope);
         
         if let Event::Actions(actions) = event {
+            // Generic Scroll Handler
+            let mut total_scroll_delta = DVec2::default();
+            for action in actions {
+                let mut handled = false;
+
+                if let InputAction::Scroll(delta) = action.cast() {
+                    total_scroll_delta += delta;
+                    handled = true;
+                }
+                
+                if !handled {
+                    if let ButtonAction::Scroll(delta) = action.cast() {
+                         total_scroll_delta += delta;
+                         handled = true;
+                    }
+                }
+                
+                if !handled {
+                     if let WrapperAction::Scroll(delta) = action.cast() {
+                         total_scroll_delta += delta;
+                         handled = true;
+                    }
+                }
+                
+                // Fallback: Parse Debug String if cast fails (handles TypeId mismatches)
+                if !handled {
+                    let action_str = format!("{:?}", action);
+                    if action_str.contains("Scroll") && action_str.contains("Vec2d") {
+                        // Expected format: ... Scroll(Vec2d { x: VAL, y: VAL }) ...
+                        if let Some(start) = action_str.find("Scroll(Vec2d { x: ") {
+                            let rest = &action_str[start..];
+                            if let Some(x_start) = rest.find("x: ") {
+                                 let x_str = &rest[x_start + 3..];
+                                 if let Some(comma) = x_str.find(",") {
+                                     let x_val_str = &x_str[..comma];
+                                     if let Some(y_start) = x_str.find("y: ") {
+                                         let y_str = &x_str[y_start + 3..];
+                                         if let Some(brace) = y_str.find("}") {
+                                             let y_val_str = &y_str[..brace].trim();
+                                             
+                                             if let (Ok(x), Ok(y)) = (x_val_str.parse::<f64>(), y_val_str.parse::<f64>()) {
+                                                 let delta = DVec2 { x, y };
+                                                 total_scroll_delta += delta;
+                                             }
+                                         }
+                                     }
+                                 }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if total_scroll_delta.x != 0.0 || total_scroll_delta.y != 0.0 {
+                 if let Some(mut view) = self.ui.widget(ids!(main_content)).borrow_mut::<KeyboardView>() {
+                    let current_scroll = view.get_scroll_pos(cx);
+                    let new_scroll = DVec2{x: current_scroll.x - total_scroll_delta.x, y: current_scroll.y - total_scroll_delta.y};
+                    view.set_scroll_pos(cx, new_scroll);
+                    view.redraw(cx);
+                }
+            }
+
+            // Input Validation Logic (Specific to input1)
             let submit_clicked = self.ui.widget(ids!(submit_btn))
                 .borrow::<Btn>()
                 .map(|btn| btn.clicked(&actions))
@@ -231,8 +294,9 @@ impl AppMain for App {
                      }
                 }
             }
-        
-            if let Some(mut input) = self.ui.widget(ids!(input1)).borrow_mut::<Input>() {
+            
+            // Check Input 1 Changed (Validation)
+             if let Some(mut input) = self.ui.widget(ids!(input1)).borrow_mut::<Input>() {
                 if let Some(action) = actions.find_widget_action(input.widget_uid()) {
                     if let InputAction::Changed(_) = action.cast() {
                         let valid = input.validate(cx);
@@ -246,25 +310,22 @@ impl AppMain for App {
              // Open Modal Logic
              let mut open_modal = false;
              if let Some(btn) = self.ui.widget(ids!(open_modal_btn)).borrow::<Btn>() {
-                 if btn.clicked(&actions) {
-                     open_modal = true;
+                 if let Some(action) = actions.find_widget_action(btn.widget_uid()) {
+                      if let ButtonAction::Clicked(_) = action.cast() {
+                           open_modal = true;
+                       }
                  }
              }
              
              if open_modal {
-                 let mut opened = false;
-                 if let Some(mut modal) = self.ui.widget(ids!(demo_modal)).borrow_mut::<Modal>() {
-                     modal.set_visible(cx, true);
-                     opened = true;
-                 }
-                 if opened {
-                     self.ui.redraw(cx);
-                 }
+                  if let Some(mut modal) = self.ui.widget(ids!(demo_modal)).borrow_mut::<Modal>() {
+                      modal.set_visible(cx, true);
+                  }
+                  self.ui.redraw(cx);
              }
              
              // Check for Wrapper Actions (Right Click / Long Press)
-             let mut open_modal = false;
-             for action in actions {
+             for action in actions { // This will re-iterate over the actions if `actions` is a slice or reference
                  if let WrapperAction::RightClick = action.as_widget_action().cast() {
                      open_modal = true;
                  }

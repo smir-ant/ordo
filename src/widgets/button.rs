@@ -474,6 +474,7 @@ pub enum ButtonAction {
     /// The button was released (an "up" event), but should not be considered clicked
     /// because the mouse/finger was not over the button area when released.
     Released(KeyModifiers),
+    Scroll(Vec2d),
 }
 
 /// A clickable button widget that emits actions when pressed, and when either released or clicked.
@@ -537,6 +538,9 @@ pub struct Button {
     pub text: ArcStringMut,
     
     #[action_data] #[rust] action_data: WidgetActionData,
+    #[rust] last_abs: Option<Vec2d>,
+    #[rust] start_abs: Option<Vec2d>,
+    #[rust] is_dragged: bool,
 }
 
 impl Widget for Button {
@@ -578,8 +582,12 @@ impl Widget for Button {
                     cx.set_key_focus(self.draw_bg.area());
                 }
                 cx.widget_action_with_data(&self.action_data, uid, &scope.path, ButtonAction::Pressed(fe.modifiers));
-                    self.animator_play(cx, ids!(hover.down));
-                    self.set_key_focus(cx);
+                self.animator_play(cx, ids!(hover.down));
+                self.set_key_focus(cx);
+                self.last_abs = Some(fe.abs);
+                self.start_abs = Some(fe.abs);
+                self.is_dragged = false;
+                crate::makepad_platform::log!("Button (Local) FingerDown: {:?}", fe.abs); // DEBUG
             }
             Hit::FingerHoverIn(_) => {
                 if self.enabled {
@@ -592,21 +600,46 @@ impl Widget for Button {
             Hit::FingerHoverOut(_) => {
                 self.animator_play(cx, ids!(hover.off));
             }
+            Hit::FingerMove(fe) => {
+                 let last_abs = self.last_abs.unwrap_or(fe.abs);
+                 let delta = fe.abs - last_abs;
+                 self.last_abs = Some(fe.abs);
+                 
+                 // Use total distance from start to determine if it's a drag
+                 if let Some(start) = self.start_abs {
+                     let total_dist = (fe.abs - start).length();
+                     if total_dist > 10.0 { // Increased threshold to 10px
+                         self.is_dragged = true;
+                     }
+                 }
+                 
+                 if delta.x != 0.0 || delta.y != 0.0 {
+                    cx.widget_action_with_data(&self.action_data, uid, &scope.path, ButtonAction::Scroll(delta));
+                 }
+            }
             Hit::FingerLongPress(_lp) if self.enabled && self.enable_long_press => {
                 cx.widget_action_with_data(&self.action_data, uid, &scope.path, ButtonAction::LongPressed);
             }
             Hit::FingerUp(fe) if self.enabled && fe.is_primary_hit() => {
-                let was_clicked = fe.is_over && if self.enable_long_press { fe.was_tap() } else { true };
-                if was_clicked {
-                    cx.widget_action_with_data(&self.action_data, uid, &scope.path, ButtonAction::Clicked(fe.modifiers));
-                    if self.reset_hover_on_click {
-                        self.animator_cut(cx, ids!(hover.off));
-                    } else if fe.has_hovers() {
-                        self.animator_play(cx, ids!(hover.on));
+                self.last_abs = None;
+                 if !self.is_dragged {
+                    crate::makepad_platform::log!("Button (Local) FingerUp: Clicked!"); // DEBUG
+                    let was_clicked = fe.is_over;
+                    if was_clicked {
+                        cx.widget_action_with_data(&self.action_data, uid, &scope.path, ButtonAction::Clicked(fe.modifiers));
+                        if self.reset_hover_on_click {
+                            self.animator_cut(cx, ids!(hover.off));
+                        } else if fe.has_hovers() {
+                            self.animator_play(cx, ids!(hover.on));
+                        } else {
+                            self.animator_play(cx, ids!(hover.off));
+                        }
                     } else {
+                        cx.widget_action_with_data(&self.action_data, uid, &scope.path, ButtonAction::Released(fe.modifiers));
                         self.animator_play(cx, ids!(hover.off));
                     }
                 } else {
+                    crate::makepad_platform::log!("Button (Local) FingerUp: Dragged, click ignored."); // DEBUG
                     cx.widget_action_with_data(&self.action_data, uid, &scope.path, ButtonAction::Released(fe.modifiers));
                     self.animator_play(cx, ids!(hover.off));
                 }

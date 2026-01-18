@@ -642,6 +642,8 @@ pub struct Input {
     #[rust] composition_start: usize,
     /// IME composition tracking - byte length of current composition
     #[rust] composition_length: usize,
+    #[rust] last_abs: Option<Vec2d>,
+    #[rust] is_potential_scroll: bool,
 }
 
  impl LiveHook for Input{
@@ -667,6 +669,12 @@ pub struct Input {
 
 impl Widget for Input {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event, scope: &mut Scope) {
+        // match event.hits(cx, self.draw_bg.area()) { 
+        //    Hit::FingerDown(_) => crate::makepad_platform::log!("Input: FingerDown Detected"),
+        //    Hit::FingerMove(_) => crate::makepad_platform::log!("Input: FingerMove Detected"),
+        //    _ => ()
+        // }
+
         if self.animator_handle_event(cx, event).must_redraw() {
             self.draw_bg.redraw(cx);
         }
@@ -814,56 +822,78 @@ impl Widget for Input {
                 ..
             }) if device.is_primary_hit() => {
                 self.reset_blink_timer(cx);
-                self.set_key_focus(cx);
-                let rel = abs - self.text_area.rect(cx).pos;
-                let Ok(cursor) = self.point_in_lpxs_to_cursor(
-                    Point::new(rel.x as f32, rel.y as f32)
-                ) else {
-                    warning!("can't move cursor because layout was invalidated by earlier event");
-                    return;
-                };
+                self.last_abs = Some(abs);
+                self.is_potential_scroll = true;
+                crate::makepad_platform::log!("Input Hit: FingerDown at {:?}", abs); // DEBUG
 
-                let selection = self.selection();
-                let has_selection = selection.cursor != selection.anchor;
-                let touching_selection = if has_selection {
-                    let sel_start = selection.start().index;
-                    let sel_end = selection.end().index;
-                    cursor.index >= sel_start && cursor.index <= sel_end
-                } else {
-                    false
-                };
-
-                if tap_count > 1 || !touching_selection {
-                    self.set_cursor(cx, cursor, false);
-                    self.preserved_selection_cursor = None;
-                } else {
-                    self.preserved_selection_cursor = Some(cursor);
-                }
-
-                match tap_count {
-                    2 => {
-                        self.select_word(cx);
-                        if device.is_touch() {
-                            let has_selection = !self.selected_text().is_empty();
-                            let selection_rect = self.get_selection_rect(cx);
-                            cx.show_clipboard_actions(has_selection, selection_rect, cx.keyboard_shift);
-                        }
+                // Treat mouse same as touch for "swipe to scroll" support
+                // if !device.is_touch() { ... } - REMOVED to unification
+                
+                /*
+                if !device.is_touch() {
+                     self.set_key_focus(cx);
+                     self.is_potential_scroll = false; 
+                     
+                     let rel = abs - self.text_area.rect(cx).pos;
+                    let Ok(cursor) = self.point_in_lpxs_to_cursor(
+                        Point::new(rel.x as f32, rel.y as f32)
+                    ) else {
+                        warning!("can't move cursor because layout was invalidated by earlier event");
+                        return;
+                    };
+    
+                    let selection = self.selection();
+                    let has_selection = selection.cursor != selection.anchor;
+                    let touching_selection = if has_selection {
+                        let sel_start = selection.start().index;
+                        let sel_end = selection.end().index;
+                        cursor.index >= sel_start && cursor.index <= sel_end
+                    } else {
+                        false
+                    };
+    
+                    if tap_count > 1 || !touching_selection {
+                        self.set_cursor(cx, cursor, false);
+                        self.preserved_selection_cursor = None;
+                    } else {
+                        self.preserved_selection_cursor = Some(cursor);
                     }
-                    3 => {
-                        self.select_all(cx);
-                        if device.is_touch() {
-                            let has_selection = !self.selected_text().is_empty();
-                            let selection_rect = self.get_selection_rect(cx);
-                            cx.show_clipboard_actions(has_selection, selection_rect, cx.keyboard_shift);
+    
+                    match tap_count {
+                        2 => {
+                            self.select_word(cx);
                         }
+                        3 => {
+                            self.select_all(cx);
+                        }
+                        _ => {}
                     }
-                    _ => {}
                 }
-
+                */
+                
                 self.animator_play(cx, ids!(hover.down));
             }
             Hit::FingerUp(fe) => {
                 self.ignore_next_move = false;
+                self.last_abs = None;
+                
+                // If we were potentially scrolling (touch OR mouse now), check if it was actually a tap
+                if self.is_potential_scroll { // Removed device.is_touch() check
+                    self.is_potential_scroll = false;
+                    if fe.was_tap() {
+                        self.set_key_focus(cx);
+                        let rel = fe.abs - self.text_area.rect(cx).pos;
+                        if let Ok(cursor) = self.point_in_lpxs_to_cursor(
+                                Point::new(rel.x as f32, rel.y as f32)
+                        ) {
+                             self.set_cursor(cx, cursor, false);
+                        }
+                         // Re-trigger clipboard logic on tap if needed
+                        let has_selection = !self.selected_text().is_empty();
+                        let selection_rect = self.get_selection_rect(cx);
+                        cx.show_clipboard_actions(has_selection, selection_rect, cx.keyboard_shift);
+                    }
+                }
 
                 if fe.was_tap() {
                     if let Some(cursor) = self.preserved_selection_cursor.take() {
@@ -885,6 +915,7 @@ impl Widget for Input {
             }
             Hit::FingerLongPress(lp) => {
                 self.preserved_selection_cursor = None;
+                self.is_potential_scroll = false;
 
                 // Select word at long press position
                 let rel = lp.abs - self.text_area.rect(cx).pos;
@@ -922,6 +953,19 @@ impl Widget for Input {
                     self.ignore_next_move = false;
                     return;
                 }
+                
+                if self.is_potential_scroll { // Removed device.is_touch()
+                     let last_abs = self.last_abs.unwrap_or(abs);
+                     let delta = abs - last_abs;
+                     self.last_abs = Some(abs);
+                     if delta.x != 0.0 || delta.y != 0.0 {
+                        crate::makepad_platform::log!("Input emitting Scroll: {:?}, is_potential_scroll={}", delta, self.is_potential_scroll); // DEBUG
+                        cx.widget_action(self.widget_uid(), &scope.path, InputAction::Scroll(delta));
+                     }
+                     return;
+                }
+                
+                crate::makepad_platform::log!("Input Hit: FingerMove (selection mode or mouse). is_potential_scroll={}", self.is_potential_scroll); // DEBUG
 
                 // Clear preserved cursor - user is dragging to select
                 self.preserved_selection_cursor = None;
@@ -2116,6 +2160,7 @@ pub enum InputAction {
     Escaped,
     Changed(String),
     KeyDownUnhandled(KeyEvent),
+    Scroll(Vec2d),
 }
 
 #[derive(Clone, Debug, Default)]
