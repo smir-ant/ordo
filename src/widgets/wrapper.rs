@@ -13,6 +13,13 @@ live_design! {
     }
 }
 
+#[derive(Clone, DefaultNone, Debug)]
+pub enum WrapperAction {
+    None,
+    RightClick,
+    DoubleTap,
+}
+
 #[derive(Live, LiveHook, Widget)]
 pub struct Wrapper {
     #[deref] view: View,
@@ -24,15 +31,16 @@ impl Widget for Wrapper {
         
         match event.hits(cx, self.view.area()) {
             Hit::FingerDown(_fe) => {
-                 log!("Wrapper: FingerDown Detected!");
+                 // log!("Wrapper: FingerDown Detected!");
             }
             Hit::FingerUp(fe) => {
-                 log!("Wrapper: FingerUp Detected! Count: {}", fe.tap_count);
                  if fe.mouse_button() == Some(MouseButton::SECONDARY) {
-                     log!("Wrapper: Right Click Detected on Scroll Test Area!");
+                     log!("Wrapper: Right Click Detected! Emitting Action.");
+                     cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::RightClick);
                  }
                  if fe.tap_count > 1 {
-                     log!("Wrapper: Double Click/Tap Detected! (Count: {})", fe.tap_count);
+                     log!("Wrapper: Double Tap Detected! Emitting Action.");
+                     cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::DoubleTap);
                  }
             }
             _ => ()

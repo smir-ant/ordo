@@ -2,6 +2,7 @@ use makepad_widgets::*;
 use crate::widgets::input::{Input, InputAction};
 use crate::widgets::button::Button as Btn;
 use crate::widgets::modal::Modal;
+use crate::widgets::wrapper::{Wrapper, WrapperAction};
 
 live_design!{
     use makepad_widgets::base::*;
@@ -12,6 +13,8 @@ live_design!{
     use makepad_widgets::button::Button;
     use crate::widgets::input::Input;
     use crate::widgets::button::Btn;
+    use crate::widgets::modal::Modal;
+    use crate::widgets::text::Text;
     use crate::widgets::modal::Modal;
     use crate::widgets::text::Text;
     use crate::widgets::wrapper::Wrapper;
@@ -248,6 +251,28 @@ impl AppMain for App {
              
              if open_modal {
                  let mut opened = false;
+                 if let Some(mut modal) = self.ui.widget(ids!(demo_modal)).borrow_mut::<Modal>() {
+                     modal.set_visible(cx, true);
+                     opened = true;
+                 }
+                 if opened {
+                     self.ui.redraw(cx);
+                 }
+             }
+             
+             // Check for Wrapper Actions (Right Click / Double Tap)
+             let mut open_modal = false;
+             for action in actions {
+                 if let WrapperAction::RightClick = action.as_widget_action().cast() {
+                     open_modal = true;
+                 }
+                 if let WrapperAction::DoubleTap = action.as_widget_action().cast() {
+                     open_modal = true;
+                 }
+             }
+             
+             if open_modal {
+                  let mut opened = false;
                  if let Some(mut modal) = self.ui.widget(ids!(demo_modal)).borrow_mut::<Modal>() {
                      modal.set_visible(cx, true);
                      opened = true;
