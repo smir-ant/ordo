@@ -17,7 +17,7 @@ live_design! {
 pub enum WrapperAction {
     None,
     RightClick,
-    DoubleTap,
+    LongPress,
 }
 
 #[derive(Live, LiveHook, Widget)]
@@ -30,18 +30,15 @@ impl Widget for Wrapper {
         self.view.handle_event(cx, event, scope);
         
         match event.hits(cx, self.view.area()) {
-            Hit::FingerDown(_fe) => {
-                 // log!("Wrapper: FingerDown Detected!");
-            }
             Hit::FingerUp(fe) => {
                  if fe.mouse_button() == Some(MouseButton::SECONDARY) {
                      log!("Wrapper: Right Click Detected! Emitting Action.");
                      cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::RightClick);
                  }
-                 if fe.tap_count > 1 {
-                     log!("Wrapper: Double Tap Detected! Emitting Action.");
-                     cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::DoubleTap);
-                 }
+            }
+            Hit::FingerLongPress(_fe) => {
+                 log!("Wrapper: Long Press Detected! Emitting Action.");
+                 cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::LongPress);
             }
             _ => ()
         }

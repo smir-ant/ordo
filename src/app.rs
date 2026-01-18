@@ -260,13 +260,13 @@ impl AppMain for App {
                  }
              }
              
-             // Check for Wrapper Actions (Right Click / Double Tap)
+             // Check for Wrapper Actions (Right Click / Long Press)
              let mut open_modal = false;
              for action in actions {
                  if let WrapperAction::RightClick = action.as_widget_action().cast() {
                      open_modal = true;
                  }
-                 if let WrapperAction::DoubleTap = action.as_widget_action().cast() {
+                 if let WrapperAction::LongPress = action.as_widget_action().cast() {
                      open_modal = true;
                  }
              }
