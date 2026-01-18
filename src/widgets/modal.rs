@@ -8,6 +8,8 @@ live_design! {
     use crate::widgets::button::Btn;
     use crate::widgets::text::Text;
     
+    use makepad_widgets::scroll_bars::ScrollBars;
+    
     Card = {{View}} {
         show_bg: true
         draw_bg: {
@@ -59,6 +61,12 @@ live_design! {
             }
         }
         
+        
+        scroll_bars: <ScrollBars> {
+             show_scroll_x: false
+             show_scroll_y: true
+        }
+        
         title = <Text> {
             text: "Info"
             draw_text: {
@@ -108,6 +116,12 @@ live_design! {
                 sdf.fill_keep(self.color);
                 return sdf.result
             }
+        }
+        
+        
+        scroll_bars: <ScrollBars> {
+             show_scroll_x: false
+             show_scroll_y: true
         }
         
         title = <Text> {

@@ -1348,6 +1348,19 @@ impl Input {
         self.is_required
     }
 
+    pub fn text(&self) -> String {
+        self.text.clone()
+    }
+
+    pub fn returned(&self, actions: &Actions) -> Option<(String, KeyModifiers)> {
+        for action in actions.filter_widget_actions_cast::<InputAction>(self.widget_uid()){
+            if let InputAction::Returned(text, modifiers) = action {
+                return Some((text, modifiers));
+            }
+        }
+        None
+    }
+
     pub fn set_is_required(&mut self, cx: &mut Cx, is_required: bool) {
         self.is_required = is_required;
         self.validate(cx);
@@ -2002,6 +2015,14 @@ impl InputRef {
     pub fn set_is_numeric_only(&self, cx: &mut Cx, is_numeric_only: bool) {
         if let Some(mut inner) = self.borrow_mut(){
             inner.set_is_numeric_only(cx, is_numeric_only);
+        }
+    }
+
+    pub fn text(&self) -> String {
+        if let Some(inner) = self.borrow() {
+            inner.text.clone()
+        } else {
+            String::new()
         }
     }
 

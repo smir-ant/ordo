@@ -25,10 +25,24 @@ pub enum WrapperAction {
 pub struct Wrapper {
     #[deref] view: View,
     #[rust] last_abs: Option<Vec2d>,
+    #[live] blocked: bool,
 }
 
 impl Widget for Wrapper {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event, scope: &mut Scope) {
+        if self.blocked {
+            match event {
+                Event::MouseDown(_) |
+                // Event::MouseUp(_) |  <-- Allow Up to complete clicks
+                // Event::MouseMove(_) | <-- Allow Move to update cursor? No, blocking move is fine usually.
+                Event::Scroll(_) |
+                Event::TouchUpdate(_) |
+                Event::KeyDown(_) |
+                Event::KeyUp(_) |
+                Event::TextInput(_) => return,
+                _ => ()
+            }
+        }
         self.view.handle_event(cx, event, scope);
         
         match event.hits(cx, self.view.area()) {
@@ -58,5 +72,11 @@ impl Widget for Wrapper {
     
     fn draw_walk(&mut self, cx: &mut Cx2d, scope: &mut Scope, walk: Walk) -> DrawStep {
         self.view.draw_walk(cx, scope, walk)
+    }
+}
+
+impl Wrapper {
+    pub fn set_blocked(&mut self, _cx: &mut Cx, blocked: bool) {
+        self.blocked = blocked;
     }
 }
