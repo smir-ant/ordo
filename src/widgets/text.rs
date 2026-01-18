@@ -35,3 +35,10 @@ impl Widget for Text {
         DrawStep::done()
     }
 }
+
+impl Text {
+    pub fn set_text(&mut self, cx: &mut Cx, text: &str) {
+        self.text = text.to_string();
+        self.draw_text.redraw(cx);
+    }
+}

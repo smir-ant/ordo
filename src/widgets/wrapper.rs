@@ -19,6 +19,7 @@ pub enum WrapperAction {
     RightClick,
     LongPress,
     Scroll(Vec2d),
+    ShowTooltip(String),
 }
 
 #[derive(Live, LiveHook, Widget)]
@@ -26,6 +27,7 @@ pub struct Wrapper {
     #[deref] view: View,
     #[rust] last_abs: Option<Vec2d>,
     #[live] blocked: bool,
+    #[live] tooltip_text: String,
 }
 
 impl Widget for Wrapper {
@@ -33,8 +35,8 @@ impl Widget for Wrapper {
         if self.blocked {
             match event {
                 Event::MouseDown(_) |
-                // Event::MouseUp(_) |  <-- Allow Up to complete clicks
-                // Event::MouseMove(_) | <-- Allow Move to update cursor? No, blocking move is fine usually.
+                // Event::MouseUp(_) |  
+                // Event::MouseMove(_) |
                 Event::Scroll(_) |
                 Event::TouchUpdate(_) |
                 Event::KeyDown(_) |
@@ -52,11 +54,19 @@ impl Widget for Wrapper {
             Hit::FingerUp(fe) => {
                  self.last_abs = None;
                  if fe.mouse_button() == Some(MouseButton::SECONDARY) {
-                     cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::RightClick);
+                     if !self.tooltip_text.is_empty() {
+                         cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::ShowTooltip(self.tooltip_text.clone()));
+                     } else {
+                         cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::RightClick);
+                     }
                  }
             }
             Hit::FingerLongPress(_fe) => {
-                 cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::LongPress);
+                 if !self.tooltip_text.is_empty() {
+                     cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::ShowTooltip(self.tooltip_text.clone()));
+                 } else {
+                     cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::LongPress);
+                 }
             }
             Hit::FingerMove(fe) => {
                  let last_abs = self.last_abs.unwrap_or(fe.abs);

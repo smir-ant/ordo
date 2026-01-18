@@ -1,8 +1,9 @@
 use makepad_widgets::*;
 use crate::widgets::input::{Input, InputAction};
 use crate::widgets::button::{Button as Btn, ButtonAction};
-use crate::widgets::modal::{Modal, ModalAction};
+use crate::widgets::modal::{Modal, ModalAction, TooltipContent};
 use crate::widgets::wrapper::{Wrapper, WrapperAction};
+use crate::widgets::text::Text;
 use makepad_widgets::view::View;
 use makepad_widgets::keyboard_view::KeyboardView;
 
@@ -181,6 +182,7 @@ live_design!{
                         
                         scroll_wrapper = <Wrapper> {
                              width: Fill, height: Fit
+                             tooltip_text: "Scroll Area Action detected"
                             <Text> {
                                 width: Fill, margin: {top: 20.0}
                                 text: "--- Scroll Test Area ---"
@@ -330,14 +332,25 @@ impl AppMain for App {
                 }
             }
             
-            // Check Wrapper Right Click
-             if let WrapperAction::RightClick = actions.find_widget_action(self.ui.widget(ids!(scroll_wrapper)).widget_uid()).cast() {
+             // Check for generic ShowTooltip action
+             for action in actions {
+                 if let WrapperAction::ShowTooltip(text) = action.as_widget_action().cast() {
+                     open_tooltip = true;
+                     // Update tooltip text
+                      if let Some(mut text_widget) = self.ui.widget(&[live_id!(tooltip_modal), live_id!(content), live_id!(text)]).borrow_mut::<Text>() {
+                           text_widget.set_text(cx, &text);
+                       }
+                 }
+             }
+            
+            // Removed specific scroll_wrapper RightClick/LongPress checks as Wrapper now handles emitting ShowTooltip
+             /*if let WrapperAction::RightClick = actions.find_widget_action(self.ui.widget(ids!(scroll_wrapper)).widget_uid()).cast() {
                  open_tooltip = true;
             }
              if let WrapperAction::LongPress = actions.find_widget_action(self.ui.widget(ids!(scroll_wrapper)).widget_uid()).cast() {
                  open_tooltip = true;
-            }
-
+            }*/
+            
             if open_modal {
                 let modal = self.ui.widget(ids!(demo_modal));
                 modal.set_visible(cx, true);
