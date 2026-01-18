@@ -334,6 +334,9 @@ impl AppMain for App {
              if let WrapperAction::RightClick = actions.find_widget_action(self.ui.widget(ids!(scroll_wrapper)).widget_uid()).cast() {
                  open_tooltip = true;
             }
+             if let WrapperAction::LongPress = actions.find_widget_action(self.ui.widget(ids!(scroll_wrapper)).widget_uid()).cast() {
+                 open_tooltip = true;
+            }
 
             if open_modal {
                 let modal = self.ui.widget(ids!(demo_modal));
