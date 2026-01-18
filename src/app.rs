@@ -145,6 +145,17 @@ live_design!{
                             text_style: { font_size: 14.0 }
                         }
                     }
+                    
+                    <Input> {
+                        width: Fill, height: Fit, margin: {top: 20.0}
+                        is_numeric_only: true
+                        empty_text: "Numeric Only"
+                    }
+
+                    <Input> {
+                        width: Fill, height: Fit, margin: {top: 10.0}
+                        empty_text: "Standard Text Input"
+                    }
                 }
                 
                 demo_modal = <Modal> {

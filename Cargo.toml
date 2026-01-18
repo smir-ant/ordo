@@ -23,4 +23,3 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 makepad-widgets = { path = "makepad/widgets" }
-unicode-segmentation = "1.11.0"  # few bytes symbols cursor (GraphemeCursor)

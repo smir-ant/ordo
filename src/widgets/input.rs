@@ -22,7 +22,6 @@ use {
     },
 
     std::rc::Rc,
-    unicode_segmentation::{GraphemeCursor, UnicodeSegmentation},
 };
 
 live_design! {
@@ -1434,20 +1433,22 @@ impl Input {
         if !self.is_password {
             return index;
         }
-        let grapheme_index = self.text[..index].graphemes(true).count();
+        let char_count = self.text[..index].chars().count();
         self.password_text
-            .grapheme_indices(true)
-            .nth(grapheme_index).map_or(self.password_text.len(), |(index, _)| index)
+            .char_indices()
+            .nth(char_count)
+            .map_or(self.password_text.len(), |(index, _)| index)
     }
 
     fn password_index_to_index(&self, password_index: usize) -> usize {
         if !self.is_password {
             return password_index;
         }
-        let grapheme_index = self.password_text[..password_index].graphemes(true).count();
+        let char_count = self.password_text[..password_index].chars().count();
         self.text
-            .grapheme_indices(true)
-            .nth(grapheme_index).map_or(self.text.len(), |(index, _)| index)
+            .char_indices()
+            .nth(char_count)
+            .map_or(self.text.len(), |(index, _)| index)
     }
 
     fn inner_walk(&self) -> Walk {
@@ -1464,8 +1465,8 @@ impl Input {
         }
         let text = if self.is_password {
             self.password_text.clear();
-            for grapheme in self.text.graphemes(true) {
-                self.password_text.push(if grapheme == "\n" {
+            for c in self.text.chars() {
+                self.password_text.push(if c == '\n' {
                     '\n'
                 } else {
                     '•'
@@ -1802,25 +1803,53 @@ impl Input {
     }
 
     fn ceil_word_boundary(&self, index: usize) -> usize {
-        let mut prev_word_boundary_index = 0;
-        for (word_boundary_index, _) in self.text.split_word_bound_indices() {
-            if word_boundary_index > index {
-                return prev_word_boundary_index;
+        if index >= self.text.len() { return self.text.len(); }
+        
+        // Find next boundary where char class changes
+        let mut chars = self.text[index..].char_indices().peekable();
+        let first_char_class = chars.peek().map(|(_, c)| Self::char_class(*c)).unwrap_or(0);
+        
+        for (i, c) in chars {
+            if Self::char_class(c) != first_char_class {
+                return index + i;
             }
-            prev_word_boundary_index = word_boundary_index;
         }
-        prev_word_boundary_index
+        self.text.len()
     }
 
     fn floor_word_boundary(&self, index: usize) -> usize {
-        let mut prev_word_boundary_index = self.text.len();
-        for (word_boundary_index, _) in self.text.split_word_bound_indices().rev() {
-            if word_boundary_index < index {
-                return prev_word_boundary_index;
-            }
-            prev_word_boundary_index = word_boundary_index;
+        if index == 0 { return 0; }
+        
+        // Walk backwards
+        let mut indices = self.text.char_indices().rev();
+        // Skip until we find strict less than index (handle if index is not boundary)
+        let _ = indices.by_ref().skip_while(|(i, _)| *i >= index);
+        
+        // Get char before index
+        if let Some((start_i, start_c)) = indices.next() {
+             let start_class = Self::char_class(start_c);
+             // Verify this logic: we want to go back until class changes.
+             // But rev() iterates backwards. 
+             // Current char at start_i has class start_class.
+             // We want to find LAST char with DIFFERENT class, then return next one?
+             // Or find FIRST char (going back) with different class.
+             let mut last_i = start_i;
+             
+             for (i, c) in indices {
+                 if Self::char_class(c) != start_class {
+                     return last_i; // The boundary is after this char, so it is last_i
+                 }
+                 last_i = i;
+             }
+             return 0;
         }
-        prev_word_boundary_index
+        0
+    }
+    
+    fn char_class(c: char) -> u8 {
+        if c.is_whitespace() { 0 }
+        else if c.is_alphanumeric() { 1 }
+        else { 2 }
     }
 
     fn filter_input(&self, input: &str, _is_set_text: bool) -> String {
@@ -2245,11 +2274,23 @@ impl Edit {
 }
 
 fn prev_grapheme_boundary(text: &str, index: usize) -> usize {
-    let mut cursor = GraphemeCursor::new(index, text.len(), true);
-    cursor.prev_boundary(text, 0).unwrap().unwrap_or(0)
+    if index == 0 {
+        return 0;
+    }
+    let mut i = index - 1;
+    while !text.is_char_boundary(i) && i > 0 {
+        i -= 1;
+    }
+    i
 }
 
 fn next_grapheme_boundary(text: &str, index: usize) -> usize {
-    let mut cursor = GraphemeCursor::new(index, text.len(), true);
-    cursor.next_boundary(text, 0).unwrap().unwrap_or(text.len())
+    if index >= text.len() {
+        return text.len();
+    }
+    let mut i = index + 1;
+    while i < text.len() && !text.is_char_boundary(i) {
+        i += 1;
+    }
+    i
 }
