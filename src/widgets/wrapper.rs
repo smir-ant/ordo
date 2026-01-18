@@ -18,11 +18,13 @@ pub enum WrapperAction {
     None,
     RightClick,
     LongPress,
+    Scroll(Vec2d),
 }
 
 #[derive(Live, LiveHook, Widget)]
 pub struct Wrapper {
     #[deref] view: View,
+    #[rust] last_abs: Option<Vec2d>,
 }
 
 impl Widget for Wrapper {
@@ -30,15 +32,25 @@ impl Widget for Wrapper {
         self.view.handle_event(cx, event, scope);
         
         match event.hits(cx, self.view.area()) {
+            Hit::FingerDown(fe) => {
+                self.last_abs = Some(fe.abs);
+            }
             Hit::FingerUp(fe) => {
+                 self.last_abs = None;
                  if fe.mouse_button() == Some(MouseButton::SECONDARY) {
-                     log!("Wrapper: Right Click Detected! Emitting Action.");
                      cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::RightClick);
                  }
             }
             Hit::FingerLongPress(_fe) => {
-                 log!("Wrapper: Long Press Detected! Emitting Action.");
                  cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::LongPress);
+            }
+            Hit::FingerMove(fe) => {
+                 let last_abs = self.last_abs.unwrap_or(fe.abs);
+                 let delta = fe.abs - last_abs;
+                 self.last_abs = Some(fe.abs);
+                 if delta.x.abs() > 1.0 || delta.y.abs() > 1.0 { // Sensitivity threshold
+                    cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::Scroll(delta));
+                 }
             }
             _ => ()
         }

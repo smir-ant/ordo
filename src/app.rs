@@ -3,6 +3,8 @@ use crate::widgets::input::{Input, InputAction};
 use crate::widgets::button::Button as Btn;
 use crate::widgets::modal::Modal;
 use crate::widgets::wrapper::{Wrapper, WrapperAction};
+use makepad_widgets::view::View;
+use makepad_widgets::keyboard_view::KeyboardView;
 
 live_design!{
     use makepad_widgets::base::*;
@@ -268,6 +270,15 @@ impl AppMain for App {
                  }
                  if let WrapperAction::LongPress = action.as_widget_action().cast() {
                      open_modal = true;
+                 }
+                 if let WrapperAction::Scroll(delta) = action.as_widget_action().cast() {
+                    // Manually scroll main_content if the wrapper captured the touch
+                    if let Some(mut view) = self.ui.widget(ids!(main_content)).borrow_mut::<KeyboardView>() {
+                        let current_scroll = view.get_scroll_pos(cx);
+                        let new_scroll = DVec2{x: current_scroll.x - delta.x, y: current_scroll.y - delta.y};
+                        view.set_scroll_pos(cx, new_scroll);
+                        view.redraw(cx);
+                    }
                  }
              }
              
