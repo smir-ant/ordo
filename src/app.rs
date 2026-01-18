@@ -16,8 +16,7 @@ live_design!{
     use crate::widgets::input::Input;
     use crate::widgets::button::Btn;
     use crate::widgets::modal::Modal;
-    use crate::widgets::text::Text;
-    use crate::widgets::modal::Modal;
+    use crate::widgets::modal::DialogContent;
     use crate::widgets::text::Text;
     use crate::widgets::wrapper::Wrapper;
     use crate::theme::*;
@@ -190,6 +189,10 @@ live_design!{
                 
                 demo_modal = <Modal> {
                     visible: false
+                    content = <DialogContent> {
+                        title = { text: "Confirm Action" }
+                        text = { text: "Are you sure you want to proceed?" }
+                    }
                 }
             }
         }
@@ -280,7 +283,18 @@ impl AppMain for App {
                 .map(|btn| btn.clicked(&actions))
                 .unwrap_or(false);
 
-            if submit_clicked {
+            let input_returned = self.ui.widget(ids!(input1))
+                .borrow::<Input>()
+                .map(|input| {
+                    if let Some(action) = actions.find_widget_action(input.widget_uid()) {
+                        matches!(action.cast(), InputAction::Returned(_, _))
+                    } else {
+                        false
+                    }
+                })
+                .unwrap_or(false);
+
+            if submit_clicked || input_returned {
                 if let Some(mut input) = self.ui.widget(ids!(input1)).borrow_mut::<Input>() {
                      let valid = input.validate(cx);
                      if let Some(mut btn) = self.ui.widget(ids!(submit_btn)).borrow_mut::<Btn>() {
@@ -356,30 +370,19 @@ impl AppMain for App {
              
              // Modal Actions
              let modal = self.ui.widget(ids!(demo_modal));
-             let inner = modal.widget(ids!(modal_inner));
-             
              let mut close = false;
-             if let Some(btn) = inner.widget(ids!(cancel_button)).borrow::<Btn>(){
-                if btn.clicked(&actions){
-                    close = true;
-                }
-             }
-             if let Some(btn) = inner.widget(ids!(ok_button)).borrow::<Btn>(){
-                if btn.clicked(&actions){
-                    close = true;
-                }
-             }
              
+             // Listen for Modal Actions (Emitted by DialogContent or Modal wrapper)
              if let Some(action) = actions.find_widget_action(modal.widget_uid()) {
-                match action.cast() {
-                    crate::widgets::modal::ModalAction::Dismissed => {
-                        close = true;
-                    }
-                    crate::widgets::modal::ModalAction::Accepted => {
-                        close = true;
-                    }
-                    _ => ()
-                }
+                 match action.cast() {
+                     crate::widgets::modal::ModalAction::Dismissed => {
+                         close = true;
+                     }
+                     crate::widgets::modal::ModalAction::Accepted => {
+                         close = true;
+                     }
+                     _ => ()
+                 }
             }
              
              if close {
