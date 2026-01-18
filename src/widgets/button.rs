@@ -1,5 +1,6 @@
 use makepad_widgets::*;
 use makepad_widgets::widget::{WidgetDesignAction, WidgetActionData};
+use makepad_widgets::touch_gesture::*;
 
 live_design! {
     use makepad_widgets::base::*;
@@ -478,7 +479,7 @@ pub enum ButtonAction {
 }
 
 /// A clickable button widget that emits actions when pressed, and when either released or clicked.
-#[derive(Live, LiveHook, Widget)]
+#[derive(Live, Widget)]
 pub struct Button {
     #[animator]
     animator: Animator,
@@ -538,9 +539,15 @@ pub struct Button {
     pub text: ArcStringMut,
     
     #[action_data] #[rust] action_data: WidgetActionData,
-    #[rust] last_abs: Option<Vec2d>,
-    #[rust] start_abs: Option<Vec2d>,
-    #[rust] is_dragged: bool,
+    
+    #[rust] touch_gesture: TouchGesture,
+    #[rust] last_scroll_pos: f64,
+}
+
+impl LiveHook for Button{
+    fn after_new_from_doc(&mut self, _cx:&mut Cx){
+        self.touch_gesture = TouchGesture::new();
+    }
 }
 
 impl Widget for Button {
@@ -554,6 +561,16 @@ impl Widget for Button {
 
     fn handle_event(&mut self, cx: &mut Cx, event: &Event, scope: &mut Scope) {
         let uid = self.widget_uid();
+        
+        if self.touch_gesture.handle_event(cx, event, self.draw_bg.area()).has_changed() {
+            let new_pos = self.touch_gesture.scrolled_at;
+            let delta = self.last_scroll_pos - new_pos; // Reversed direction
+            self.last_scroll_pos = new_pos;
+            if delta.abs() > 1e-5 {
+                 cx.widget_action_with_data(&self.action_data, uid, &scope.path, ButtonAction::Scroll(DVec2{x:0.0, y: delta}));
+            }
+        }
+    
         if self.animator_handle_event(cx, event).must_redraw() {
             self.draw_bg.redraw(cx);
         }
@@ -584,10 +601,9 @@ impl Widget for Button {
                 cx.widget_action_with_data(&self.action_data, uid, &scope.path, ButtonAction::Pressed(fe.modifiers));
                 self.animator_play(cx, ids!(hover.down));
                 self.set_key_focus(cx);
-                self.last_abs = Some(fe.abs);
-                self.start_abs = Some(fe.abs);
-                self.is_dragged = false;
-                crate::makepad_platform::log!("Button (Local) FingerDown: {:?}", fe.abs); // DEBUG
+                
+                self.touch_gesture.set_mode(ScrollMode::Swipe);
+                self.last_scroll_pos = self.touch_gesture.scrolled_at;
             }
             Hit::FingerHoverIn(_) => {
                 if self.enabled {
@@ -601,29 +617,14 @@ impl Widget for Button {
                 self.animator_play(cx, ids!(hover.off));
             }
             Hit::FingerMove(fe) => {
-                 let last_abs = self.last_abs.unwrap_or(fe.abs);
-                 let delta = fe.abs - last_abs;
-                 self.last_abs = Some(fe.abs);
-                 
-                 // Use total distance from start to determine if it's a drag
-                 if let Some(start) = self.start_abs {
-                     let total_dist = (fe.abs - start).length();
-                     if total_dist > 10.0 { // Increased threshold to 10px
-                         self.is_dragged = true;
-                     }
-                 }
-                 
-                 if delta.x != 0.0 || delta.y != 0.0 {
-                    cx.widget_action_with_data(&self.action_data, uid, &scope.path, ButtonAction::Scroll(delta));
-                 }
+                 // Scroll handled by TouchGesture. 
+                 // We don't need manual logic here.
             }
             Hit::FingerLongPress(_lp) if self.enabled && self.enable_long_press => {
                 cx.widget_action_with_data(&self.action_data, uid, &scope.path, ButtonAction::LongPressed);
             }
             Hit::FingerUp(fe) if self.enabled && fe.is_primary_hit() => {
-                self.last_abs = None;
-                 if !self.is_dragged {
-                    crate::makepad_platform::log!("Button (Local) FingerUp: Clicked!"); // DEBUG
+                 if fe.was_tap() {
                     let was_clicked = fe.is_over;
                     if was_clicked {
                         cx.widget_action_with_data(&self.action_data, uid, &scope.path, ButtonAction::Clicked(fe.modifiers));
@@ -639,7 +640,6 @@ impl Widget for Button {
                         self.animator_play(cx, ids!(hover.off));
                     }
                 } else {
-                    crate::makepad_platform::log!("Button (Local) FingerUp: Dragged, click ignored."); // DEBUG
                     cx.widget_action_with_data(&self.action_data, uid, &scope.path, ButtonAction::Released(fe.modifiers));
                     self.animator_play(cx, ids!(hover.off));
                 }

@@ -18,6 +18,7 @@ use {
             *
         },
         widget::*,
+        touch_gesture::*,
         makepad_platform::event::keyboard::TextInputEvent
     },
 
@@ -642,8 +643,9 @@ pub struct Input {
     #[rust] composition_start: usize,
     /// IME composition tracking - byte length of current composition
     #[rust] composition_length: usize,
-    #[rust] last_abs: Option<Vec2d>,
-    #[rust] is_potential_scroll: bool,
+    
+    #[rust] touch_gesture: TouchGesture,
+    #[rust] last_scroll_pos: f64,
 }
 
  impl LiveHook for Input{
@@ -659,6 +661,7 @@ pub struct Input {
         nodes.skip_node(index)
      }
      fn after_new_from_doc(&mut self, cx:&mut Cx){
+         self.touch_gesture = TouchGesture::new();
          self.check_text_is_empty(cx);
          if self.is_warning {
             self.animator_play(cx, ids!(warning.on));
@@ -667,13 +670,18 @@ pub struct Input {
  }
 
 
+
 impl Widget for Input {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event, scope: &mut Scope) {
-        // match event.hits(cx, self.draw_bg.area()) { 
-        //    Hit::FingerDown(_) => crate::makepad_platform::log!("Input: FingerDown Detected"),
-        //    Hit::FingerMove(_) => crate::makepad_platform::log!("Input: FingerMove Detected"),
-        //    _ => ()
-        // }
+        if self.touch_gesture.handle_event(cx, event, self.draw_bg.area()).has_changed() {
+            let new_pos = self.touch_gesture.scrolled_at;
+            let delta = self.last_scroll_pos - new_pos; // Reversed direction
+            self.last_scroll_pos = new_pos;
+            
+            if delta.abs() > 1e-5 {
+                 cx.widget_action(self.widget_uid(), &scope.path, InputAction::Scroll(DVec2{x:0.0, y: delta}));
+            }
+        }
 
         if self.animator_handle_event(cx, event).must_redraw() {
             self.draw_bg.redraw(cx);
@@ -822,10 +830,10 @@ impl Widget for Input {
                 ..
             }) if device.is_primary_hit() => {
                 self.reset_blink_timer(cx);
-                self.last_abs = Some(abs);
-                self.is_potential_scroll = true;
-                crate::makepad_platform::log!("Input Hit: FingerDown at {:?}", abs); // DEBUG
-
+                
+                self.touch_gesture.set_mode(ScrollMode::Swipe);
+                self.last_scroll_pos = self.touch_gesture.scrolled_at;
+                
                 // Treat mouse same as touch for "swipe to scroll" support
                 // if !device.is_touch() { ... } - REMOVED to unification
                 
@@ -875,14 +883,12 @@ impl Widget for Input {
             }
             Hit::FingerUp(fe) => {
                 self.ignore_next_move = false;
-                self.last_abs = None;
+                // self.last_abs = None; // Field removed
                 
-                // If we were potentially scrolling (touch OR mouse now), check if it was actually a tap
-                if self.is_potential_scroll { // Removed device.is_touch() check
-                    self.is_potential_scroll = false;
-                    if fe.was_tap() {
-                        self.set_key_focus(cx);
-                        let rel = fe.abs - self.text_area.rect(cx).pos;
+                // Check if it was actually a tap
+                if fe.was_tap() {
+                    self.set_key_focus(cx);
+                    let rel = fe.abs - self.text_area.rect(cx).pos;
                         if let Ok(cursor) = self.point_in_lpxs_to_cursor(
                                 Point::new(rel.x as f32, rel.y as f32)
                         ) {
@@ -893,7 +899,6 @@ impl Widget for Input {
                         let selection_rect = self.get_selection_rect(cx);
                         cx.show_clipboard_actions(has_selection, selection_rect, cx.keyboard_shift);
                     }
-                }
 
                 if fe.was_tap() {
                     if let Some(cursor) = self.preserved_selection_cursor.take() {
@@ -915,7 +920,6 @@ impl Widget for Input {
             }
             Hit::FingerLongPress(lp) => {
                 self.preserved_selection_cursor = None;
-                self.is_potential_scroll = false;
 
                 // Select word at long press position
                 let rel = lp.abs - self.text_area.rect(cx).pos;
@@ -954,18 +958,13 @@ impl Widget for Input {
                     return;
                 }
                 
-                if self.is_potential_scroll { // Removed device.is_touch()
-                     let last_abs = self.last_abs.unwrap_or(abs);
-                     let delta = abs - last_abs;
-                     self.last_abs = Some(abs);
-                     if delta.x != 0.0 || delta.y != 0.0 {
-                        crate::makepad_platform::log!("Input emitting Scroll: {:?}, is_potential_scroll={}", delta, self.is_potential_scroll); // DEBUG
-                        cx.widget_action(self.widget_uid(), &scope.path, InputAction::Scroll(delta));
-                     }
+                if self.touch_gesture.is_dragging() {
+                     // Scroll handled by touch_gesture at top of handle_event
                      return;
                 }
                 
-                crate::makepad_platform::log!("Input Hit: FingerMove (selection mode or mouse). is_potential_scroll={}", self.is_potential_scroll); // DEBUG
+                // Clear preserved cursor - user is dragging to selection
+                // crate::makepad_platform::log!("Input Hit: FingerMove (selection mode or mouse). is_potential_scroll={}", self.is_potential_scroll); // DEBUG
 
                 // Clear preserved cursor - user is dragging to select
                 self.preserved_selection_cursor = None;
