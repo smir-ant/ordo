@@ -21,6 +21,7 @@ live_design!{
     use crate::widgets::modal::TooltipContent;
     use crate::widgets::text::Text;
     use crate::widgets::wrapper::Wrapper;
+    use crate::widgets::group::Group;
     use crate::theme::*;
     use makepad_widgets::keyboard_view::KeyboardView;
     
@@ -87,11 +88,14 @@ live_design!{
                             }
                         }
                         
-                        input1 = <Input> {
+                        input_group = <Group> {
                             width: Fill, height: Fit
-                            empty_text: "* Morning Routine"
-                            is_numeric_only: true
-                            is_required: true
+                            input1 = <Input> {
+                                width: Fill, height: Fit
+                                empty_text: "* Morning Routine"
+                                is_numeric_only: true
+                                is_required: true
+                            }
                         }
                         submit_btn = <Btn> {
                             text: "Submit"
