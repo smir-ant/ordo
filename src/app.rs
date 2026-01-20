@@ -4,6 +4,7 @@ use crate::widgets::button::{Button as Btn, ButtonAction};
 use crate::widgets::modal::{Modal, ModalAction, TooltipContent};
 use crate::widgets::wrapper::{Wrapper, WrapperAction};
 use crate::widgets::text::Text;
+use crate::widgets::day_of_week::DayOfWeek;
 use makepad_widgets::view::View;
 use makepad_widgets::keyboard_view::KeyboardView;
 
@@ -22,6 +23,7 @@ live_design!{
     use crate::widgets::text::Text;
     use crate::widgets::wrapper::Wrapper;
     use crate::widgets::group::Group;
+    use crate::widgets::day_of_week::DayOfWeek;
     use crate::theme::*;
     use makepad_widgets::keyboard_view::KeyboardView;
     use makepad_widgets::drop_down::DropDown;
@@ -91,6 +93,29 @@ live_design!{
 
                             submit_btn = <Btn> {
                                 text: "Submit"
+                            }
+                        }
+                        
+                        <Group> {
+                            width: Fill, height: Fit
+                            flow: Down
+                            spacing: 10.0
+                            
+                            <Text> {
+                                text: "Regularity"
+                                draw_text: {
+                                    color: #DDD
+                                    text_style: { font_size: 13.0 }
+                                }
+                            }
+                            
+                            day_of_week = <DayOfWeek> {
+                                width: Fill, height: Fit
+                            }
+                            
+                            receive_dow_btn = <Btn> {
+                                width: Fit
+                                text: "Receive DOW"
                             }
                         }
                         
@@ -271,6 +296,16 @@ impl AppMain for App {
                          log!("Input is invalid/empty!");
                      }
                  }
+            }
+            
+            // Handle Receive DOW
+            if let Some(btn) = self.ui.widget(ids!(receive_dow_btn)).borrow::<Btn>() {
+                if btn.clicked(&actions) {
+                    if let Some(dow) = self.ui.widget(ids!(day_of_week)).borrow::<DayOfWeek>() {
+                        let selected = dow.get_selected_days();
+                        log!("Selected Days Indices: {:?}", selected);
+                    }
+                }
             }
             
             // Handle Modal Opening

@@ -7,6 +7,7 @@ pub mod view;
 
 pub mod modal;
 pub mod wrapper;
+pub mod day_of_week;
 pub mod group;
 
 pub fn live_design(cx: &mut Cx) {
@@ -17,4 +18,5 @@ pub fn live_design(cx: &mut Cx) {
     modal::live_design(cx);
     wrapper::live_design(cx);
     group::live_design(cx);
+    day_of_week::live_design(cx);
 }
