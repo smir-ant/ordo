@@ -117,7 +117,7 @@ live_design!{
                         <Group> {
                             width: Fill, height: Fit
                             <Input> {
-                                width: Fill, height: Fit, margin: {top: 20.0}
+                                width: Fill, height: Fit
                                 is_numeric_only: true
                                 empty_text: "Numeric Only"
                             }
@@ -129,27 +129,20 @@ live_design!{
                         }
                         
                         scroll_wrapper = <Wrapper> {
-                             width: Fill, height: Fit
+                             // width: Fit, height: Fit
                              tooltip_title: "Scroll Info"
                              tooltip_text: "Scroll Area Action detected\nLine breaks are supported!"
                             
-                             <View> {
-                                width: Fill, height: Fit
-                                flow: Right
-                                align: {y: 0.5}
-                                spacing: 15.0
-                                
-                                <Text> {
-                                    text: "need help?"
-                                    draw_text: {
-                                        color: #ffffff
-                                        text_style: { font_size: 16.0 }
-                                    }
+                             <Text> {
+                                text: "need help?"
+                                draw_text: {
+                                    color: #ffffff
+                                    text_style: { font_size: 16.0 }
                                 }
+                            }
 
-                                tooltip_btn = <Btn> {
-                                    text: "Open Tooltip"
-                                }
+                            tooltip_btn = <Btn> {
+                                text: "Open Tooltip"
                             }
                         }
 
