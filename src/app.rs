@@ -24,6 +24,7 @@ live_design!{
     use crate::widgets::group::Group;
     use crate::theme::*;
     use makepad_widgets::keyboard_view::KeyboardView;
+    use makepad_widgets::drop_down::DropDown;
     
     App = {{App}} {
         ui: <Window> {
@@ -56,36 +57,27 @@ live_design!{
                         
                         // Typography Section
                         <Text> {
-                            width: Fit, margin: {bottom: 10.0}
-                            text: "Typography System"
-                            draw_text: {
-                                color: #9cb4d8
-                                text_style: { font_size: 14.0 }
-                            }
-                        }
-        
-                        <Text> {
                             text: "Regular Text (Inter)"
                             draw_text: {
-                                color: #ffffff
+                                color: #ffaa00
                                 text_style: { font_size: 20.0 }
                             }
                         }
                         
                         <Text> {
-                            text: "Monospace Text (Ubuntu Mono)"
-                            draw_text: {
-                                color: #a3d9ff
-                                text_style: <THEME_FONT_MONO> { font_size: 20.0 }
-                            }
+                             text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+                             draw_text: {
+                                 color: #888
+                                 text_style: { font_size: 14.0 }
+                             }
                         }
-                        
+
                         <Text> {
-                            text: "code_snippet = fn main() {}"
-                            draw_text: {
-                                color: #ffaa00
-                                text_style: <THEME_FONT_MONO> { font_size: 16.0 }
-                            }
+                             text: "Съешь ещё этих мягких французских булок, да выпей чаю."
+                             draw_text: {
+                                 color: #888
+                                 text_style: { font_size: 14.0 }
+                             }
                         }
                         
                         input_group = <Group> {
@@ -96,9 +88,10 @@ live_design!{
                                 is_numeric_only: true
                                 is_required: true
                             }
-                        }
-                        submit_btn = <Btn> {
-                            text: "Submit"
+
+                            submit_btn = <Btn> {
+                                text: "Submit"
+                            }
                         }
                         
                         <View> {
@@ -120,85 +113,51 @@ live_design!{
                             margin: {top: 20.0}
                             text: "Open Modal"
                         }
+
+                        <Group> {
+                            width: Fill, height: Fit
+                            <Input> {
+                                width: Fill, height: Fit, margin: {top: 20.0}
+                                is_numeric_only: true
+                                empty_text: "Numeric Only"
+                            }
     
-                        open_tooltip_btn = <Btn> {
-                            margin: {top: 20.0, left: 10.0}
-                            text: "Open Tooltip"
-                        }
-    
-                        <Text> {
-                            width: Fill, margin: {top: 20.0}
-                            text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."
-                            draw_text: {
-                                wrapping: Word
-                                color: #888
-                                text_style: { font_size: 12.0 }
+                            <Input> {
+                                width: Fill, height: Fit, margin: {top: 10.0}
+                                empty_text: "Standard Text Input"
                             }
-                        }
-                        
-                        <Text> {
-                            width: Fill, margin: {top: 10.0}
-                            text: "Съешь ещё этих мягких французских булок, да выпей чаю."
-                            draw_text: {
-                                wrapping: Word
-                                color: #888
-                                text_style: { font_size: 12.0 }
-                            }
-                        }
-                        
-                        <Text> {
-                            width: Fill, margin: {top: 10.0}
-                            text: "!@#$%^&*()_+-=[]{}|;':\",./<>?`~№"
-                            draw_text: {
-                                color: #888
-                                text_style: { font_size: 14.0 }
-                            }
-                        }
-                        
-                        <Text> {
-                            width: Fill, margin: {top: 10.0}
-                            text: "A a B E e K M H O o P p C c T y X x (English)"
-                            draw_text: {
-                                color: #888
-                                text_style: { font_size: 14.0 }
-                            }
-                        }
-                        
-                        <Text> {
-                            width: Fill, margin: {top: 5.0}
-                            text: "А а В Е е К М Н О о Р р С с Т у Х х (Russian)"
-                            draw_text: {
-                                color: #888
-                                text_style: { font_size: 14.0 }
-                            }
-                        }
-                        
-                        <Input> {
-                            width: Fill, height: Fit, margin: {top: 20.0}
-                            is_numeric_only: true
-                            empty_text: "Numeric Only"
-                        }
-    
-                        <Input> {
-                            width: Fill, height: Fit, margin: {top: 10.0}
-                            empty_text: "Standard Text Input"
                         }
                         
                         scroll_wrapper = <Wrapper> {
                              width: Fill, height: Fit
                              tooltip_title: "Scroll Info"
                              tooltip_text: "Scroll Area Action detected\nLine breaks are supported!"
-                            <Text> {
-                                width: Fill, margin: {top: 20.0}
-                                text: "--- Scroll Test Area ---"
-                                draw_text: { color: #FFF, text_style: { font_size: 14.0 } }
+                            
+                             <View> {
+                                width: Fill, height: Fit
+                                flow: Right
+                                align: {y: 0.5}
+                                spacing: 15.0
+                                
+                                <Text> {
+                                    text: "need help?"
+                                    draw_text: {
+                                        color: #ffffff
+                                        text_style: { font_size: 16.0 }
+                                    }
+                                }
+
+                                tooltip_btn = <Btn> {
+                                    text: "Open Tooltip"
+                                }
                             }
                         }
-                        <Text> { width: Fill, margin: {top: 10.0}, text: "Line 1: Testing scroll behavior..." }
-                        <Text> { width: Fill, margin: {top: 10.0}, text: "Line 2: Swipe up to see more." }
-                        <Text> { width: Fill, margin: {top: 10.0}, text: "Line 3: Keyboard should push this up." }
-                        <Text> { width: Fill, margin: {top: 10.0}, text: "Line 4: Bottom of the scrollable area." }
-                        <Text> { width: Fill, margin: {top: 10.0, bottom: 50.0}, text: "--- End of Content ---" }
+
+                        // DropDown 
+                        <DropDown> {
+                            width: Fit, height: Fit
+                            labels: ["Option A", "Option B", "Option C"]
+                        }
                     }
                 }
                 
@@ -311,12 +270,13 @@ impl AppMain for App {
                 .unwrap_or(false);
 
             if submit_clicked || input_returned {
-                 let input = self.ui.widget(ids!(input1));
-                 let text = input.borrow::<Input>().unwrap().text().clone();
-                 if text.is_empty() {
-                     log!("Input is empty!");
-                 } else {
-                     log!("Submitted: {}", text);
+                 if let Some(mut input) = self.ui.widget(ids!(input1)).borrow_mut::<Input>() {
+                     if input.validate(cx) {
+                         let text = input.text();
+                         log!("Submitted: {}", text);
+                     } else {
+                         log!("Input is invalid/empty!");
+                     }
                  }
             }
             
@@ -335,7 +295,7 @@ impl AppMain for App {
                 }
             }
             
-             if let Some(btn) = self.ui.widget(ids!(open_tooltip_btn)).borrow::<Btn>() {
+             if let Some(btn) = self.ui.widget(ids!(tooltip_btn)).borrow::<Btn>() {
                 if btn.clicked(&actions) {
                    open_tooltip = true;
                    // Set Default Title/Text for button-triggered tooltip
