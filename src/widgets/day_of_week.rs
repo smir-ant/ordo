@@ -17,12 +17,25 @@ live_design! {
         draw_bg_active: {
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                sdf.circle(self.rect_size.x * 0.5, self.rect_size.y * 0.5, self.rect_size.x * 0.5 - 2.0); // Slightly smaller to fit stroke
+                sdf.circle(self.rect_size.x * 0.5, self.rect_size.y * 0.5, self.rect_size.x * 0.5 - 2.0);
                 
                 let fill_grad = mix(#FF7E60, #FF5C39, self.pos.y); 
                 sdf.fill_keep(fill_grad);
                 
                 let stroke_grad = mix(#FF8C70, #A03010, self.pos.y);
+                return sdf.stroke(stroke_grad, 1);
+            }
+        }
+        
+        draw_bg_hover: {
+            fn pixel(self) -> vec4 {
+                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                sdf.circle(self.rect_size.x * 0.5, self.rect_size.y * 0.5, self.rect_size.x * 0.5 - 2.0);
+                
+                let fill_grad = mix(#555, #444, self.pos.y);
+                sdf.fill_keep(fill_grad);
+                
+                let stroke_grad = mix(#666, #222, self.pos.y); 
                 return sdf.stroke(stroke_grad, 1);
             }
         }
@@ -35,8 +48,6 @@ live_design! {
                 let fill_grad = mix(#444, #333, self.pos.y);
                 sdf.fill_keep(fill_grad);
                 
-                // Darker at bottom, lighter at top for "inset" look or vice versa for "outset"
-                // User asked for "darker in lower part and lighter in upper".
                 let stroke_grad = mix(#555, #111, self.pos.y); 
                 return sdf.stroke(stroke_grad, 1);
             }
@@ -45,6 +56,11 @@ live_design! {
         draw_text_active: {
             text_style: <THEME_FONT_REGULAR>{ font_size: 9.0 }
             color: #FFF
+        }
+        
+        draw_text_hover: {
+            text_style: <THEME_FONT_REGULAR>{ font_size: 9.0 }
+            color: #DDD
         }
         
         draw_text_inactive: {
@@ -56,44 +72,56 @@ live_design! {
 
 #[derive(Live, LiveHook, Widget)]
 pub struct DayOfWeek {
-    #[redraw] #[live] draw_bg: DrawQuad, // Container
+    #[redraw] #[live] draw_bg: DrawQuad,
     #[live] draw_bg_active: DrawQuad,
+    #[live] draw_bg_hover: DrawQuad,
     #[live] draw_bg_inactive: DrawQuad,
     
     #[live] draw_text_active: DrawText,
+    #[live] draw_text_hover: DrawText,
     #[live] draw_text_inactive: DrawText,
     
     #[walk] walk: Walk,
     #[layout] layout: Layout,
     
     #[rust] selected_mask: u8,
+    #[rust] hovered_index: Option<usize>,
     #[rust] area_days: Vec<Rect>,
 }
 
 impl Widget for DayOfWeek {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event, _scope: &mut Scope) {
-        // Now self.draw_bg.area() covers the whole widget because we used begin/end
         match event.hits(cx, self.draw_bg.area()) {
             Hit::FingerDown(fe) => {
                 for (i, rect) in self.area_days.iter().enumerate() {
                     if rect.contains(fe.abs) {
                         self.selected_mask ^= 1 << i;
-                        self.draw_bg.redraw(cx); // Redraw container (propagates to children?) 
-                        // Actually explicit redraw of components is better if they are separate instances.
-                        // But since we are inside draw_bg, hitting redraw on it should re-layout?
-                        // Let's explicitly redraw all logic.
-                        self.draw_bg_active.redraw(cx);
-                        self.draw_bg_inactive.redraw(cx);
-                        self.draw_text_active.redraw(cx);
-                        self.draw_text_inactive.redraw(cx);
+                        self.draw_bg.redraw(cx);
                         break;
                     }
                 }
             }
-            Hit::FingerHoverIn(_) | Hit::FingerHoverOver(_) => {
+            Hit::FingerHoverIn(fe) | Hit::FingerHoverOver(fe) => {
                 cx.set_cursor(MouseCursor::Hand);
+                let mut new_hovered = None;
+                for (i, rect) in self.area_days.iter().enumerate() {
+                    if rect.contains(fe.abs) {
+                        new_hovered = Some(i);
+                        break;
+                    }
+                }
+                if new_hovered != self.hovered_index {
+                    self.hovered_index = new_hovered;
+                    self.draw_bg.redraw(cx);
+                }
             }
-             _ => ()
+            Hit::FingerHoverOut(_) => {
+                if self.hovered_index.is_some() {
+                    self.hovered_index = None;
+                    self.draw_bg.redraw(cx);
+                }
+            }
+            _ => ()
         }
     }
 
@@ -108,6 +136,7 @@ impl Widget for DayOfWeek {
         
         for (i, label) in labels.iter().enumerate() {
             let is_selected = (self.selected_mask >> i) & 1 == 1;
+            let is_hovered = self.hovered_index == Some(i);
             
             cx.begin_turtle(Walk::fixed(circle_size.x, circle_size.y), Layout {
                 align: Align {x: 0.5, y: 0.5},
@@ -120,6 +149,9 @@ impl Widget for DayOfWeek {
             if is_selected {
                 self.draw_bg_active.draw_abs(cx, rect);
                 self.draw_text_active.draw_walk(cx, Walk::fit(), Align::default(), label);
+            } else if is_hovered {
+                self.draw_bg_hover.draw_abs(cx, rect);
+                self.draw_text_hover.draw_walk(cx, Walk::fit(), Align::default(), label);
             } else {
                 self.draw_bg_inactive.draw_abs(cx, rect);
                 self.draw_text_inactive.draw_walk(cx, Walk::fit(), Align::default(), label);
@@ -128,7 +160,7 @@ impl Widget for DayOfWeek {
             cx.end_turtle();
             
             if i < 6 {
-                 cx.walk_turtle(Walk::fixed(space, 0.0));
+                cx.walk_turtle(Walk::fixed(space, 0.0));
             }
         }
         
