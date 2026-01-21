@@ -125,114 +125,45 @@ live_design! {
             instance hover: 0.0
             instance focus: 0.0
             instance down: 0.0
-            instance enabled: 1.0
-            instance disabled: 1.0
+            instance disabled: 0.0
 
             uniform border_size: (THEME_BEVELING)
             uniform border_radius: (THEME_CORNER_RADIUS)
 
-            uniform color_dither: 1.0
-            uniform gradient_border_horizontal: 0.0; 
-            uniform gradient_fill_horizontal: 0.0; 
-
-            uniform color: (THEME_COLOR_OUTSET)
-            uniform color_hover: (THEME_COLOR_OUTSET_HOVER)
-            uniform color_down: (THEME_COLOR_OUTSET_DOWN)
-            uniform color_focus: (THEME_COLOR_OUTSET_FOCUS)
-            uniform color: (THEME_COLOR_OUTSET)
-            uniform color_hover: (THEME_COLOR_OUTSET_HOVER)
-            uniform color_down: (THEME_COLOR_OUTSET_DOWN)
-            uniform color_focus: (THEME_COLOR_OUTSET_FOCUS)
-            uniform color_disabled: #292929  // Darker, flat background
-
-            uniform color_2: vec4(-1.0, -1.0, -1.0, -1.0)
-            uniform color_2_hover: (THEME_COLOR_OUTSET_2_HOVER)
-            uniform color_2_down: (THEME_COLOR_OUTSET_2_DOWN)
-            uniform color_2_focus: (THEME_COLOR_OUTSET_2_FOCUS)
-            uniform color_2_disabled: (THEME_COLOR_OUTSET_2_DISABLED)
-
-            uniform border_color: (THEME_COLOR_BEVEL)
-            uniform border_color_hover: (THEME_COLOR_BEVEL_HOVER)
-            uniform border_color_down: (THEME_COLOR_BEVEL_DOWN)
-            uniform border_color_focus: (THEME_COLOR_BEVEL_FOCUS)
-            uniform border_color: (THEME_COLOR_BEVEL)
-            uniform border_color_hover: (THEME_COLOR_BEVEL_HOVER)
-            uniform border_color_down: (THEME_COLOR_BEVEL_DOWN)
-            uniform border_color_focus: (THEME_COLOR_BEVEL_FOCUS)
-            uniform border_color_disabled: #292929 // Match bg for complete flatness
-
-            uniform border_color_2: vec4(-1.0, -1.0, -1.0, -1.0)
-            uniform border_color_2_hover: (THEME_COLOR_BEVEL_OUTSET_2_HOVER)
-            uniform border_color_2_down: (THEME_COLOR_BEVEL_OUTSET_2_DOWN)
-            uniform border_color_2_focus: (THEME_COLOR_BEVEL_OUTSET_2_FOCUS)
-            uniform border_color_2_disabled: (THEME_COLOR_BEVEL_OUTSET_2_DISABLED)
+            // DOW-style colors: subtle difference (lighter hover, darker down)
+            uniform color: #444
+            uniform color_hover: #505050  // Visible but soft hover
+            uniform color_down: #383838   // Distinct press state
+            uniform color_focus: #4a4a4a
+            uniform color_disabled: #292929
 
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size)
-                let dither = Math::random_2d(self.pos.xy) * 0.04 * self.color_dither;
                 
-                let color_2 = self.color;
-                let color_2_hover = self.color_hover;
-                let color_2_down = self.color_down;
-                let color_2_focus = self.color_focus;
-                let color_2_disabled = self.color_disabled;
-
-                let border_color_2 = self.border_color;
-                let border_color_2_hover = self.border_color_hover;
-                let border_color_2_down = self.border_color_down;
-                let border_color_2_focus = self.border_color_focus;
-                let border_color_2_disabled = self.border_color_disabled;
-
-                if (self.color_2.x > -0.5) {
-                    color_2 = self.color_2
-                    color_2_hover = self.color_2_hover
-                    color_2_down = self.color_2_down;
-                    color_2_focus = self.color_2_focus;
-                    color_2_disabled = self.color_2_disabled;
-                }
-
-                if (self.border_color_2.x > -0.5) {
-                    border_color_2 = self.border_color_2;
-                    border_color_2_hover = self.border_color_2_hover;
-                    border_color_2_down = self.border_color_2_down;
-                    border_color_2_focus = self.border_color_2_focus;
-                    border_color_2_disabled = self.border_color_2_disabled;
-                }
+                // SUBTLE gradient like DOW (~10% difference for slight 3D convex effect)
+                let base_color = mix(
+                    mix(
+                        mix(
+                            mix(self.color, self.color_focus, self.focus),
+                            self.color_hover,
+                            self.hover
+                        ),
+                        self.color_down,
+                        self.down
+                    ),
+                    self.color_disabled,
+                    self.disabled
+                );
+                let fill_color = mix(base_color * 1.05, base_color * 0.95, self.pos.y);
                 
-                let border_sz_uv = vec2(
-                    self.border_size / self.rect_size.x,
-                    self.border_size / self.rect_size.y
+                // Gradient stroke only: light on top, dark on bottom (bevel/depth effect like DOW)
+                let stroke_top = mix(#666, #777, self.hover);
+                let stroke_bottom = mix(#222, #333, self.hover);
+                let stroke_color = mix(
+                    mix(stroke_top, stroke_bottom, self.pos.y),
+                    #292929,
+                    self.disabled
                 );
-
-                let gradient_border = vec2(
-                    self.pos.x + dither,
-                    self.pos.y + dither
-                );
-
-                let gradient_border_dir = gradient_border.y;
-                if (self.gradient_border_horizontal > 0.5) {
-                    gradient_border_dir = gradient_border.x;
-                }
-
-                let sz_inner_px = vec2(
-                    self.rect_size.x - self.border_size * 2.,
-                    self.rect_size.y - self.border_size * 2.
-                );
-
-                let scale_factor_fill = vec2(
-                    self.rect_size.x / sz_inner_px.x,
-                    self.rect_size.y / sz_inner_px.y
-                );
-
-                let gradient_fill = vec2(
-                    self.pos.x * scale_factor_fill.x - border_sz_uv.x * 2. + dither,
-                    self.pos.y * scale_factor_fill.y - border_sz_uv.y * 2. + dither
-                );
-
-                let gradient_fill_dir = gradient_fill.y;
-                if (self.gradient_fill_horizontal > 0.5) {
-                    gradient_fill_dir = gradient_fill.x;
-                }
 
                 sdf.box(
                     self.border_size,
@@ -242,45 +173,9 @@ live_design! {
                     self.border_radius
                 );
 
-                sdf.fill_keep(
-                    mix(
-                        mix(
-                            mix(
-                                mix(
-                                    mix(self.color, color_2, gradient_fill_dir),
-                                    mix(self.color_focus, color_2_focus, gradient_fill_dir),
-                                    self.focus
-                                ),
-                                mix(self.color_hover, color_2_hover, gradient_fill_dir),
-                                self.hover
-                            ),
-                            mix(self.color_down, color_2_down, gradient_fill_dir),
-                            self.down
-                        ),
-                        mix(self.color_disabled, color_2_disabled, gradient_fill_dir),
-                        self.disabled
-                    )
-                );
-
-                sdf.stroke(
-                        mix(
-                            mix(
-                                mix(
-                                    mix(
-                                        mix(self.border_color, border_color_2, gradient_border_dir),
-                                        mix(self.border_color_focus, border_color_2_focus, gradient_border_dir),
-                                        self.focus
-                                    ),
-                                    mix(self.border_color_hover, border_color_2_hover, gradient_border_dir),
-                                    self.hover
-                                ),
-                                mix(self.border_color_down, border_color_2_down, gradient_border_dir),
-                                self.down
-                                ),
-                                mix(self.border_color_disabled, border_color_2_disabled, gradient_border_dir),
-                                self.disabled
-                            ), self.border_size
-                );
+                sdf.fill_keep(fill_color);
+                sdf.stroke(stroke_color, self.border_size);
+                
                 return sdf.result
             }
         }
@@ -381,64 +276,23 @@ live_design! {
             color_hover: (THEME_COLOR_U_HIDDEN)
             color_down: (THEME_COLOR_U_HIDDEN)
             color_disabled: (THEME_COLOR_OUTSET_DISABLED)
-
-            border_color: (THEME_COLOR_U_HIDDEN)
-            border_color_hover: (THEME_COLOR_U_HIDDEN)
-            border_color_down: (THEME_COLOR_U_HIDDEN)
-            border_color_focus: (THEME_COLOR_U_HIDDEN)
-            border_color_disabled: (THEME_COLOR_U_HIDDEN)
         }
     }
 
-    pub Btn = <BtnFlat> {
-        draw_bg: {
-            border_color: (THEME_COLOR_BEVEL_OUTSET_1)
-            border_color_hover: (THEME_COLOR_BEVEL_OUTSET_1_HOVER)
-            border_color_down: (THEME_COLOR_BEVEL_OUTSET_1_DOWN)
-            border_color_focus: (THEME_COLOR_BEVEL_OUTSET_1_FOCUS)
-            border_color_disabled: #292929 // Override to flat
+    pub Btn = <BtnFlat> {}
 
-            border_color_2: (THEME_COLOR_BEVEL_OUTSET_2)
-            border_color_2_hover: (THEME_COLOR_BEVEL_OUTSET_2_HOVER)
-            border_color_2_down: (THEME_COLOR_BEVEL_OUTSET_2_DOWN)
-            border_color_2_focus: (THEME_COLOR_BEVEL_OUTSET_2_FOCUS)
-            border_color_2_disabled: #292929 // Override to flat
-        }
-        
-    }
  
-    pub BtnGradientX = <Btn> {
-        draw_bg: {
-            uniform color: (THEME_COLOR_OUTSET_1)
-            uniform color_hover: (THEME_COLOR_OUTSET_1_HOVER)
-            uniform color_down: (THEME_COLOR_OUTSET_1_DOWN)
-            uniform color_focus: (THEME_COLOR_OUTSET_1_FOCUS)
-            uniform color_disabled: (THEME_COLOR_OUTSET_1_DISABLED)
+    // BtnGradientX and BtnGradientY removed - gradients not supported in simplified shader
+    // Use Btn instead
 
-            uniform color_2: (THEME_COLOR_OUTSET_2)
-        }
-    }
-
-    pub BtnGradientY = <BtnGradientX> {
-       draw_bg: {
-            gradient_fill_horizontal: 1.0
-       } 
-    }
   
     pub BtnIcon = <Btn> {
         spacing: 0.
         text: ""
     }
     
-    pub BtnGradientXIcon = <BtnGradientX> {
-        spacing: 0.
-        text: ""
-    }
-    
-    pub BtnGradientYIcon = <BtnGradientY> {
-        spacing: 0.
-        text: ""
-    }
+    // BtnGradientXIcon and BtnGradientYIcon removed - use BtnIcon instead
+
     
     pub BtnFlatIcon = <BtnFlat> {
         spacing: 0.
