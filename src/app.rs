@@ -215,55 +215,16 @@ impl AppMain for App {
         self.ui.handle_event(cx, event, scope);
         
         if let Event::Actions(actions) = event {
-            // Generic Scroll Handler
+            // Generic Scroll Handler - collect scroll deltas from all widget types
             let mut total_scroll_delta = DVec2::default();
             for action in actions {
-                let mut handled = false;
-
+                // Try each scroll action type
                 if let InputAction::Scroll(delta) = action.cast() {
                     total_scroll_delta += delta;
-                    handled = true;
-                }
-                
-                if !handled {
-                    if let ButtonAction::Scroll(delta) = action.cast() {
-                         total_scroll_delta += delta;
-                         handled = true;
-                    }
-                }
-                
-                if !handled {
-                     if let WrapperAction::Scroll(delta) = action.cast() {
-                         total_scroll_delta += delta;
-                         handled = true;
-                    }
-                }
-                
-                // Fallback: Parse Debug String if cast fails (handles TypeId mismatches)
-                if !handled {
-                    let action_str = format!("{:?}", action);
-                    if action_str.contains("Scroll") && action_str.contains("Vec2d") {
-                        if let Some(start) = action_str.find("Scroll(Vec2d { x: ") {
-                            let rest = &action_str[start..];
-                            if let Some(x_start) = rest.find("x: ") {
-                                 let x_str = &rest[x_start + 3..];
-                                 if let Some(comma) = x_str.find(",") {
-                                     let x_val_str = &x_str[..comma];
-                                     if let Some(y_start) = x_str.find("y: ") {
-                                         let y_str = &x_str[y_start + 3..];
-                                         if let Some(brace) = y_str.find("}") {
-                                             let y_val_str = &y_str[..brace].trim();
-                                             
-                                             if let (Ok(x), Ok(y)) = (x_val_str.parse::<f64>(), y_val_str.parse::<f64>()) {
-                                                 let delta = DVec2 { x, y };
-                                                 total_scroll_delta += delta;
-                                             }
-                                         }
-                                     }
-                                 }
-                            }
-                        }
-                    }
+                } else if let ButtonAction::Scroll(delta) = action.cast() {
+                    total_scroll_delta += delta;
+                } else if let WrapperAction::Scroll(delta) = action.cast() {
+                    total_scroll_delta += delta;
                 }
             }
 

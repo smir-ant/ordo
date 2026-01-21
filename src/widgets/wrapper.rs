@@ -31,13 +31,34 @@ pub struct Wrapper {
     #[live] tooltip_title: String,
 }
 
+impl Wrapper {
+    /// Emit ShowTooltip action with configured title/text
+    fn emit_tooltip(&self, cx: &mut Cx, scope: &Scope) {
+        if !self.tooltip_text.is_empty() {
+            let title = if self.tooltip_title.is_empty() { 
+                "Info".to_string() 
+            } else { 
+                self.tooltip_title.clone() 
+            };
+            cx.widget_action(
+                self.widget_uid(), 
+                &scope.path, 
+                WrapperAction::ShowTooltip { title, text: self.tooltip_text.clone() }
+            );
+        }
+    }
+    
+    /// Check if position is inside wrapper area
+    fn contains_pos(&self, cx: &Cx, pos: DVec2) -> bool {
+        self.view.area().rect(cx).contains(pos)
+    }
+}
+
 impl Widget for Wrapper {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event, scope: &mut Scope) {
         if self.blocked {
             match event {
                 Event::MouseDown(_) |
-                // Event::MouseUp(_) |  
-                // Event::MouseMove(_) |
                 Event::Scroll(_) |
                 Event::TouchUpdate(_) |
                 Event::KeyDown(_) |
@@ -46,40 +67,51 @@ impl Widget for Wrapper {
                 _ => ()
             }
         }
-        self.view.handle_event(cx, event, scope);
         
-        match event.hits(cx, self.view.area()) {
-            Hit::FingerDown(fe) => {
-                self.last_abs = Some(fe.abs);
+        // Intercept long press and right click BEFORE passing to children
+        // This ensures tooltip works even when clicking on child widgets (buttons, inputs, etc.)
+        let mut intercepted = false;
+        
+        match event {
+            // Mobile: Long press anywhere in wrapper area
+            Event::LongPress(lp) => {
+                if self.contains_pos(cx, lp.abs) {
+                    self.emit_tooltip(cx, scope);
+                    intercepted = true;
+                }
             }
-            Hit::FingerUp(fe) => {
-                 self.last_abs = None;
-                 if fe.mouse_button() == Some(MouseButton::SECONDARY) {
-                     if !self.tooltip_text.is_empty() {
-                         let title = if self.tooltip_title.is_empty() { "Info".to_string() } else { self.tooltip_title.clone() };
-                         cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::ShowTooltip{title, text: self.tooltip_text.clone()});
-                     } else {
-                         cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::RightClick);
-                     }
-                 }
-            }
-            Hit::FingerLongPress(_fe) => {
-                 if !self.tooltip_text.is_empty() {
-                     let title = if self.tooltip_title.is_empty() { "Info".to_string() } else { self.tooltip_title.clone() };
-                     cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::ShowTooltip{title, text: self.tooltip_text.clone()});
-                 } else {
-                     cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::LongPress);
-                 }
-            }
-            Hit::FingerMove(fe) => {
-                 let last_abs = self.last_abs.unwrap_or(fe.abs);
-                 let delta = fe.abs - last_abs;
-                 self.last_abs = Some(fe.abs);
-                 if delta.x.abs() > 1.0 || delta.y.abs() > 1.0 { // Sensitivity threshold
-                    cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::Scroll(delta));
-                 }
+            // Desktop: Right click (secondary button) anywhere in wrapper area
+            Event::MouseUp(mu) => {
+                if mu.button == MouseButton::SECONDARY && self.contains_pos(cx, mu.abs) {
+                    self.emit_tooltip(cx, scope);
+                    intercepted = true;
+                }
             }
             _ => ()
+        }
+        
+        // Pass event to children (they handle their own clicks, hovers, etc.)
+        self.view.handle_event(cx, event, scope);
+        
+        // Handle scroll gesture through hits (for scroll propagation)
+        if !intercepted {
+            match event.hits(cx, self.view.area()) {
+                Hit::FingerDown(fe) => {
+                    self.last_abs = Some(fe.abs);
+                }
+                Hit::FingerUp(_fe) => {
+                    self.last_abs = None;
+                }
+                Hit::FingerMove(fe) => {
+                    let last_abs = self.last_abs.unwrap_or(fe.abs);
+                    let delta = fe.abs - last_abs;
+                    self.last_abs = Some(fe.abs);
+                    if delta.x.abs() > 1.0 || delta.y.abs() > 1.0 {
+                        cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::Scroll(delta));
+                    }
+                }
+                _ => ()
+            }
         }
     }
     
