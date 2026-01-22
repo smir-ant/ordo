@@ -162,10 +162,14 @@ live_design! {
                     self.disabled
                 );
                 
-                // Accent base color (orange gradient like DOW active state)
+                // Accent base color with hover effect (like DOW active_hover)
+                let accent_fill = mix(self.accent_color_light, self.accent_color, self.pos.y);
+                let accent_hover_fill = mix(accent_fill, #fff, 0.2);  // 20% lighter on hover
+                let accent_down_fill = self.accent_color * 0.8;  // Darken on down
+                
                 let accent_base = mix(
-                    mix(self.accent_color_light, self.accent_color, self.pos.y),
-                    self.accent_color * 0.8,  // Darken on down
+                    mix(accent_fill, accent_hover_fill, self.hover),
+                    accent_down_fill,
                     self.down
                 );
                 

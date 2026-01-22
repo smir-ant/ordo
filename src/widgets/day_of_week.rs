@@ -33,6 +33,27 @@ live_design! {
             }
         }
         
+        // Hover state for active (selected) days - 20% lighter
+        draw_bg_active_hover: {
+            uniform accent_light: (THEME_COLOR_ACCENT_LIGHT)
+            uniform accent: (THEME_COLOR_ACCENT)
+            uniform accent_stroke_top: (THEME_COLOR_ACCENT_STROKE_TOP)
+            uniform accent_dark: (THEME_COLOR_ACCENT_DARK)
+            
+            fn pixel(self) -> vec4 {
+                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                sdf.circle(self.rect_size.x * 0.5, self.rect_size.y * 0.5, self.rect_size.x * 0.5 - 2.0);
+                
+                // 20% lighter fill on hover
+                let base_fill = mix(self.accent_light, self.accent, self.pos.y);
+                let fill_grad = mix(base_fill, #fff, 0.2);
+                sdf.fill_keep(fill_grad);
+                
+                let stroke_grad = mix(self.accent_stroke_top, self.accent_dark, self.pos.y);
+                return sdf.stroke(stroke_grad, 1);
+            }
+        }
+        
         draw_bg_hover: {
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
@@ -80,6 +101,7 @@ live_design! {
 pub struct DayOfWeek {
     #[redraw] #[live] draw_bg: DrawQuad,
     #[live] draw_bg_active: DrawQuad,
+    #[live] draw_bg_active_hover: DrawQuad,
     #[live] draw_bg_hover: DrawQuad,
     #[live] draw_bg_inactive: DrawQuad,
     
@@ -152,7 +174,11 @@ impl Widget for DayOfWeek {
             let rect = cx.turtle().rect();
             self.area_days.push(rect);
             
-            if is_selected {
+            if is_selected && is_hovered {
+                // Selected day with hover - use brighter variant
+                self.draw_bg_active_hover.draw_abs(cx, rect);
+                self.draw_text_active.draw_walk(cx, Walk::fit(), Align::default(), label);
+            } else if is_selected {
                 self.draw_bg_active.draw_abs(cx, rect);
                 self.draw_text_active.draw_walk(cx, Walk::fit(), Align::default(), label);
             } else if is_hovered {
