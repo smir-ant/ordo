@@ -132,6 +132,10 @@ live_design!{
                                 text: "Demo Disabled"
                                 enabled: false
                             }
+                            <Btn> {
+                                text: "Demo Accent"
+                                accent: true
+                            }
                         }
                         
                         open_modal_btn = <Btn> {

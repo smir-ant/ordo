@@ -28,7 +28,8 @@ use {
 live_design! {
     link widgets;
 
-    use link::theme::*;
+    use makepad_widgets::theme_desktop_dark::*;
+    use link::styling::*;
     use makepad_draw::shader::std::*;
 
     pub InputBase = {{Input}} {}

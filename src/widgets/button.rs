@@ -6,6 +6,7 @@ live_design! {
     use makepad_widgets::base::*;
     use makepad_widgets::theme_desktop_dark::*;
     use makepad_draw::shader::std::*;
+    use link::styling::*;
     
     pub BtnBase = {{Button}} {}
     
@@ -126,22 +127,28 @@ live_design! {
             instance focus: 0.0
             instance down: 0.0
             instance disabled: 0.0
+            instance accent: 0.0
 
             uniform border_size: (THEME_BEVELING)
             uniform border_radius: (THEME_CORNER_RADIUS)
 
-            // DOW-style colors: subtle difference (lighter hover, darker down)
+            // Normal colors (DOW-style)
             uniform color: #444
-            uniform color_hover: #505050  // Visible but soft hover
-            uniform color_down: #383838   // Distinct press state
+            uniform color_hover: #505050
+            uniform color_down: #383838
             uniform color_focus: #4a4a4a
             uniform color_disabled: #292929
+            
+            // Accent colors from styling
+            uniform accent_color: (THEME_COLOR_ACCENT)
+            uniform accent_color_light: (THEME_COLOR_ACCENT_LIGHT)
+            uniform accent_color_dark: (THEME_COLOR_ACCENT_DARK)
 
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size)
                 
-                // SUBTLE gradient like DOW (~10% difference for slight 3D convex effect)
-                let base_color = mix(
+                // Normal base color (DOW-style)
+                let normal_base = mix(
                     mix(
                         mix(
                             mix(self.color, self.color_focus, self.focus),
@@ -154,13 +161,29 @@ live_design! {
                     self.color_disabled,
                     self.disabled
                 );
+                
+                // Accent base color (orange gradient like DOW active state)
+                let accent_base = mix(
+                    mix(self.accent_color_light, self.accent_color, self.pos.y),
+                    self.accent_color * 0.8,  // Darken on down
+                    self.down
+                );
+                
+                // Mix between normal and accent based on accent property
+                let base_color = mix(normal_base, accent_base, self.accent);
                 let fill_color = mix(base_color * 1.05, base_color * 0.95, self.pos.y);
                 
-                // Gradient stroke only: light on top, dark on bottom (bevel/depth effect like DOW)
-                let stroke_top = mix(#666, #777, self.hover);
-                let stroke_bottom = mix(#222, #333, self.hover);
+                // Normal stroke gradient
+                let normal_stroke_top = mix(#666, #777, self.hover);
+                let normal_stroke_bottom = mix(#222, #333, self.hover);
+                let normal_stroke = mix(normal_stroke_top, normal_stroke_bottom, self.pos.y);
+                
+                // Accent stroke gradient (like DOW active)
+                let accent_stroke = mix(self.accent_color_light, self.accent_color_dark, self.pos.y);
+                
+                // Mix strokes and apply disabled
                 let stroke_color = mix(
-                    mix(stroke_top, stroke_bottom, self.pos.y),
+                    mix(normal_stroke, accent_stroke, self.accent),
                     #292929,
                     self.disabled
                 );
@@ -361,6 +384,9 @@ pub struct Button {
     #[live(true)]
     enabled: bool,
 
+    #[live(false)]
+    accent: bool,
+
     #[live(true)]
     #[visible] visible: bool,
 
@@ -507,6 +533,7 @@ impl Widget for Button {
             return DrawStep::done();
         }
 
+        self.draw_bg.apply_over(cx, live!{accent: (if self.accent { 1.0 } else { 0.0 })});
         self.draw_bg.begin(cx, walk, self.layout);
         if self.enabled {
              self.animator_cut(cx, ids!(disabled.off));

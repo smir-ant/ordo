@@ -4,6 +4,7 @@ live_design! {
     use makepad_widgets::base::*;
     use makepad_widgets::theme_desktop_dark::*; 
     use makepad_draw::shader::std::*;
+    use link::styling::*;
 
     pub DayOfWeek = {{DayOfWeek}} {
         width: Fill, height: Fit
@@ -15,14 +16,19 @@ live_design! {
         }
         
         draw_bg_active: {
+            uniform accent_light: (THEME_COLOR_ACCENT_LIGHT)
+            uniform accent: (THEME_COLOR_ACCENT)
+            uniform accent_stroke_top: (THEME_COLOR_ACCENT_STROKE_TOP)
+            uniform accent_dark: (THEME_COLOR_ACCENT_DARK)
+            
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
                 sdf.circle(self.rect_size.x * 0.5, self.rect_size.y * 0.5, self.rect_size.x * 0.5 - 2.0);
                 
-                let fill_grad = mix(#FF7E60, #FF5C39, self.pos.y); 
+                let fill_grad = mix(self.accent_light, self.accent, self.pos.y); 
                 sdf.fill_keep(fill_grad);
                 
-                let stroke_grad = mix(#FF8C70, #A03010, self.pos.y);
+                let stroke_grad = mix(self.accent_stroke_top, self.accent_dark, self.pos.y);
                 return sdf.stroke(stroke_grad, 1);
             }
         }
