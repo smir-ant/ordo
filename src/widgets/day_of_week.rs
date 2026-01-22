@@ -16,40 +16,42 @@ live_design! {
         }
         
         draw_bg_active: {
-            uniform accent_light: (THEME_COLOR_ACCENT_LIGHT)
             uniform accent: (THEME_COLOR_ACCENT)
-            uniform accent_stroke_top: (THEME_COLOR_ACCENT_STROKE_TOP)
-            uniform accent_dark: (THEME_COLOR_ACCENT_DARK)
             
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
                 sdf.circle(self.rect_size.x * 0.5, self.rect_size.y * 0.5, self.rect_size.x * 0.5 - 2.0);
                 
-                let fill_grad = mix(self.accent_light, self.accent, self.pos.y); 
+                // Derive variants from single accent color
+                let accent_light = mix(self.accent, #fff, 0.15);
+                let accent_dark = mix(self.accent, #000, 0.4);
+                
+                let fill_grad = mix(accent_light, self.accent, self.pos.y); 
                 sdf.fill_keep(fill_grad);
                 
-                let stroke_grad = mix(self.accent_stroke_top, self.accent_dark, self.pos.y);
+                let stroke_grad = mix(accent_light, accent_dark, self.pos.y);
                 return sdf.stroke(stroke_grad, 1);
             }
         }
         
         // Hover state for active (selected) days - 20% lighter
         draw_bg_active_hover: {
-            uniform accent_light: (THEME_COLOR_ACCENT_LIGHT)
             uniform accent: (THEME_COLOR_ACCENT)
-            uniform accent_stroke_top: (THEME_COLOR_ACCENT_STROKE_TOP)
-            uniform accent_dark: (THEME_COLOR_ACCENT_DARK)
             
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
                 sdf.circle(self.rect_size.x * 0.5, self.rect_size.y * 0.5, self.rect_size.x * 0.5 - 2.0);
                 
+                // Derive variants from single accent color
+                let accent_light = mix(self.accent, #fff, 0.15);
+                let accent_dark = mix(self.accent, #000, 0.4);
+                
                 // 20% lighter fill on hover
-                let base_fill = mix(self.accent_light, self.accent, self.pos.y);
+                let base_fill = mix(accent_light, self.accent, self.pos.y);
                 let fill_grad = mix(base_fill, #fff, 0.2);
                 sdf.fill_keep(fill_grad);
                 
-                let stroke_grad = mix(self.accent_stroke_top, self.accent_dark, self.pos.y);
+                let stroke_grad = mix(accent_light, accent_dark, self.pos.y);
                 return sdf.stroke(stroke_grad, 1);
             }
         }

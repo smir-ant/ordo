@@ -36,9 +36,6 @@ live_design! {
     // Theme Mode (1.0 = Dark, 0.0 = Light)
     pub THEME_IS_DARK = 1.0
     
-    // Accent Color (Primary brand color - Orange like DOW)
-    pub THEME_COLOR_ACCENT = #FF5C39        // Main accent (DOW active fill bottom)
-    pub THEME_COLOR_ACCENT_LIGHT = #FF7E60  // Lighter variant (DOW active fill top)
-    pub THEME_COLOR_ACCENT_DARK = #A03010   // Darker variant (DOW stroke bottom)
-    pub THEME_COLOR_ACCENT_STROKE_TOP = #FF8C70  // Stroke top gradient
+    // Accent Color - Single value, variants computed via mix() in shaders
+    pub THEME_COLOR_ACCENT = #FF5C39
 }

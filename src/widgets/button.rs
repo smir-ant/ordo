@@ -24,6 +24,7 @@ live_design! {
             instance down: 0.0,
             instance focus: 0.0,
             instance disabled: 0.0
+            instance accent: 0.0
 
             color: (THEME_COLOR_LABEL_INNER)
             uniform color_hover: (THEME_COLOR_LABEL_INNER_HOVER)
@@ -39,7 +40,7 @@ live_design! {
                 font_size: (THEME_FONT_SIZE_P)
             }
             fn get_color(self) -> vec4 {
-                return mix(
+                let normal_color = mix(
                     mix(
                         mix(
                             mix(self.color, self.color_focus, self.focus),
@@ -51,7 +52,9 @@ live_design! {
                     ),
                     self.color_disabled,
                     self.disabled
-                )
+                );
+                // White text for accent buttons
+                return mix(normal_color, #FFF, self.accent);
             }
         }
         
@@ -139,10 +142,8 @@ live_design! {
             uniform color_focus: #4a4a4a
             uniform color_disabled: #292929
             
-            // Accent colors from styling
+            // Single accent color - variants derived via mix()
             uniform accent_color: (THEME_COLOR_ACCENT)
-            uniform accent_color_light: (THEME_COLOR_ACCENT_LIGHT)
-            uniform accent_color_dark: (THEME_COLOR_ACCENT_DARK)
 
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size)
@@ -162,8 +163,12 @@ live_design! {
                     self.disabled
                 );
                 
-                // Accent base color with hover effect (like DOW active_hover)
-                let accent_fill = mix(self.accent_color_light, self.accent_color, self.pos.y);
+                // Derive accent variants from single color
+                let accent_light = mix(self.accent_color, #fff, 0.15);
+                let accent_dark = mix(self.accent_color, #000, 0.4);
+                
+                // Accent base color with hover effect
+                let accent_fill = mix(accent_light, self.accent_color, self.pos.y);
                 let accent_hover_fill = mix(accent_fill, #fff, 0.2);  // 20% lighter on hover
                 let accent_down_fill = self.accent_color * 0.8;  // Darken on down
                 
@@ -182,8 +187,8 @@ live_design! {
                 let normal_stroke_bottom = mix(#222, #333, self.hover);
                 let normal_stroke = mix(normal_stroke_top, normal_stroke_bottom, self.pos.y);
                 
-                // Accent stroke gradient (like DOW active)
-                let accent_stroke = mix(self.accent_color_light, self.accent_color_dark, self.pos.y);
+                // Accent stroke gradient
+                let accent_stroke = mix(accent_light, accent_dark, self.pos.y);
                 
                 // Mix strokes and apply disabled
                 let stroke_color = mix(
@@ -538,6 +543,7 @@ impl Widget for Button {
         }
 
         self.draw_bg.apply_over(cx, live!{accent: (if self.accent { 1.0 } else { 0.0 })});
+        self.draw_text.apply_over(cx, live!{accent: (if self.accent { 1.0 } else { 0.0 })});
         self.draw_bg.begin(cx, walk, self.layout);
         if self.enabled {
              self.animator_cut(cx, ids!(disabled.off));
