@@ -5,6 +5,7 @@ use crate::widgets::modal::{Modal, ModalAction, TooltipContent};
 use crate::widgets::wrapper::{Wrapper, WrapperAction};
 use crate::widgets::text::Text;
 use crate::widgets::day_of_week::DayOfWeek;
+use crate::widgets::tabs::{Tabs, TabsAction};
 use makepad_widgets::view::View;
 use makepad_widgets::keyboard_view::KeyboardView;
 
@@ -24,6 +25,7 @@ live_design!{
     use crate::widgets::wrapper::Wrapper;
     use crate::widgets::group::Group;
     use crate::widgets::day_of_week::DayOfWeek;
+    use crate::widgets::tabs::Tabs;
     use crate::theme::*;
     use makepad_widgets::keyboard_view::KeyboardView;
     use makepad_widgets::drop_down::DropDown;
@@ -138,6 +140,35 @@ live_design!{
                             }
                         }
                         
+                        // Tabs Demo Section
+                        <Group> {
+                            width: Fill, height: Fit
+                            flow: Down
+                            spacing: 15.0
+                            
+                            <Text> {
+                                text: "Tabs Widget Demo"
+                                draw_text: {
+                                    color: #DDD
+                                    text_style: { font_size: 13.0 }
+                                }
+                            }
+                            
+                            // Single tab example
+                            tabs_single = <Tabs> {
+                                labels: ["Only Option"]
+                            }
+                            
+                            // Two tabs example (like check.html)
+                            tabs_two = <Tabs> {
+                                labels: ["Require All", "Require Any"]
+                            }
+                            
+                            // Six tabs example
+                            tabs_six = <Tabs> {
+                                labels: ["Day", "Week", "Month", "Year", "All Time", "Custom"]
+                            }
+                        }
                         open_modal_btn = <Btn> {
                             margin: {top: 20.0}
                             text: "Open Modal"
@@ -273,6 +304,12 @@ impl AppMain for App {
                 }
             }
             
+            // Tabs Action Handling - log when tabs change
+            for action in actions {
+                if let TabsAction::Changed(idx) = action.cast() {
+                    log!("Tab changed to index: {}", idx);
+                }
+            }
             // Handle Modal Opening
             let mut open_modal = false;
             let mut open_tooltip = false;

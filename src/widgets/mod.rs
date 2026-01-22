@@ -9,6 +9,7 @@ pub mod modal;
 pub mod wrapper;
 pub mod day_of_week;
 pub mod group;
+pub mod tabs;
 
 pub fn live_design(cx: &mut Cx) {
     text::live_design(cx);
@@ -19,4 +20,5 @@ pub fn live_design(cx: &mut Cx) {
     wrapper::live_design(cx);
     group::live_design(cx);
     day_of_week::live_design(cx);
+    tabs::live_design(cx);
 }
