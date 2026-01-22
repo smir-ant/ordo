@@ -85,6 +85,11 @@ live_design! {
             color: #FFF
         }
         
+        draw_text_active_hover: {
+            text_style: <THEME_FONT_REGULAR>{ font_size: 9.0 }
+            color: #FFF
+        }
+        
         draw_text_hover: {
             text_style: <THEME_FONT_REGULAR>{ font_size: 9.0 }
             color: #DDD
@@ -106,6 +111,7 @@ pub struct DayOfWeek {
     #[live] draw_bg_inactive: DrawQuad,
     
     #[live] draw_text_active: DrawText,
+    #[live] draw_text_active_hover: DrawText,
     #[live] draw_text_hover: DrawText,
     #[live] draw_text_inactive: DrawText,
     
@@ -175,9 +181,8 @@ impl Widget for DayOfWeek {
             self.area_days.push(rect);
             
             if is_selected && is_hovered {
-                // Selected day with hover - use brighter variant
                 self.draw_bg_active_hover.draw_abs(cx, rect);
-                self.draw_text_active.draw_walk(cx, Walk::fit(), Align::default(), label);
+                self.draw_text_active_hover.draw_walk(cx, Walk::fit(), Align::default(), label);
             } else if is_selected {
                 self.draw_bg_active.draw_abs(cx, rect);
                 self.draw_text_active.draw_walk(cx, Walk::fit(), Align::default(), label);
