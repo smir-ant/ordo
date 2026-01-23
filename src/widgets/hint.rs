@@ -94,29 +94,12 @@ impl Widget for Hint {
             _ => ()
         }
         
+
+
         // Pass event to children (they handle their own clicks, hovers, etc.)
         self.view.handle_event(cx, event, scope);
         
-        // Handle scroll gesture through hits (for scroll propagation)
-        if !intercepted {
-            match event.hits(cx, self.view.area()) {
-                Hit::FingerDown(fe) => {
-                    self.last_abs = Some(fe.abs);
-                }
-                Hit::FingerUp(_fe) => {
-                    self.last_abs = None;
-                }
-                Hit::FingerMove(fe) => {
-                    let last_abs = self.last_abs.unwrap_or(fe.abs);
-                    let delta = fe.abs - last_abs;
-                    self.last_abs = Some(fe.abs);
-                    if delta.x.abs() > 1.0 || delta.y.abs() > 1.0 {
-                        cx.widget_action(self.widget_uid(), &scope.path, HintAction::Scroll(delta));
-                    }
-                }
-                _ => ()
-            }
-        }
+
     }
     
     fn draw_walk(&mut self, cx: &mut Cx2d, scope: &mut Scope, walk: Walk) -> DrawStep {
