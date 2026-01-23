@@ -2,7 +2,7 @@ use makepad_widgets::*;
 use crate::widgets::input::{Input, InputAction};
 use crate::widgets::button::{Button as Btn, ButtonAction};
 use crate::widgets::modal::{Modal, ModalAction, TooltipContent};
-use crate::widgets::wrapper::{Wrapper, WrapperAction};
+use crate::widgets::hint::{Hint, HintAction};
 use crate::widgets::text::Text;
 use crate::widgets::day_of_week::DayOfWeek;
 use crate::widgets::tabs::{Tabs, TabsAction};
@@ -24,7 +24,7 @@ live_design!{
     use crate::widgets::modal::DialogContent;
     use crate::widgets::modal::TooltipContent;
     use crate::widgets::text::Text;
-    use crate::widgets::wrapper::Wrapper;
+    use crate::widgets::hint::Hint;
     use crate::widgets::group::Group;
     use crate::widgets::day_of_week::DayOfWeek;
     use crate::widgets::tabs::Tabs;
@@ -41,7 +41,7 @@ live_design!{
                 width: Fill, height: Fill
                 flow: Overlay // Overlay allows stacking for modal
                 
-                content_wrapper = <Wrapper> {
+                content_wrapper = <Hint> {
                     width: Fill, height: Fill
                     main_content = <KeyboardView> {
                         width: Fill, height: Fill,
@@ -248,7 +248,7 @@ live_design!{
                             }
                         }
                         
-                        scroll_wrapper = <Wrapper> {
+                        scroll_wrapper = <Hint> {
                              // width: Fit, height: Fit
                              tooltip_title: "Scroll Info"
                              tooltip_text: "Scroll Area Action detected\nLine breaks are supported!"
@@ -318,7 +318,7 @@ impl AppMain for App {
                     total_scroll_delta += delta;
                 } else if let ButtonAction::Scroll(delta) = action.cast() {
                     total_scroll_delta += delta;
-                } else if let WrapperAction::Scroll(delta) = action.cast() {
+                } else if let HintAction::Scroll(delta) = action.cast() {
                     total_scroll_delta += delta;
                 }
             }
@@ -400,7 +400,7 @@ impl AppMain for App {
             
              // Check for generic ShowTooltip action
              for action in actions {
-                 if let WrapperAction::ShowTooltip{title, text} = action.as_widget_action().cast() {
+                 if let HintAction::ShowTooltip{title, text} = action.as_widget_action().cast() {
                      open_tooltip = true;
                      // Update tooltip title and text
                       if let Some(mut title_widget) = self.ui.widget(&[live_id!(tooltip_modal), live_id!(content), live_id!(title)]).borrow_mut::<Text>() {
@@ -426,7 +426,7 @@ impl AppMain for App {
                 modal.redraw(cx);
                 
                 // Block Content
-                if let Some(mut wrapper) = self.ui.widget(ids!(content_wrapper)).borrow_mut::<Wrapper>() {
+                if let Some(mut wrapper) = self.ui.widget(ids!(content_wrapper)).borrow_mut::<Hint>() {
                     wrapper.set_blocked(cx, true);
                 }
                 self.ui.redraw(cx);
@@ -438,7 +438,7 @@ impl AppMain for App {
                 modal.redraw(cx);
                 
                 // Block Content
-                if let Some(mut wrapper) = self.ui.widget(ids!(content_wrapper)).borrow_mut::<Wrapper>() {
+                if let Some(mut wrapper) = self.ui.widget(ids!(content_wrapper)).borrow_mut::<Hint>() {
                     wrapper.set_blocked(cx, true);
                 }
                 self.ui.redraw(cx);
@@ -468,7 +468,7 @@ impl AppMain for App {
             
             if close_modal {
                 // Unblock Content
-                if let Some(mut wrapper) = self.ui.widget(ids!(content_wrapper)).borrow_mut::<Wrapper>() {
+                if let Some(mut wrapper) = self.ui.widget(ids!(content_wrapper)).borrow_mut::<Hint>() {
                     wrapper.set_blocked(cx, false);
                 }
             }

@@ -3,7 +3,7 @@ use makepad_widgets::*;
 live_design! {
     use makepad_widgets::base::*;
     
-    pub Wrapper = {{Wrapper}} {
+    pub Hint = {{Hint}} {
         width: Fit, height: Fit
         flow: Down
         show_bg: true
@@ -14,7 +14,7 @@ live_design! {
 }
 
 #[derive(Clone, DefaultNone, Debug)]
-pub enum WrapperAction {
+pub enum HintAction {
     None,
     RightClick,
     LongPress,
@@ -23,7 +23,7 @@ pub enum WrapperAction {
 }
 
 #[derive(Live, LiveHook, Widget)]
-pub struct Wrapper {
+pub struct Hint {
     #[deref] view: View,
     #[rust] last_abs: Option<Vec2d>,
     #[live] blocked: bool,
@@ -31,7 +31,7 @@ pub struct Wrapper {
     #[live] tooltip_title: String,
 }
 
-impl Wrapper {
+impl Hint {
     /// Emit ShowTooltip action with configured title/text
     fn emit_tooltip(&self, cx: &mut Cx, scope: &Scope) {
         if !self.tooltip_text.is_empty() {
@@ -43,18 +43,22 @@ impl Wrapper {
             cx.widget_action(
                 self.widget_uid(), 
                 &scope.path, 
-                WrapperAction::ShowTooltip { title, text: self.tooltip_text.clone() }
+                HintAction::ShowTooltip { title, text: self.tooltip_text.clone() }
             );
         }
     }
     
-    /// Check if position is inside wrapper area
+    /// Check if position is inside hint area
     fn contains_pos(&self, cx: &Cx, pos: DVec2) -> bool {
         self.view.area().rect(cx).contains(pos)
     }
+    
+    pub fn set_blocked(&mut self, _cx: &mut Cx, blocked: bool) {
+        self.blocked = blocked;
+    }
 }
 
-impl Widget for Wrapper {
+impl Widget for Hint {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event, scope: &mut Scope) {
         if self.blocked {
             match event {
@@ -73,14 +77,14 @@ impl Widget for Wrapper {
         let mut intercepted = false;
         
         match event {
-            // Mobile: Long press anywhere in wrapper area
+            // Mobile: Long press anywhere in hint area
             Event::LongPress(lp) => {
                 if self.contains_pos(cx, lp.abs) {
                     self.emit_tooltip(cx, scope);
                     intercepted = true;
                 }
             }
-            // Desktop: Right click (secondary button) anywhere in wrapper area
+            // Desktop: Right click (secondary button) anywhere in hint area
             Event::MouseUp(mu) => {
                 if mu.button == MouseButton::SECONDARY && self.contains_pos(cx, mu.abs) {
                     self.emit_tooltip(cx, scope);
@@ -107,7 +111,7 @@ impl Widget for Wrapper {
                     let delta = fe.abs - last_abs;
                     self.last_abs = Some(fe.abs);
                     if delta.x.abs() > 1.0 || delta.y.abs() > 1.0 {
-                        cx.widget_action(self.widget_uid(), &scope.path, WrapperAction::Scroll(delta));
+                        cx.widget_action(self.widget_uid(), &scope.path, HintAction::Scroll(delta));
                     }
                 }
                 _ => ()
@@ -117,11 +121,5 @@ impl Widget for Wrapper {
     
     fn draw_walk(&mut self, cx: &mut Cx2d, scope: &mut Scope, walk: Walk) -> DrawStep {
         self.view.draw_walk(cx, scope, walk)
-    }
-}
-
-impl Wrapper {
-    pub fn set_blocked(&mut self, _cx: &mut Cx, blocked: bool) {
-        self.blocked = blocked;
     }
 }

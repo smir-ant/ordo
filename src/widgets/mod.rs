@@ -6,7 +6,7 @@ pub mod text;
 pub mod view;
 
 pub mod modal;
-pub mod wrapper;
+pub mod hint;
 pub mod day_of_week;
 pub mod group;
 pub mod tabs;
@@ -19,7 +19,7 @@ pub fn live_design(cx: &mut Cx) {
     input::live_design(cx);
     view::live_design(cx);
     modal::live_design(cx);
-    wrapper::live_design(cx);
+    hint::live_design(cx);
     group::live_design(cx);
     day_of_week::live_design(cx);
     tabs::live_design(cx);
