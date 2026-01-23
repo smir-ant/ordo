@@ -6,6 +6,7 @@ use crate::widgets::wrapper::{Wrapper, WrapperAction};
 use crate::widgets::text::Text;
 use crate::widgets::day_of_week::DayOfWeek;
 use crate::widgets::tabs::{Tabs, TabsAction};
+use crate::widgets::check::{Check, CheckAction};
 use makepad_widgets::view::View;
 use makepad_widgets::keyboard_view::KeyboardView;
 
@@ -26,6 +27,7 @@ live_design!{
     use crate::widgets::group::Group;
     use crate::widgets::day_of_week::DayOfWeek;
     use crate::widgets::tabs::Tabs;
+    use crate::widgets::check::Check;
     use crate::theme::*;
     use makepad_widgets::keyboard_view::KeyboardView;
     use makepad_widgets::drop_down::DropDown;
@@ -167,6 +169,53 @@ live_design!{
                             // Six tabs example
                             tabs_six = <Tabs> {
                                 labels: ["Day", "Week", "Month", "Year", "All Time", "Custom"]
+                            }
+                        }
+                        
+                        // Check Widget Demo
+                        <Group> {
+                            width: Fill, height: Fit
+                            flow: Down
+                            spacing: 10.0
+                            
+                            <Text> {
+                                text: "Check Widget Demo"
+                                draw_text: {
+                                    color: #DDD
+                                    text_style: { font_size: 13.0 }
+                                }
+                            }
+                            
+                            <View> {
+                                width: Fill, height: Fit
+                                flow: Right
+                                spacing: 10.0
+                                align: {y: 0.5}
+                                
+                                check_demo = <Check> {}
+                                <Text> {
+                                    text: "Enable feature"
+                                    draw_text: {
+                                        color: #AAA
+                                        text_style: { font_size: 13.0 }
+                                    }
+                                }
+                            }
+                            
+                            <View> {
+                                width: Fill, height: Fit
+                                flow: Right
+                                spacing: 10.0
+                                align: {y: 0.5}
+                                
+                                check_demo_2 = <Check> { checked: true }
+                                <Text> {
+                                    text: "Pre-checked option"
+                                    draw_text: {
+                                        color: #AAA
+                                        text_style: { font_size: 13.0 }
+                                    }
+                                }
                             }
                         }
                         open_modal_btn = <Btn> {
