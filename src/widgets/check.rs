@@ -8,9 +8,11 @@ live_design! {
     use makepad_widgets::theme_desktop_dark::*;
     use makepad_draw::shader::std::*;
     use link::styling::*;
+    use link::shaders::*;
 
     pub Check = {{Check}} {
         width: Fit, height: Fit
+        flow: Right, align: {y: 0.5}, spacing: 8.0
         
         draw_bg: {
             instance checked: 0.0
@@ -41,56 +43,94 @@ live_design! {
                 return sdf.stroke(stroke, 1.0);
             }
         }
+        
+        draw_label: {
+            instance hover: 0.0
+            text_style: <THEME_FONT_REGULAR> { font_size: 11.0 }
+            fn get_color(self) -> vec4 {
+                return mix(#BFBFBF, #FFFFFF, self.hover);
+            }
+        }
+        
+        label: ""
     }
 }
 
 #[derive(Live, LiveHook, Widget)]
 pub struct Check {
     #[redraw] #[live] draw_bg: DrawQuad,
+    #[live] draw_label: DrawText,
     
     #[walk] walk: Walk,
     #[layout] layout: Layout,
     
+    #[live] label: ArcStringMut,
     #[live(false)] pub checked: bool,
     #[rust] is_hovered: bool,
+    #[rust] area: Area,
 }
 
 impl Widget for Check {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event, scope: &mut Scope) {
         let uid = self.widget_uid();
-        match event.hits(cx, self.draw_bg.area()) {
+        // Use combined area for hit testing (checkbox + label)
+        match event.hits(cx, self.area) {
             Hit::FingerDown(_) => {
                 self.checked = !self.checked;
                 log!("Check: toggled to {}", self.checked);
                 cx.widget_action(uid, &scope.path, CheckAction::Changed(self.checked));
-                self.draw_bg.redraw(cx);
+                self.redraw(cx);
             }
             Hit::FingerHoverIn(_) => {
                 cx.set_cursor(MouseCursor::Hand);
                 self.is_hovered = true;
-                self.draw_bg.redraw(cx);
+                self.redraw(cx);
             }
             Hit::FingerHoverOut(_) => {
                 self.is_hovered = false;
-                self.draw_bg.redraw(cx);
+                self.redraw(cx);
             }
             _ => ()
         }
     }
 
-    fn draw_walk(&mut self, cx: &mut Cx2d, _scope: &mut Scope, _walk: Walk) -> DrawStep {
-        let size = 16.0;
+    fn draw_walk(&mut self, cx: &mut Cx2d, _scope: &mut Scope, walk: Walk) -> DrawStep {
+        let box_size = 16.0;
         
-        // Set instance values
+        // Begin the widget container
+        cx.begin_turtle(walk, self.layout);
+        
+        // Set instance values for checkbox
         self.draw_bg.apply_over(cx, live!{
             checked: (if self.checked { 1.0 } else { 0.0 }),
             hover: (if self.is_hovered { 1.0 } else { 0.0 })
         });
         
-        let rect = cx.walk_turtle(Walk::fixed(size, size));
-        self.draw_bg.draw_abs(cx, rect);
+        // Draw checkbox
+        let box_rect = cx.walk_turtle(Walk::fixed(box_size, box_size));
+        self.draw_bg.draw_abs(cx, box_rect);
+        
+        // Draw label if present
+        let label = self.label.as_ref();
+        if !label.is_empty() {
+            self.draw_label.apply_over(cx, live!{
+                hover: (if self.is_hovered { 1.0 } else { 0.0 })
+            });
+            self.draw_label.draw_walk(cx, Walk::fit(), Align::default(), label);
+        }
+        
+        // End container and store combined area for hit testing
+        cx.end_turtle_with_area(&mut self.area);
         
         DrawStep::done()
+    }
+    
+    fn text(&self) -> String {
+        self.label.as_ref().to_string()
+    }
+    
+    fn set_text(&mut self, _cx: &mut Cx, v: &str) {
+        self.label.as_mut_empty().push_str(v);
     }
 }
 
@@ -102,7 +142,7 @@ impl Check {
     pub fn set_checked(&mut self, cx: &mut Cx, checked: bool) {
         if self.checked != checked {
             self.checked = checked;
-            self.draw_bg.redraw(cx);
+            self.redraw(cx);
         }
     }
 }

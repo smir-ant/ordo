@@ -186,37 +186,8 @@ live_design!{
                                 }
                             }
                             
-                            <View> {
-                                width: Fill, height: Fit
-                                flow: Right
-                                spacing: 10.0
-                                align: {y: 0.5}
-                                
-                                check_demo = <Check> {}
-                                <Text> {
-                                    text: "Enable feature"
-                                    draw_text: {
-                                        color: #AAA
-                                        text_style: { font_size: 13.0 }
-                                    }
-                                }
-                            }
-                            
-                            <View> {
-                                width: Fill, height: Fit
-                                flow: Right
-                                spacing: 10.0
-                                align: {y: 0.5}
-                                
-                                check_demo_2 = <Check> { checked: true }
-                                <Text> {
-                                    text: "Pre-checked option"
-                                    draw_text: {
-                                        color: #AAA
-                                        text_style: { font_size: 13.0 }
-                                    }
-                                }
-                            }
+                            check_demo = <Check> { label: "Enable feature" }
+                            check_demo_2 = <Check> { checked: true, label: "Pre-checked option" }
                         }
                         open_modal_btn = <Btn> {
                             margin: {top: 20.0}
