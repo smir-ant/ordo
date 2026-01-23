@@ -559,6 +559,7 @@ impl Widget for Input {
 
         match event.hits(cx, self.draw_bg.area()) {
             Hit::FingerHoverIn(_) => {
+                cx.set_cursor(MouseCursor::Hand);
                 self.animator_play(cx, ids!(hover.on));
             }
             Hit::FingerHoverOut(_) => {
