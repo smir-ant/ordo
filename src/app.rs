@@ -202,15 +202,17 @@ live_design!{
                             }
                         }
                         
-                        details_demo = <Details> {
-                            summary: "Advanced Settings"
-                            
-                            content = {
-                                <Check> { label: "Allow skipping" }
-                                <Check> { label: "Carry over missed reps" }
-                                <Text> {
-                                    text: "Nested content works!"
-                                    draw_text: { color: #888, text_style: { font_size: 11.0 } }
+                        <Group> {
+                            details_demo = <Details> {
+                                summary: "Advanced Settings"
+                                
+                                content = {
+                                    <Check> { label: "Allow skipping" }
+                                    <Check> { label: "Carry over missed reps" }
+                                    <Text> {
+                                        text: "Nested content works!"
+                                        draw_text: { color: #888, text_style: { font_size: 11.0 } }
+                                    }
                                 }
                             }
                         }
