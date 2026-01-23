@@ -123,7 +123,7 @@ impl Widget for Tabs {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event, scope: &mut Scope) {
         let uid = self.widget_uid();
         match event.hits(cx, self.draw_bg.area()) {
-            Hit::FingerDown(fe) => {
+            Hit::FingerUp(fe) if fe.was_tap() => {
                 for (i, rect) in self.area_tabs.iter().enumerate() {
                     if rect.contains(fe.abs) {
                         if self.selected_index != i {

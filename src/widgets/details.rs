@@ -97,7 +97,7 @@ impl Widget for Details {
         
         // Handle clicks and hover on header area
         match event.hits(cx, self.header_area) {
-            Hit::FingerDown(_) => {
+            Hit::FingerUp(fe) if fe.was_tap() => {
                 self.open = !self.open;
                 log!("Details: toggled to {}", if self.open { "open" } else { "closed" });
                 cx.widget_action(uid, &scope.path, DetailsAction::Toggled(self.open));

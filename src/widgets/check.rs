@@ -68,6 +68,7 @@ pub struct Check {
     #[live(false)] pub checked: bool,
     #[rust] is_hovered: bool,
     #[rust] area: Area,
+
 }
 
 impl Widget for Check {
@@ -75,7 +76,7 @@ impl Widget for Check {
         let uid = self.widget_uid();
         // Use combined area for hit testing (checkbox + label)
         match event.hits(cx, self.area) {
-            Hit::FingerDown(_) => {
+            Hit::FingerUp(fe) if fe.was_tap() => {
                 self.checked = !self.checked;
                 log!("Check: toggled to {}", self.checked);
                 cx.widget_action(uid, &scope.path, CheckAction::Changed(self.checked));

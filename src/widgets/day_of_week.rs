@@ -128,7 +128,7 @@ pub struct DayOfWeek {
 impl Widget for DayOfWeek {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event, _scope: &mut Scope) {
         match event.hits(cx, self.draw_bg.area()) {
-            Hit::FingerDown(fe) => {
+            Hit::FingerUp(fe) if fe.was_tap() => {
                 for (i, rect) in self.area_days.iter().enumerate() {
                     if rect.contains(fe.abs) {
                         self.selected_mask ^= 1 << i;
