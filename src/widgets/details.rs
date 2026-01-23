@@ -15,9 +15,10 @@ live_design! {
         width: Fill, height: Fit
         flow: Down, spacing: 0.0
         
-        // Arrow shader
+        // Arrow shader - changes color based on hover
         draw_arrow: {
             instance open: 0.0
+            instance hover: 0.0
             
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
@@ -37,16 +38,18 @@ live_design! {
                     sdf.line_to(c.x - sz * 0.5, c.y + sz);
                 }
                 
-                return sdf.stroke(#888, 1.5);
+                // Brighten on hover
+                let color = mix(#888, #CCC, self.hover);
+                return sdf.stroke(color, 1.5);
             }
         }
         
-        // Title text
+        // Title text - normal color, brightens on hover
         draw_title: {
-            instance open: 0.0
+            instance hover: 0.0
             text_style: <THEME_FONT_REGULAR> { font_size: 13.0 }
             fn get_color(self) -> vec4 {
-                return mix(#999, #DDD, self.open);
+                return mix(#DDD, #FFF, self.hover);
             }
         }
         
@@ -82,6 +85,7 @@ pub struct Details {
     
     #[live] summary: ArcStringMut,
     #[live(false)] pub open: bool,
+    #[rust] is_hovered: bool,
     #[rust] header_area: Area,
 }
 
@@ -91,7 +95,7 @@ impl Widget for Details {
         
         let uid = self.widget_uid();
         
-        // Handle clicks on header area
+        // Handle clicks and hover on header area
         match event.hits(cx, self.header_area) {
             Hit::FingerDown(_) => {
                 self.open = !self.open;
@@ -101,36 +105,43 @@ impl Widget for Details {
             }
             Hit::FingerHoverIn(_) => {
                 cx.set_cursor(MouseCursor::Hand);
+                self.is_hovered = true;
+                self.redraw(cx);
+            }
+            Hit::FingerHoverOut(_) => {
+                self.is_hovered = false;
+                self.redraw(cx);
             }
             _ => ()
         }
     }
 
     fn draw_walk(&mut self, cx: &mut Cx2d, scope: &mut Scope, walk: Walk) -> DrawStep {
-        // Begin main container
+        // Begin main container with full width
         cx.begin_turtle(walk, Layout {
             flow: Flow::Down,
             ..Default::default()
         });
         
-        // Draw header row
-        cx.begin_turtle(Walk::fit(), Layout {
+        // Draw header row with full width
+        cx.begin_turtle(Walk::fill_fit(), Layout {
             flow: Flow::right(),
             align: Align { x: 0.0, y: 0.5 },
             padding: Padding { top: 8.0, bottom: 8.0, left: 0.0, right: 0.0 },
             ..Default::default()
         });
         
-        // Update and draw arrow
+        // Update and draw arrow (with hover)
         self.draw_arrow.apply_over(cx, live!{
-            open: (if self.open { 1.0 } else { 0.0 })
+            open: (if self.open { 1.0 } else { 0.0 }),
+            hover: (if self.is_hovered { 1.0 } else { 0.0 })
         });
         let arrow_rect = cx.walk_turtle(Walk::fixed(20.0, 20.0));
         self.draw_arrow.draw_abs(cx, arrow_rect);
         
-        // Update and draw title
+        // Update and draw title (with hover)
         self.draw_title.apply_over(cx, live!{
-            open: (if self.open { 1.0 } else { 0.0 })
+            hover: (if self.is_hovered { 1.0 } else { 0.0 })
         });
         self.draw_title.draw_walk(cx, Walk::fit(), Align::default(), self.summary.as_ref());
         
@@ -153,7 +164,7 @@ impl Widget for Details {
         self.view.apply_over(cx, live!{
             content = { visible: (self.open) }
         });
-        self.view.draw(cx, scope);
+        let _ = self.view.draw(cx, scope);
         
         // End main container
         cx.end_turtle();
