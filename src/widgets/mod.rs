@@ -11,6 +11,7 @@ pub mod day_of_week;
 pub mod group;
 pub mod tabs;
 pub mod check;
+pub mod details;
 
 pub fn live_design(cx: &mut Cx) {
     text::live_design(cx);
@@ -23,4 +24,5 @@ pub fn live_design(cx: &mut Cx) {
     day_of_week::live_design(cx);
     tabs::live_design(cx);
     check::live_design(cx);
+    details::live_design(cx);
 }

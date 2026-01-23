@@ -7,6 +7,7 @@ use crate::widgets::text::Text;
 use crate::widgets::day_of_week::DayOfWeek;
 use crate::widgets::tabs::{Tabs, TabsAction};
 use crate::widgets::check::{Check, CheckAction};
+use crate::widgets::details::Details;
 use makepad_widgets::view::View;
 use makepad_widgets::keyboard_view::KeyboardView;
 
@@ -28,6 +29,7 @@ live_design!{
     use crate::widgets::day_of_week::DayOfWeek;
     use crate::widgets::tabs::Tabs;
     use crate::widgets::check::Check;
+    use crate::widgets::details::Details;
     use crate::theme::*;
     use makepad_widgets::keyboard_view::KeyboardView;
     use makepad_widgets::drop_down::DropDown;
@@ -188,7 +190,43 @@ live_design!{
                             
                             check_demo = <Check> { label: "Enable feature" }
                             check_demo_2 = <Check> { checked: true, label: "Pre-checked option" }
+                            
                         }
+
+                        <Text> {
+                            margin: {top: 16.0}
+                            text: "Details Widget Demo"
+                            draw_text: {
+                                color: #DDD
+                                text_style: { font_size: 13.0 }
+                            }
+                        }
+                        
+                        details_demo = <Details> {
+                            summary: "Advanced Settings"
+                            
+                            content = {
+                                <Check> { label: "Allow skipping" }
+                                <Check> { label: "Carry over missed reps" }
+                                <Text> {
+                                    text: "Nested content works!"
+                                    draw_text: { color: #888, text_style: { font_size: 11.0 } }
+                                }
+                            }
+                        }
+                        
+                        details_open = <Details> {
+                            summary: "Pre-opened Section"
+                            open: true
+                            
+                            content = {
+                                <Text> {
+                                    text: "This section starts open"
+                                    draw_text: { color: #AAA, text_style: { font_size: 12.0 } }
+                                }
+                            }
+                        }
+
                         open_modal_btn = <Btn> {
                             margin: {top: 20.0}
                             text: "Open Modal"
