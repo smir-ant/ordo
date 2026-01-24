@@ -12,12 +12,14 @@ pub mod group;
 pub mod tabs;
 pub mod check;
 pub mod details;
+pub mod side_panel;
 
 pub fn live_design(cx: &mut Cx) {
     text::live_design(cx);
     button::live_design(cx);
     input::live_design(cx);
     view::live_design(cx);
+    side_panel::live_design(cx);
     modal::live_design(cx);
     hint::live_design(cx);
     group::live_design(cx);

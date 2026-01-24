@@ -3,6 +3,7 @@ use crate::widgets::input::{Input, InputAction};
 use crate::widgets::button::{Button as Btn, ButtonAction};
 use crate::widgets::modal::{Modal, ModalAction, TooltipContent};
 use crate::widgets::hint::{Hint, HintAction};
+use crate::widgets::side_panel::{SidePanel, SidePanelAction};
 use crate::widgets::text::Text;
 use crate::widgets::day_of_week::DayOfWeek;
 use crate::widgets::tabs::{Tabs, TabsAction};
@@ -23,6 +24,7 @@ live_design!{
     use crate::widgets::modal::Modal;
     use crate::widgets::modal::DialogContent;
     use crate::widgets::modal::TooltipContent;
+    use crate::widgets::side_panel::SidePanel;
     use crate::widgets::text::Text;
     use crate::widgets::hint::Hint;
     use crate::widgets::group::Group;
@@ -233,6 +235,11 @@ live_design!{
                             margin: {top: 20.0}
                             text: "Open Modal"
                         }
+                        
+                        side_panel_btn = <Btn> {
+                            margin: {top: 10.0}
+                            text: "Side Panel"
+                        }
 
                         <Group> {
                             width: Fill, height: Fit
@@ -287,6 +294,39 @@ live_design!{
                     content = <TooltipContent> {
                         title = { text: "Scroll Area Info" }
                         text = { text: "You interacted with the scroll test area." }
+                    }
+                }
+                
+                side_panel_view = <SidePanel> {
+                    panel = {
+                        padding: 20.0
+                        spacing: 15.0
+                        
+                        <Text> {
+                            text: "Side Panel"
+                            draw_text: {
+                                text_style: <THEME_FONT_BOLD> { font_size: 20.0 }
+                                color: #fff
+                            }
+                        }
+                        
+                        <Text> {
+                            text: "This is a custom side panel.\nYou can put anything here."
+                            draw_text: {
+                                color: #bbb
+                                text_style: { font_size: 14.0 }
+                            }
+                        }
+                        
+                        <Input> {
+                            width: Fill, height: Fit
+                            empty_text: "Edit me..."
+                        }
+                        
+                        close_panel_btn = <Btn> {
+                            width: Fill
+                            text: "Close Panel"
+                        }
                     }
                 }
             }
@@ -470,6 +510,39 @@ impl AppMain for App {
                 // Unblock Content
                 if let Some(mut wrapper) = self.ui.widget(ids!(content_wrapper)).borrow_mut::<Hint>() {
                     wrapper.set_blocked(cx, false);
+                }
+            }
+            
+            // Side Panel Logic
+             // Side Panel Logic
+             if self.ui.widget(ids!(side_panel_btn)).borrow::<Btn>().map(|b| b.clicked(&actions)).unwrap_or(false) {
+                if let Some(mut panel) = self.ui.widget(ids!(side_panel_view)).borrow_mut::<SidePanel>() {
+                    panel.open(cx);
+                }
+                // Block main content interactions (like scroll)
+                if let Some(mut wrapper) = self.ui.widget(ids!(content_wrapper)).borrow_mut::<Hint>() {
+                    wrapper.set_blocked(cx, true);
+                }
+                self.ui.redraw(cx); // Explicit redraw to force panel visibility update immediately
+            }
+            
+            if self.ui.widget(ids!(side_panel_view)).widget(ids!(panel)).widget(ids!(close_panel_btn)).borrow::<Btn>().map(|b| b.clicked(&actions)).unwrap_or(false) {
+                 if let Some(mut panel) = self.ui.widget(ids!(side_panel_view)).borrow_mut::<SidePanel>() {
+                    panel.close(cx);
+                }
+                // Unblock content
+                if let Some(mut wrapper) = self.ui.widget(ids!(content_wrapper)).borrow_mut::<Hint>() {
+                    wrapper.set_blocked(cx, false);
+                }
+                self.ui.redraw(cx); // Explicit redraw to update UI immediately
+            }
+            
+            // Check if SidePanel closed itself (ESC or Click Outside)
+            if let Some(action) = actions.find_widget_action(self.ui.widget(ids!(side_panel_view)).widget_uid()) {
+                if let SidePanelAction::Close = action.cast() {
+                     if let Some(mut wrapper) = self.ui.widget(ids!(content_wrapper)).borrow_mut::<Hint>() {
+                        wrapper.set_blocked(cx, false);
+                    }
                 }
             }
         }
