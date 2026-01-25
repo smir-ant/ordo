@@ -40,22 +40,25 @@ live_design! {
         }
         
         draw_selection: {
-            instance color: #fff2
-            instance border_width: 1.0
-            instance border_color: #ffff
+            instance color: (THEME_COLOR_ACCENT)
             instance border_radius: 2.0
             
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size)
                 sdf.box(
-                    self.border_width,
-                    self.border_width,
-                    self.rect_size.x - self.border_width * 2.0,
-                    self.rect_size.y - self.border_width * 2.0,
+                    0.0,
+                    0.0,
+                    self.rect_size.x,
+                    self.rect_size.y,
                     self.border_radius
                 )
-                sdf.fill_keep(self.color)
-                return sdf.stroke(self.border_color, self.border_width)
+                sdf.fill_keep(vec4(self.color.xyz, 1));
+                
+                let stroke_top = #fff5;
+                let stroke_bottom = #0005; 
+                let stroke_color = mix(stroke_top, stroke_bottom, self.pos.y);
+                
+                return sdf.stroke(stroke_color, 1.0);
             }
         }
         
