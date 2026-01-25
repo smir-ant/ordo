@@ -1,15 +1,11 @@
 use makepad_widgets::*;
 use crate::widgets::input::{Input, InputAction};
 use crate::widgets::button::{Button as Btn, ButtonAction};
-use crate::widgets::modal::{Modal, ModalAction, TooltipContent};
-use crate::widgets::hint::{Hint, HintAction};
-use crate::widgets::side_panel::{SidePanel, SidePanelAction};
+use crate::widgets::modal::{Modal, ModalAction, TooltipContent, DialogContent, SidePanelContent, TooltipTrigger, TooltipTriggerAction};
 use crate::widgets::text::Text;
 use crate::widgets::day_of_week::DayOfWeek;
-use crate::widgets::tabs::{Tabs, TabsAction};
-use crate::widgets::check::{Check, CheckAction};
-use crate::widgets::details::Details;
-use makepad_widgets::view::View;
+use crate::widgets::tabs::TabsAction;
+use crate::widgets::check::Check;
 use makepad_widgets::keyboard_view::KeyboardView;
 
 live_design!{
@@ -21,12 +17,15 @@ live_design!{
     use makepad_widgets::button::Button;
     use crate::widgets::input::Input;
     use crate::widgets::button::Btn;
+    
     use crate::widgets::modal::Modal;
     use crate::widgets::modal::DialogContent;
     use crate::widgets::modal::TooltipContent;
-    use crate::widgets::side_panel::SidePanel;
+    use crate::widgets::modal::SidePanelContent;
+    use crate::widgets::modal::TooltipTrigger;
+    
     use crate::widgets::text::Text;
-    use crate::widgets::hint::Hint;
+    // use crate::widgets::hint::Hint; // Deleted
     use crate::widgets::group::Group;
     use crate::widgets::day_of_week::DayOfWeek;
     use crate::widgets::tabs::Tabs;
@@ -43,7 +42,7 @@ live_design!{
                 width: Fill, height: Fill
                 flow: Overlay // Overlay allows stacking for modal
                 
-                content_wrapper = <Hint> {
+                content_wrapper = <View> {
                     width: Fill, height: Fill
                     main_content = <KeyboardView> {
                         width: Fill, height: Fill,
@@ -255,77 +254,69 @@ live_design!{
                             }
                         }
                         
-                        scroll_wrapper = <Hint> {
-                             // width: Fit, height: Fit
-                             tooltip_title: "Scroll Info"
-                             tooltip_text: "Scroll Area Action detected\nLine breaks are supported!"
+                        scroll_wrapper = <TooltipTrigger> {
+                             width: Fit, height: Fit
                             
-                             <Text> {
-                                text: "need help?"
+                              <Text> {
+                                text: "RMB or long press for tooltip!"
                                 draw_text: {
                                     color: #ffffff
                                     text_style: { font_size: 16.0 }
                                 }
                             }
-
-                            tooltip_btn = <Btn> {
-                                text: "Open Tooltip"
-                            }
                         }
-
-                        // DropDown 
-                        <DropDown> {
+             
+                        help_btn = <Btn> {
                             width: Fit, height: Fit
-                            labels: ["Option A", "Option B", "Option C"]
+                            text: "?"
                         }
                     }
                 }
                 
+                // --- STATIC MODAL INSTANCES (Overlay Layer) ---
+                
                 demo_modal = <Modal> {
-                    visible: false
                     content = <DialogContent> {
                         title = { text: "Confirm Action" }
                         text = { text: "Are you sure you want to proceed?" }
                     }
                 }
                 
-                tooltip_modal = <Modal> {
+                // Specific Modal for Trigger
+                trigger_tooltip = <Modal> {
                     visible: false
                     content = <TooltipContent> {
-                        title = { text: "Scroll Area Info" }
-                        text = { text: "You interacted with the scroll test area." }
+                        title = { text: "Trigger Action" }
+                        text = { text: "Tooltip opened via Right-Click or Long-Press!" }
+                    }
+                }
+
+                // Specific Modal for Button
+                button_tooltip = <Modal> {
+                    visible: false
+                    content = <TooltipContent> {
+                        title = { text: "Button Action" }
+                        text = { text: "Tooltip opened via button!" }
                     }
                 }
                 
-                side_panel_view = <SidePanel> {
-                    panel = {
-                        padding: 20.0
-                        spacing: 15.0
-                        
-                        <Text> {
-                            text: "Side Panel"
-                            draw_text: {
-                                text_style: <THEME_FONT_BOLD> { font_size: 20.0 }
-                                color: #fff
+                side_panel_view = <Modal> {
+                    align: {x: 0.0, y: 0.0} // Left aligned
+                    content = <SidePanelContent> {
+                        header = { title = { text: "Side Panel" } }
+                        body = {
+                            <Text> {
+                                text: "This is a custom side panel.\nYou can put anything here."
+                                draw_text: {
+                                    color: #bbb
+                                    text_style: { font_size: 14.0 }
+                                }
                             }
-                        }
-                        
-                        <Text> {
-                            text: "This is a custom side panel.\nYou can put anything here."
-                            draw_text: {
-                                color: #bbb
-                                text_style: { font_size: 14.0 }
+                            
+                            <Input> {
+                                width: Fill, height: Fit
+                                empty_text: "Edit me..."
                             }
-                        }
-                        
-                        <Input> {
-                            width: Fill, height: Fit
-                            empty_text: "Edit me..."
-                        }
-                        
-                        close_panel_btn = <Btn> {
-                            width: Fill
-                            text: "Close Panel"
                         }
                     }
                 }
@@ -358,9 +349,10 @@ impl AppMain for App {
                     total_scroll_delta += delta;
                 } else if let ButtonAction::Scroll(delta) = action.cast() {
                     total_scroll_delta += delta;
-                } else if let HintAction::Scroll(delta) = action.cast() {
-                    total_scroll_delta += delta;
                 }
+                /* else if let HintAction::Scroll(delta) = action.cast() {
+                    total_scroll_delta += delta;
+                }*/
             }
 
             if total_scroll_delta.x != 0.0 || total_scroll_delta.y != 0.0 {
@@ -410,141 +402,68 @@ impl AppMain for App {
                     log!("Tab changed to index: {}", idx);
                 }
             }
-            // Handle Modal Opening
-            let mut open_modal = false;
-            let mut open_tooltip = false;
             
-            // Check button click
-            if let Some(btn) = self.ui.widget(ids!(open_modal_btn)).borrow::<Btn>() {
-                if btn.clicked(&actions) {
-                   open_modal = true;
-                   // Set Dynamic Title for Dialog
-                   if let Some(mut title_widget) = self.ui.widget(&[live_id!(demo_modal), live_id!(content), live_id!(title)]).borrow_mut::<Text>() {
-                       title_widget.set_text(cx, "Dynamic Dialog Title");
-                   }
-                }
-            }
-            
-             if let Some(btn) = self.ui.widget(ids!(tooltip_btn)).borrow::<Btn>() {
-                if btn.clicked(&actions) {
-                   open_tooltip = true;
-                   // Set Default Title/Text for button-triggered tooltip
-                   if let Some(mut title_widget) = self.ui.widget(&[live_id!(tooltip_modal), live_id!(content), live_id!(title)]).borrow_mut::<Text>() {
-                       title_widget.set_text(cx, "Button Triggered");
-                   }
-                   if let Some(mut text_widget) = self.ui.widget(&[live_id!(tooltip_modal), live_id!(content), live_id!(text)]).borrow_mut::<Text>() {
-                       text_widget.set_text(cx, "This tooltip was opened via button click.");
-                   }
-                }
-            }
-            
-             // Check for generic ShowTooltip action
-             for action in actions {
-                 if let HintAction::ShowTooltip{title, text} = action.as_widget_action().cast() {
-                     open_tooltip = true;
-                     // Update tooltip title and text
-                      if let Some(mut title_widget) = self.ui.widget(&[live_id!(tooltip_modal), live_id!(content), live_id!(title)]).borrow_mut::<Text>() {
-                           title_widget.set_text(cx, &title);
-                       }
-                      if let Some(mut text_widget) = self.ui.widget(&[live_id!(tooltip_modal), live_id!(content), live_id!(text)]).borrow_mut::<Text>() {
-                           text_widget.set_text(cx, &text);
-                       }
+            // --- Modal Logic ---
+
+// --- Modal Logic ---
+
+            // Open Modal Button
+            if self.ui.widget(ids!(open_modal_btn)).borrow::<Btn>().map(|b| b.clicked(&actions)).unwrap_or(false) {
+                 // 1. Set data (completely isolated scope)
+                 {
+                     let modal_ref = self.ui.widget(ids!(demo_modal));
+                     if let Some(mut title_widget) = modal_ref.widget(ids!(content)).widget(ids!(title)).borrow_mut::<Text>() {
+                         title_widget.set_text(cx, "Dynamic Dialog Title");
+                     }
                  }
-             }
-            
-            // Removed specific scroll_wrapper RightClick/LongPress checks as Wrapper now handles emitting ShowTooltip
-             /*if let WrapperAction::RightClick = actions.find_widget_action(self.ui.widget(ids!(scroll_wrapper)).widget_uid()).cast() {
-                 open_tooltip = true;
+                 
+                 // 2. Open Modal
+                 let modal_ref = self.ui.widget(ids!(demo_modal));
+                 modal_ref.apply_over(cx, live!{visible: true});
+                 self.ui.redraw(cx);
             }
-             if let WrapperAction::LongPress = actions.find_widget_action(self.ui.widget(ids!(scroll_wrapper)).widget_uid()).cast() {
-                 open_tooltip = true;
-            }*/
             
-            if open_modal {
-                let modal = self.ui.widget(ids!(demo_modal));
-                modal.set_visible(cx, true);
-                modal.redraw(cx);
-                
-                // Block Content
-                if let Some(mut wrapper) = self.ui.widget(ids!(content_wrapper)).borrow_mut::<Hint>() {
-                    wrapper.set_blocked(cx, true);
+            // Tooltip Trigger Action
+            let mut open_trigger_tooltip = false;
+            for action in actions {
+                if let TooltipTriggerAction::ShowTooltip = action.as_widget_action().cast() {
+                    open_trigger_tooltip = true;
                 }
-                self.ui.redraw(cx);
             }
             
-            if open_tooltip {
-                let modal = self.ui.widget(ids!(tooltip_modal));
-                modal.set_visible(cx, true);
-                modal.redraw(cx);
-                
-                // Block Content
-                if let Some(mut wrapper) = self.ui.widget(ids!(content_wrapper)).borrow_mut::<Hint>() {
-                    wrapper.set_blocked(cx, true);
-                }
-                self.ui.redraw(cx);
+            if open_trigger_tooltip {
+                 let modal_ref = self.ui.widget(ids!(trigger_tooltip));
+                 modal_ref.apply_over(cx, live!{visible: true});
+                 self.ui.redraw(cx);
             }
             
-            // Handle Modal Actions
-            let mut close_modal = false;
+            // Helper Button Tooltip
+            if self.ui.widget(ids!(help_btn)).borrow::<Btn>().map(|b| b.clicked(&actions)).unwrap_or(false) {
+                 let modal_ref = self.ui.widget(ids!(button_tooltip));
+                 modal_ref.apply_over(cx, live!{visible: true});
+                 self.ui.redraw(cx);
+            }
+            
+            // Handle Modal Results (Logging)
+            // Check specifically for demo_modal actions to log them
             if let Some(action) = actions.find_widget_action(self.ui.widget(ids!(demo_modal)).widget_uid()) {
-                let modal_action: ModalAction = action.cast();
-                match modal_action {
-                    ModalAction::Accepted | ModalAction::Dismissed => {
-                        close_modal = true;
-                    }
-                    _ => ()
+                if let ModalAction::Accepted = action.cast() {
+                     // Log handled by content
+                } else if let ModalAction::Dismissed = action.cast() {
+                     // Log handled by content
                 }
             }
             
-             if let Some(action) = actions.find_widget_action(self.ui.widget(ids!(tooltip_modal)).widget_uid()) {
-                let modal_action: ModalAction = action.cast();
-                match modal_action {
-                    ModalAction::Accepted | ModalAction::Dismissed => {
-                        close_modal = true;
-                    }
-                     _ => ()
-                }
+            // Open SidePanel Button
+            if self.ui.widget(ids!(side_panel_btn)).borrow::<Btn>().map(|b| b.clicked(&actions)).unwrap_or(false) {
+                 if let Some(mut modal) = self.ui.widget(ids!(side_panel_view)).borrow_mut::<Modal>() {
+                    // Try borrow for side panel if simple apply doesn't animate? 
+                    // But to be safe let's use apply here too.
+                 }
+                 self.ui.widget(ids!(side_panel_view)).apply_over(cx, live!{visible: true});
+                 self.ui.redraw(cx); 
             }
             
-            if close_modal {
-                // Unblock Content
-                if let Some(mut wrapper) = self.ui.widget(ids!(content_wrapper)).borrow_mut::<Hint>() {
-                    wrapper.set_blocked(cx, false);
-                }
-            }
-            
-            // Side Panel Logic
-             // Side Panel Logic
-             if self.ui.widget(ids!(side_panel_btn)).borrow::<Btn>().map(|b| b.clicked(&actions)).unwrap_or(false) {
-                if let Some(mut panel) = self.ui.widget(ids!(side_panel_view)).borrow_mut::<SidePanel>() {
-                    panel.open(cx);
-                }
-                // Block main content interactions (like scroll)
-                if let Some(mut wrapper) = self.ui.widget(ids!(content_wrapper)).borrow_mut::<Hint>() {
-                    wrapper.set_blocked(cx, true);
-                }
-                self.ui.redraw(cx); // Explicit redraw to force panel visibility update immediately
-            }
-            
-            if self.ui.widget(ids!(side_panel_view)).widget(ids!(panel)).widget(ids!(close_panel_btn)).borrow::<Btn>().map(|b| b.clicked(&actions)).unwrap_or(false) {
-                 if let Some(mut panel) = self.ui.widget(ids!(side_panel_view)).borrow_mut::<SidePanel>() {
-                    panel.close(cx);
-                }
-                // Unblock content
-                if let Some(mut wrapper) = self.ui.widget(ids!(content_wrapper)).borrow_mut::<Hint>() {
-                    wrapper.set_blocked(cx, false);
-                }
-                self.ui.redraw(cx); // Explicit redraw to update UI immediately
-            }
-            
-            // Check if SidePanel closed itself (ESC or Click Outside)
-            if let Some(action) = actions.find_widget_action(self.ui.widget(ids!(side_panel_view)).widget_uid()) {
-                if let SidePanelAction::Close = action.cast() {
-                     if let Some(mut wrapper) = self.ui.widget(ids!(content_wrapper)).borrow_mut::<Hint>() {
-                        wrapper.set_blocked(cx, false);
-                    }
-                }
-            }
         }
     }
 }
