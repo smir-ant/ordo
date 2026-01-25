@@ -109,6 +109,28 @@ impl Widget for WheelPicker {
              }
         }
         
+        // Global Scroll Handler to consume events
+        if let Event::Scroll(e) = event {
+            if self.draw_bg.area().rect(cx).contains(e.abs) {
+                // Consume event to prevent parent scrolling
+                e.handled_x.set(true);
+                e.handled_y.set(true);
+                
+                self.scroll_target = None; // Cancel animation
+                self.scroll_pos += e.scroll.y;
+                if !self.is_infinite { self.clamp_scroll(); }
+                self.draw_bg.redraw(cx);
+                self.draw_selection.redraw(cx);
+                self.draw_bg.redraw(cx);
+                self.draw_selection.redraw(cx);
+                self.update_value(cx, scope.path.clone());
+                
+                // Trigger cooldown for snap
+                self.scroll_cooldown = Some(10);
+                self.next_frame = cx.new_next_frame();
+            }
+        }
+
         match event.hits(cx, self.draw_bg.area()) {
             Hit::FingerDown(fe) => {
                 self.is_dragging = true;
@@ -153,20 +175,6 @@ impl Widget for WheelPicker {
                 self.snap_to_grid(cx);
                 self.draw_bg.redraw(cx);
                 self.draw_selection.redraw(cx);
-            }
-            Hit::FingerScroll(e) => {
-                self.scroll_target = None; // Cancel animation
-                self.scroll_pos += e.scroll.y;
-                if !self.is_infinite { self.clamp_scroll(); }
-                self.draw_bg.redraw(cx);
-                self.draw_selection.redraw(cx);
-                self.draw_bg.redraw(cx);
-                self.draw_selection.redraw(cx);
-                self.update_value(cx, scope.path.clone());
-                
-                // Trigger cooldown for snap
-                self.scroll_cooldown = Some(10); // Wait ~10 frames (~160ms) after last scroll
-                self.next_frame = cx.new_next_frame();
             }
             _ => ()
         }
