@@ -12,7 +12,7 @@ live_design! {
     use crate::styling::*;
     
     pub WheelPicker = {{WheelPicker}} {
-        width: 100.0, height: 150.0
+        width: 100.0, height: 160.0
         
         draw_text: {
             text_style: <THEME_FONT_BOLD> { font_size: 20.0 }
@@ -21,8 +21,21 @@ live_design! {
         
         draw_bg: {
             instance color: #0000
+            instance border_color: #FFF3
+            instance border_width: 1.0
+            instance border_radius: 2.0
+            
             fn pixel(self) -> vec4 {
-                return self.color
+                let sdf = Sdf2d::viewport(self.pos * self.rect_size)
+                sdf.box(
+                    self.border_width,
+                    self.border_width,
+                    self.rect_size.x - self.border_width * 2.0,
+                    self.rect_size.y - self.border_width * 2.0,
+                    self.border_radius
+                )
+                sdf.fill_keep(self.color)
+                return sdf.stroke(self.border_color, self.border_width)
             }
         }
         

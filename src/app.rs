@@ -246,10 +246,15 @@ live_design!{
                             }
                             
                             hour_picker = <WheelPicker> {
-                                width: 100.0, height: 150.0
+                                width: 100.0, height: 160.0
                                 range_min: 0
                                 range_max: 23
                                 is_infinite: true
+                            }
+                            
+                            log_value_btn = <Btn> {
+                                width: Fit
+                                text: "Get Value"
                             }
                         }
 
@@ -425,6 +430,14 @@ impl AppMain for App {
                 }
                 if let WheelPickerAction::Changed(val) = action.cast() {
                     log!("Hour picked: {}", val);
+                }
+            }
+            
+            
+            // Check for Get Value button
+            if self.ui.widget(ids!(log_value_btn)).borrow::<Btn>().map(|b| b.clicked(&actions)).unwrap_or(false) {
+                if let Some(picker) = self.ui.widget(ids!(hour_picker)).borrow::<WheelPicker>() {
+                    log!("Current WheelPicker Value: {}", picker.get_value());
                 }
             }
             
