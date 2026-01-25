@@ -346,10 +346,10 @@ impl Widget for Modal {
         let uid = self.widget_uid();
         if self.view.visible() {
 
-            // 1. Forward events to content (child widgets)
+            // Forward events to content (child widgets)
             self.view.handle_event(cx, event, scope);
             
-            // 2. Check for Actions from children (Close/Dismiss)
+            // Check for Actions from children (Close/Dismiss)
             if let Event::Actions(actions) = event {
                 // Check direct children emission or bubbled actions
                 for action in actions {
@@ -369,7 +369,7 @@ impl Widget for Modal {
                 }
             }
             
-            // 3. Handle Key Events (Escape / Enter)
+            // Handle Key Events (Escape / Enter)
             if let Event::KeyDown(ke) = event {
                 if ke.key_code == KeyCode::Escape {
                      self.close(cx);
@@ -377,7 +377,7 @@ impl Widget for Modal {
                 } 
             }
             
-            // 4. Handle External Interactions (Blocking & Dismiss on Click Outside)
+            // Handle External Interactions (Blocking & Dismiss on Click Outside)
             match event.hits(cx, self.view.area()) {
                 Hit::FingerDown(fe) => {
                     // Check if click is strictly *outside* the content

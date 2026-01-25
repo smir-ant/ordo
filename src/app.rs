@@ -409,7 +409,7 @@ impl AppMain for App {
 
             // Open Modal Button
             if self.ui.widget(ids!(open_modal_btn)).borrow::<Btn>().map(|b| b.clicked(&actions)).unwrap_or(false) {
-                 // 1. Set data (completely isolated scope)
+                 // Set data (completely isolated scope)
                  {
                      let modal_ref = self.ui.widget(ids!(demo_modal));
                      if let Some(mut title_widget) = modal_ref.widget(ids!(content)).widget(ids!(title)).borrow_mut::<Text>() {
@@ -417,7 +417,7 @@ impl AppMain for App {
                      }
                  }
                  
-                 // 2. Open Modal
+                 // Open Modal
                  let modal_ref = self.ui.widget(ids!(demo_modal));
                  modal_ref.apply_over(cx, live!{visible: true});
                  self.ui.redraw(cx);
