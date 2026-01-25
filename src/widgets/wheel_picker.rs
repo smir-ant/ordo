@@ -90,12 +90,10 @@ impl Widget for WheelPicker {
                      self.scroll_pos += delta * 0.2; // Smoothness factor
                      self.next_frame = cx.new_next_frame();
                  }
-                 if !self.is_infinite { self.clamp_scroll(); }
+                if !self.is_infinite { self.clamp_scroll(); }
                  self.draw_bg.redraw(cx);
                  self.draw_selection.redraw(cx);
-                 self.draw_bg.redraw(cx);
-                 self.draw_selection.redraw(cx);
-                 self.update_value(cx, scope.path.clone()); // Update value during animation
+                 self.update_value(cx, &scope.path); // Update value during animation
              } else if let Some(cooldown) = self.scroll_cooldown {
                  if cooldown > 0 {
                      self.scroll_cooldown = Some(cooldown - 1);
@@ -121,9 +119,7 @@ impl Widget for WheelPicker {
                 if !self.is_infinite { self.clamp_scroll(); }
                 self.draw_bg.redraw(cx);
                 self.draw_selection.redraw(cx);
-                self.draw_bg.redraw(cx);
-                self.draw_selection.redraw(cx);
-                self.update_value(cx, scope.path.clone());
+                self.update_value(cx, &scope.path);
                 
                 // Trigger cooldown for snap
                 self.scroll_cooldown = Some(10);
@@ -147,9 +143,7 @@ impl Widget for WheelPicker {
                     self.last_abs_y = fe.abs.y;
                     self.draw_bg.redraw(cx);
                     self.draw_selection.redraw(cx);
-                    self.draw_bg.redraw(cx);
-                    self.draw_selection.redraw(cx);
-                    self.update_value(cx, scope.path.clone()); // Update value while dragging
+                    self.update_value(cx, &scope.path); // Update value while dragging
                 }
             }
             Hit::FingerUp(fe) => {
@@ -279,7 +273,7 @@ impl WheelPicker {
         self.next_frame = cx.new_next_frame();
     }
     
-    fn update_value(&mut self, cx: &mut Cx, path: HeapLiveIdPath) {
+    fn update_value(&mut self, cx: &mut Cx, path: &HeapLiveIdPath) {
         let raw_idx = (self.scroll_pos / self.step_height).round() as i32;
         let range_len = self.range_max - self.range_min + 1;
         
