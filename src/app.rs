@@ -6,6 +6,7 @@ use crate::widgets::text::Text;
 use crate::widgets::day_of_week::DayOfWeek;
 use crate::widgets::tabs::TabsAction;
 use crate::widgets::check::Check;
+use crate::widgets::wheel_picker::{WheelPicker, WheelPickerAction};
 use makepad_widgets::keyboard_view::KeyboardView;
 
 live_design!{
@@ -31,6 +32,7 @@ live_design!{
     use crate::widgets::tabs::Tabs;
     use crate::widgets::check::Check;
     use crate::widgets::details::Details;
+    use crate::widgets::wheel_picker::WheelPicker;
     use crate::theme::*;
     use makepad_widgets::keyboard_view::KeyboardView;
     use makepad_widgets::drop_down::DropDown;
@@ -230,6 +232,27 @@ live_design!{
                             }
                         }
 
+                        <Group> {
+                            width: Fill, height: Fit
+                            flow: Down
+                            spacing: 10.0
+                            
+                            <Text> {
+                                text: "Time Picker"
+                                draw_text: {
+                                    color: #DDD
+                                    text_style: { font_size: 13.0 }
+                                }
+                            }
+                            
+                            hour_picker = <WheelPicker> {
+                                width: 100.0, height: 150.0
+                                range_min: 0
+                                range_max: 23
+                                is_infinite: true
+                            }
+                        }
+
                         open_modal_btn = <Btn> {
                             margin: {top: 20.0}
                             text: "Open Modal"
@@ -396,17 +419,15 @@ impl AppMain for App {
                 }
             }
             
-            // Tabs Action Handling - log when tabs change
             for action in actions {
                 if let TabsAction::Changed(idx) = action.cast() {
                     log!("Tab changed to index: {}", idx);
                 }
+                if let WheelPickerAction::Changed(val) = action.cast() {
+                    log!("Hour picked: {}", val);
+                }
             }
             
-            // --- Modal Logic ---
-
-// --- Modal Logic ---
-
             // Open Modal Button
             if self.ui.widget(ids!(open_modal_btn)).borrow::<Btn>().map(|b| b.clicked(&actions)).unwrap_or(false) {
                  // Set data (completely isolated scope)

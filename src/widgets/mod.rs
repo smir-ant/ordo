@@ -11,6 +11,7 @@ pub mod group;
 pub mod tabs;
 pub mod check;
 pub mod details;
+pub mod wheel_picker;
 
 pub fn live_design(cx: &mut Cx) {
     text::live_design(cx);
@@ -23,5 +24,6 @@ pub fn live_design(cx: &mut Cx) {
     tabs::live_design(cx);
     check::live_design(cx);
     details::live_design(cx);
+    wheel_picker::live_design(cx);
 }
 
