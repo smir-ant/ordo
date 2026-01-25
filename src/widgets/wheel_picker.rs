@@ -140,8 +140,9 @@ impl Widget for WheelPicker {
             }
         }
 
-        match event.hits(cx, self.draw_bg.area()) {
+        match event.hits_with_sweep_area(cx, self.draw_bg.area(), self.draw_bg.area()) {
             Hit::FingerDown(fe) => {
+                cx.sweep_lock(self.draw_bg.area());
                 self.is_dragging = true;
                 self.last_abs_y = fe.abs.y;
                 self.drag_start_y = fe.abs.y;
@@ -160,6 +161,7 @@ impl Widget for WheelPicker {
                 }
             }
             Hit::FingerUp(fe) => {
+                cx.sweep_unlock(self.draw_bg.area());
                 self.is_dragging = false;
                 
                 // Detect Tap
