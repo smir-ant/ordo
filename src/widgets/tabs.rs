@@ -151,6 +151,7 @@ impl Widget for Tabs {
                 }
             }
             Hit::FingerHoverOut(_) => {
+                cx.set_cursor(MouseCursor::Arrow);
                 if self.hovered_index.is_some() {
                     self.hovered_index = None;
                     self.draw_bg.redraw(cx);

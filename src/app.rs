@@ -310,7 +310,7 @@ live_design!{
                         }
                         <Text> {
                             width: Fill, height: Fit
-                            text: "Are you sure you want to proceed?"
+                            text: "Are you sure you want to proceed? bla bla bla bla"
                             draw_text: { color: #bbb, wrap: Word, text_style: { font_size: 14.0 } }
                         }
                         buttons_wrap = <View> {
@@ -348,7 +348,7 @@ live_design!{
                         }
                         <Text> {
                             width: Fill, height: Fit
-                            text: "Tooltip opened via button!"
+                            text: "Tooltip opened via button! bla bla bla bla"
                             draw_text: { color: #ccc, wrap: Word, text_style: { font_size: 12.0 } }
                         }
                         ok_button = <Btn> { width: Fill, text: "Got it", reset_hover_on_click: true }

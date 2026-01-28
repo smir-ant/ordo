@@ -88,6 +88,7 @@ impl Widget for Check {
                 self.redraw(cx);
             }
             Hit::FingerHoverOut(_) => {
+                cx.set_cursor(MouseCursor::Arrow);
                 self.is_hovered = false;
                 self.redraw(cx);
             }

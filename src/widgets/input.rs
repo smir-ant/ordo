@@ -563,6 +563,7 @@ impl Widget for Input {
                 self.animator_play(cx, ids!(hover.on));
             }
             Hit::FingerHoverOut(_) => {
+                cx.set_cursor(MouseCursor::Arrow);
                 self.animator_play(cx, ids!(hover.off));
             }
             Hit::KeyFocus(_) => {

@@ -503,6 +503,7 @@ impl Widget for Button {
                 }
             }
             Hit::FingerHoverOut(_) => {
+                cx.set_cursor(MouseCursor::Arrow);
                 self.animator_play(cx, ids!(hover.off));
             }
             Hit::FingerMove(fe) => {

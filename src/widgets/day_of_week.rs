@@ -138,6 +138,7 @@ impl Widget for DayOfWeek {
                 }
             }
             Hit::FingerHoverOut(_) => {
+                cx.set_cursor(MouseCursor::Arrow);
                 if self.hovered_index.is_some() {
                     self.hovered_index = None;
                     self.next_frame = cx.new_next_frame();
