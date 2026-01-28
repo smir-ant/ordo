@@ -4,12 +4,9 @@ use crate::widgets::button::Button;
 live_design! {
     use makepad_widgets::base::*;
     use makepad_widgets::theme_desktop_dark::*;
-    use makepad_widgets::scroll_bars::ScrollBars;
     use makepad_draw::shader::std::*;
     use makepad_widgets::view_ui::View;
-
-    use crate::widgets::button::Btn;
-    use crate::widgets::text::Text;
+    use makepad_widgets::scroll_bars::ScrollBars;
 
     // --- Style Templates ---
 
@@ -17,7 +14,7 @@ live_design! {
         width: 300.0, height: Fit
         flow: Down
         spacing: 15.0
-        padding: 15.0
+        padding: 20.0
         show_bg: true
         draw_bg: {
             color: #333
@@ -29,13 +26,18 @@ live_design! {
                 return sdf.result
             }
         }
+        // Scroll support
+        scroll_bars: <ScrollBars> {
+            show_scroll_y: true
+            scroll_bar_y: { drag_scrolling: true }
+        }
     }
 
     pub DialogStyle = <View> {
         width: 400.0, height: Fit
         flow: Down
         spacing: 20.0
-        padding: 20.0
+        padding: 24.0
         show_bg: true
         draw_bg: {
             color: #2a2a2a
@@ -47,11 +49,17 @@ live_design! {
                 return sdf.result
             }
         }
+        // Scroll support
+        scroll_bars: <ScrollBars> {
+            show_scroll_y: true
+            scroll_bar_y: { drag_scrolling: true }
+        }
     }
 
     pub SidePanelStyle = <View> {
         width: 350.0, height: Fill
         flow: Down
+        padding: 16.0
         show_bg: true
         draw_bg: { color: #232323 }
     }
@@ -78,6 +86,19 @@ live_design! {
     pub TooltipTrigger = {{TooltipTrigger}} {
         width: Fit, height: Fit
         flow: Down
+
+        draw_underline: {
+            instance hover: 0.0
+
+            fn pixel(self) -> vec4 {
+                // Dotted pattern: 2px dot + 2px gap
+                let phase = mod(self.pos.x * self.rect_size.x, 4.0);
+                if phase < 2.0 {
+                    return mix(#666, #999, self.hover);
+                }
+                return vec4(0.0, 0.0, 0.0, 0.0);
+            }
+        }
     }
 }
 
@@ -98,7 +119,9 @@ pub enum TooltipTriggerAction {
 
 #[derive(Live, LiveHook, Widget)]
 pub struct TooltipTrigger {
+    #[live] draw_underline: DrawQuad,
     #[deref] view: View,
+    #[rust] is_hovered: bool,
 }
 
 impl TooltipTrigger {
@@ -114,12 +137,32 @@ impl Widget for TooltipTrigger {
         match event {
             Event::LongPress(lp) => {
                 if self.contains_pos(cx, lp.abs) {
+                    // Reset cursor when opening tooltip
+                    self.is_hovered = false;
+                    cx.set_cursor(MouseCursor::Arrow);
+                    self.view.redraw(cx);
                     cx.widget_action(uid, &scope.path, TooltipTriggerAction::ShowTooltip);
                 }
             }
             Event::MouseUp(mu) => {
                 if mu.button.is_secondary() && self.contains_pos(cx, mu.abs) {
+                    // Reset cursor when opening tooltip
+                    self.is_hovered = false;
+                    cx.set_cursor(MouseCursor::Arrow);
+                    self.view.redraw(cx);
                     cx.widget_action(uid, &scope.path, TooltipTriggerAction::ShowTooltip);
+                }
+            }
+            Event::MouseMove(mm) => {
+                let is_over = self.contains_pos(cx, mm.abs);
+                if is_over && !self.is_hovered {
+                    self.is_hovered = true;
+                    cx.set_cursor(MouseCursor::Help);
+                    self.view.redraw(cx);
+                } else if !is_over && self.is_hovered {
+                    self.is_hovered = false;
+                    cx.set_cursor(MouseCursor::Arrow);
+                    self.view.redraw(cx);
                 }
             }
             _ => ()
@@ -129,7 +172,30 @@ impl Widget for TooltipTrigger {
     }
 
     fn draw_walk(&mut self, cx: &mut Cx2d, scope: &mut Scope, walk: Walk) -> DrawStep {
-        self.view.draw_walk(cx, scope, walk)
+        // Begin container
+        cx.begin_turtle(walk, Layout::flow_down());
+
+        // Draw view content
+        let _ = self.view.draw_walk(cx, scope, Walk::fit());
+
+        // Get the used rect (content bounds)
+        let used = cx.turtle().used();
+
+        // Draw underline at bottom of content
+        let hover_val: f64 = if self.is_hovered { 1.0 } else { 0.0 };
+        self.draw_underline.apply_over(cx, live!{ hover: (hover_val) });
+
+        let underline_rect = Rect {
+            pos: dvec2(cx.turtle().pos().x, cx.turtle().pos().y),
+            size: dvec2(used.x, 1.0),
+        };
+        self.draw_underline.draw_abs(cx, underline_rect);
+
+        // Walk past the underline
+        cx.walk_turtle(Walk::fixed(0.0, 1.0));
+
+        cx.end_turtle();
+        DrawStep::done()
     }
 }
 
@@ -148,15 +214,13 @@ impl Modal {
 
     pub fn open(&mut self, cx: &mut Cx) {
         self.is_open = true;
-        let content = self.view.widget(ids!(content));
-        if content.area() != Area::Empty {
-            cx.block_scrolling_except_within(content.area());
-        }
+        // Note: scroll blocking removed - was interfering with wheel scrolling inside modal
+        let _ = cx;
     }
 
     pub fn close(&mut self, cx: &mut Cx) {
         self.is_open = false;
-        cx.unblock_scrolling();
+        let _ = cx;
     }
 
     pub fn toggle(&mut self, cx: &mut Cx) {
@@ -248,12 +312,6 @@ impl Widget for Modal {
     }
 
     fn draw_walk(&mut self, cx: &mut Cx2d, scope: &mut Scope, walk: Walk) -> DrawStep {
-        if self.is_open {
-            let content = self.view.widget(ids!(content));
-            if content.area() != Area::Empty {
-                cx.block_scrolling_except_within(content.area());
-            }
-        }
         self.view.draw_walk(cx, scope, walk)
     }
 }

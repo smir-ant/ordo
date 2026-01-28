@@ -342,16 +342,22 @@ live_design!{
 
                 button_tooltip = <Modal> {
                     content = <TooltipStyle> {
+                        height: 300.0  // Max height for scroll test
                         <Text> {
                             text: "Button Action"
                             draw_text: { color: #fff, text_style: { font_size: 14.0 } }
                         }
                         <Text> {
                             width: Fill, height: Fit
-                            text: "Tooltip opened via button! bla bla bla bla"
+                            text: "Line 1: Tooltip opened via button!\nLine 2: This is additional content.\nLine 3: More text here.\nLine 4: And even more.\nLine 5: Testing scrolling.\nLine 6: Is it working?\nLine 7: Let's see.\nLine 8: Another line.\nLine 9: Keep going.\nLine 10: Almost there.\nLine 11: One more.\nLine 12: And another.\nLine 13: Final stretch.\nLine 14: Last few lines.\nLine 15: The end!"
                             draw_text: { color: #ccc, wrap: Word, text_style: { font_size: 12.0 } }
                         }
-                        ok_button = <Btn> { width: Fill, text: "Got it", reset_hover_on_click: true }
+                        ok_button = <Btn> {
+                            width: Fill
+                            margin: {bottom: 16.0}
+                            text: "Got it"
+                            reset_hover_on_click: true
+                        }
                     }
                 }
 
