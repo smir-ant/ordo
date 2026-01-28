@@ -19,9 +19,9 @@ live_design!{
     use crate::widgets::button::Btn;
     
     use crate::widgets::modal::Modal;
-    use crate::widgets::modal::DialogContent;
-    use crate::widgets::modal::TooltipContent;
-    use crate::widgets::modal::SidePanelContent;
+    use crate::widgets::modal::DialogStyle;
+    use crate::widgets::modal::TooltipStyle;
+    use crate::widgets::modal::SidePanelStyle;
     use crate::widgets::modal::TooltipTrigger;
     
     use crate::widgets::text::Text;
@@ -300,46 +300,82 @@ live_design!{
                     }
                 }
                 
-                // --- STATIC MODAL INSTANCES (Overlay Layer) ---
-                
+                // --- MODAL INSTANCES (Overlay Layer) ---
+
                 demo_modal = <Modal> {
-                    content = <DialogContent> {
-                        title = { text: "Confirm Action" }
-                        text = { text: "Are you sure you want to proceed?" }
-                    }
-                }
-                
-                // Specific Modal for Trigger
-                trigger_tooltip = <Modal> {
-                    visible: false
-                    content = <TooltipContent> {
-                        title = { text: "Trigger Action" }
-                        text = { text: "Tooltip opened via Right-Click or Long-Press!" }
+                    content = <DialogStyle> {
+                        <Text> {
+                            text: "Confirm Action"
+                            draw_text: { color: #fff, text_style: { font_size: 16.0 } }
+                        }
+                        <Text> {
+                            width: Fill, height: Fit
+                            text: "Are you sure you want to proceed?"
+                            draw_text: { color: #bbb, wrap: Word, text_style: { font_size: 14.0 } }
+                        }
+                        buttons_wrap = <View> {
+                            width: Fill, height: Fit
+                            flow: Right
+                            align: {x: 1.0}
+                            spacing: 15.0
+
+                            cancel_button = <Btn> { width: 100.0, text: "Cancel", draw_bg: { color: #444 } }
+                            ok_button = <Btn> { width: 100.0, text: "OK", accent: true }
+                        }
                     }
                 }
 
-                // Specific Modal for Button
-                button_tooltip = <Modal> {
-                    visible: false
-                    content = <TooltipContent> {
-                        title = { text: "Button Action" }
-                        text = { text: "Tooltip opened via button!" }
+                trigger_tooltip = <Modal> {
+                    content = <TooltipStyle> {
+                        <Text> {
+                            text: "Trigger Action"
+                            draw_text: { color: #fff, text_style: { font_size: 14.0 } }
+                        }
+                        <Text> {
+                            width: Fill, height: Fit
+                            text: "Tooltip opened via Right-Click or Long-Press!"
+                            draw_text: { color: #ccc, wrap: Word, text_style: { font_size: 12.0 } }
+                        }
+                        ok_button = <Btn> { width: Fill, text: "Got it", reset_hover_on_click: true }
                     }
                 }
-                
+
+                button_tooltip = <Modal> {
+                    content = <TooltipStyle> {
+                        <Text> {
+                            text: "Button Action"
+                            draw_text: { color: #fff, text_style: { font_size: 14.0 } }
+                        }
+                        <Text> {
+                            width: Fill, height: Fit
+                            text: "Tooltip opened via button!"
+                            draw_text: { color: #ccc, wrap: Word, text_style: { font_size: 12.0 } }
+                        }
+                        ok_button = <Btn> { width: Fill, text: "Got it", reset_hover_on_click: true }
+                    }
+                }
+
                 side_panel_view = <Modal> {
-                    align: {x: 0.0, y: 0.0} // Left aligned
-                    content = <SidePanelContent> {
-                        header = { title = { text: "Side Panel" } }
-                        body = {
+                    align: {x: 0.0, y: 0.0}
+                    content = <SidePanelStyle> {
+                        <View> {
+                            width: Fill, height: Fit
+                            padding: 20.0
+                            <Text> {
+                                text: "Side Panel"
+                                draw_text: { color: #fff, text_style: { font_size: 18.0 } }
+                            }
+                        }
+                        <View> {
+                            width: Fill, height: Fill
+                            flow: Down
+                            padding: 20.0
+                            spacing: 15.0
+
                             <Text> {
                                 text: "This is a custom side panel.\nYou can put anything here."
-                                draw_text: {
-                                    color: #bbb
-                                    text_style: { font_size: 14.0 }
-                                }
+                                draw_text: { color: #bbb, text_style: { font_size: 14.0 } }
                             }
-                            
                             <Input> {
                                 width: Fill, height: Fit
                                 empty_text: "Edit me..."
@@ -411,7 +447,6 @@ impl App {
         for id in modals {
             if let Some(modal) = self.ui.widget(id).borrow::<Modal>() {
                 if modal.is_open() {
-                    log!("Modal is open: {:?}", id);
                     return true;
                 }
             }
