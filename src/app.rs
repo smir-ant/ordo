@@ -1,11 +1,10 @@
 use makepad_widgets::*;
 use crate::widgets::input::{Input, InputAction};
 use crate::widgets::button::{Button as Btn, ButtonAction};
-use crate::widgets::modal::{Modal, ModalAction, TooltipContent, DialogContent, SidePanelContent, TooltipTrigger, TooltipTriggerAction};
+use crate::widgets::modal::{Modal, ModalAction, TooltipTriggerAction};
 use crate::widgets::text::Text;
 use crate::widgets::day_of_week::DayOfWeek;
 use crate::widgets::tabs::TabsAction;
-use crate::widgets::check::Check;
 use crate::widgets::wheel_picker::{WheelPicker, WheelPickerAction};
 use makepad_widgets::keyboard_view::KeyboardView;
 
@@ -366,138 +365,194 @@ impl LiveRegister for App {
 impl AppMain for App {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event) {
         let scope = &mut Scope::empty();
-        self.ui.handle_event(cx, event, scope);
-        
+
+        // Check if any modal is open
+        let modal_is_open = self.any_modal_open();
+
+        // Always pass draw events to entire UI for rendering
+        // Only block input events (finger, mouse, scroll) when modal is open
+        let is_input_event = matches!(event,
+            Event::MouseDown(_) | Event::MouseUp(_) | Event::MouseMove(_) |
+            Event::Scroll(_) | Event::TouchUpdate(_) | Event::LongPress(_)
+        );
+
+        if modal_is_open && is_input_event {
+            // Route input events only to modals
+            self.ui.widget(ids!(demo_modal)).handle_event(cx, event, scope);
+            self.ui.widget(ids!(trigger_tooltip)).handle_event(cx, event, scope);
+            self.ui.widget(ids!(button_tooltip)).handle_event(cx, event, scope);
+            self.ui.widget(ids!(side_panel_view)).handle_event(cx, event, scope);
+        } else {
+            // Normal event handling (draw, actions, key events, etc.)
+            self.ui.handle_event(cx, event, scope);
+        }
+
         if let Event::Actions(actions) = event {
-            // Generic Scroll Handler - collect scroll deltas from all widget types
-            let mut total_scroll_delta = DVec2::default();
-            for action in actions {
-                // Try each scroll action type
-                if let InputAction::Scroll(delta) = action.cast() {
-                    total_scroll_delta += delta;
-                } else if let ButtonAction::Scroll(delta) = action.cast() {
-                    total_scroll_delta += delta;
+            // Only handle main content actions when no modal is open
+            if !modal_is_open {
+                self.handle_main_content_actions(cx, actions);
+            }
+
+            // Always handle modal-related actions (open triggers, etc.)
+            self.handle_modal_actions(cx, actions);
+        }
+    }
+}
+
+impl App {
+    fn any_modal_open(&self) -> bool {
+        let modals = [
+            ids!(demo_modal),
+            ids!(trigger_tooltip),
+            ids!(button_tooltip),
+            ids!(side_panel_view),
+        ];
+
+        for id in modals {
+            if let Some(modal) = self.ui.widget(id).borrow::<Modal>() {
+                if modal.is_open() {
+                    log!("Modal is open: {:?}", id);
+                    return true;
                 }
-                /* else if let HintAction::Scroll(delta) = action.cast() {
-                    total_scroll_delta += delta;
-                }*/
             }
+        }
+        false
+    }
 
-            if total_scroll_delta.x != 0.0 || total_scroll_delta.y != 0.0 {
-                 if let Some(mut view) = self.ui.widget(ids!(main_content)).borrow_mut::<KeyboardView>() {
-                    let current_scroll = view.get_scroll_pos(cx);
-                    let new_scroll = DVec2{x: current_scroll.x - total_scroll_delta.x, y: current_scroll.y - total_scroll_delta.y};
-                    view.set_scroll_pos(cx, new_scroll);
-                    view.redraw(cx);
+    fn handle_main_content_actions(&mut self, cx: &mut Cx, actions: &Actions) {
+        // Generic Scroll Handler
+        let mut total_scroll_delta = DVec2::default();
+        for action in actions {
+            if let InputAction::Scroll(delta) = action.cast() {
+                total_scroll_delta += delta;
+            } else if let ButtonAction::Scroll(delta) = action.cast() {
+                total_scroll_delta += delta;
+            }
+        }
+
+        if total_scroll_delta.x != 0.0 || total_scroll_delta.y != 0.0 {
+            if let Some(mut view) = self.ui.widget(ids!(main_content)).borrow_mut::<KeyboardView>() {
+                let current_scroll = view.get_scroll_pos(cx);
+                let new_scroll = DVec2 {
+                    x: current_scroll.x - total_scroll_delta.x,
+                    y: current_scroll.y - total_scroll_delta.y,
+                };
+                view.set_scroll_pos(cx, new_scroll);
+                view.redraw(cx);
+            }
+        }
+
+        // Input Validation
+        let submit_clicked = self.ui.widget(ids!(submit_btn))
+            .borrow::<Btn>()
+            .map(|btn| btn.clicked(actions))
+            .unwrap_or(false);
+
+        let input_returned = self.ui.widget(ids!(input1))
+            .borrow::<Input>()
+            .map(|input| input.returned(actions).is_some())
+            .unwrap_or(false);
+
+        if submit_clicked || input_returned {
+            if let Some(mut input) = self.ui.widget(ids!(input1)).borrow_mut::<Input>() {
+                if input.validate(cx) {
+                    log!("Submitted: {}", input.text());
+                } else {
+                    log!("Input is invalid/empty!");
                 }
             }
+        }
 
-            // Input Validation Logic
-            let submit_clicked = self.ui.widget(ids!(submit_btn))
-                .borrow::<Btn>()
-                .map(|btn| btn.clicked(&actions))
-                .unwrap_or(false);
-
-            let input_returned = self.ui.widget(ids!(input1))
-                .borrow::<Input>()
-                .map(|input| (*input).returned(actions).is_some())
-                .unwrap_or(false);
-
-            if submit_clicked || input_returned {
-                 if let Some(mut input) = self.ui.widget(ids!(input1)).borrow_mut::<Input>() {
-                     if input.validate(cx) {
-                         let text = input.text();
-                         log!("Submitted: {}", text);
-                     } else {
-                         log!("Input is invalid/empty!");
-                     }
-                 }
+        // Handle Receive DOW
+        if let Some(btn) = self.ui.widget(ids!(receive_dow_btn)).borrow::<Btn>() {
+            if btn.clicked(actions) {
+                if let Some(dow) = self.ui.widget(ids!(day_of_week)).borrow::<DayOfWeek>() {
+                    log!("Selected Days Indices: {:?}", dow.get_selected_days());
+                }
             }
-            
-            // Handle Receive DOW
-            if let Some(btn) = self.ui.widget(ids!(receive_dow_btn)).borrow::<Btn>() {
-                if btn.clicked(&actions) {
-                    if let Some(dow) = self.ui.widget(ids!(day_of_week)).borrow::<DayOfWeek>() {
-                        let selected = dow.get_selected_days();
-                        log!("Selected Days Indices: {:?}", selected);
+        }
+
+        // Tabs and WheelPicker events
+        for action in actions {
+            if let TabsAction::Changed(idx) = action.cast() {
+                log!("Tab changed to index: {}", idx);
+            }
+            if let WheelPickerAction::Changed(val) = action.cast() {
+                log!("Hour picked: {}", val);
+            }
+        }
+
+        // Get Value button
+        if self.ui.widget(ids!(log_value_btn)).borrow::<Btn>().map(|b| b.clicked(actions)).unwrap_or(false) {
+            if let Some(picker) = self.ui.widget(ids!(hour_picker)).borrow::<WheelPicker>() {
+                log!("Current WheelPicker Value: {}", picker.get_value());
+            }
+        }
+    }
+
+    fn handle_modal_actions(&mut self, cx: &mut Cx, actions: &Actions) {
+        // Handle modal close actions (Dismissed/Accepted) - hide the modals
+        let modal_ids = [
+            ids!(demo_modal),
+            ids!(trigger_tooltip),
+            ids!(button_tooltip),
+            ids!(side_panel_view),
+        ];
+        for id in modal_ids {
+            if let Some(action) = actions.find_widget_action(self.ui.widget(id).widget_uid()) {
+                match action.cast() {
+                    ModalAction::Dismissed | ModalAction::Accepted => {
+                        self.ui.widget(id).apply_over(cx, live!{ visible: false });
+                        self.ui.redraw(cx);
                     }
+                    _ => {}
                 }
             }
-            
-            for action in actions {
-                if let TabsAction::Changed(idx) = action.cast() {
-                    log!("Tab changed to index: {}", idx);
+        }
+
+        // Open Modal Button
+        if self.ui.widget(ids!(open_modal_btn)).borrow::<Btn>().map(|b| b.clicked(actions)).unwrap_or(false) {
+            // Set dynamic title
+            let modal_ref = self.ui.widget(ids!(demo_modal));
+            if let Some(mut title) = modal_ref.widget(ids!(content)).widget(ids!(title)).borrow_mut::<Text>() {
+                title.set_text(cx, "Dynamic Dialog Title");
+            }
+            // Open modal - set is_open + block scroll
+            if let Some(mut modal) = self.ui.widget(ids!(demo_modal)).borrow_mut::<Modal>() {
+                modal.open(cx);
+            }
+            // Make visible via WidgetRef
+            self.ui.widget(ids!(demo_modal)).apply_over(cx, live!{ visible: true });
+            self.ui.redraw(cx);
+        }
+
+        // Tooltip Trigger Action (RMB / Long Press)
+        for action in actions {
+            if let TooltipTriggerAction::ShowTooltip = action.as_widget_action().cast() {
+                if let Some(mut modal) = self.ui.widget(ids!(trigger_tooltip)).borrow_mut::<Modal>() {
+                    modal.open(cx);
                 }
-                if let WheelPickerAction::Changed(val) = action.cast() {
-                    log!("Hour picked: {}", val);
-                }
+                self.ui.widget(ids!(trigger_tooltip)).apply_over(cx, live!{ visible: true });
+                self.ui.redraw(cx);
             }
-            
-            
-            // Check for Get Value button
-            if self.ui.widget(ids!(log_value_btn)).borrow::<Btn>().map(|b| b.clicked(&actions)).unwrap_or(false) {
-                if let Some(picker) = self.ui.widget(ids!(hour_picker)).borrow::<WheelPicker>() {
-                    log!("Current WheelPicker Value: {}", picker.get_value());
-                }
+        }
+
+        // Helper Button Tooltip
+        if self.ui.widget(ids!(help_btn)).borrow::<Btn>().map(|b| b.clicked(actions)).unwrap_or(false) {
+            if let Some(mut modal) = self.ui.widget(ids!(button_tooltip)).borrow_mut::<Modal>() {
+                modal.open(cx);
             }
-            
-            // Open Modal Button
-            if self.ui.widget(ids!(open_modal_btn)).borrow::<Btn>().map(|b| b.clicked(&actions)).unwrap_or(false) {
-                 // Set data (completely isolated scope)
-                 {
-                     let modal_ref = self.ui.widget(ids!(demo_modal));
-                     if let Some(mut title_widget) = modal_ref.widget(ids!(content)).widget(ids!(title)).borrow_mut::<Text>() {
-                         title_widget.set_text(cx, "Dynamic Dialog Title");
-                     }
-                 }
-                 
-                 // Open Modal
-                 let modal_ref = self.ui.widget(ids!(demo_modal));
-                 modal_ref.apply_over(cx, live!{visible: true});
-                 self.ui.redraw(cx);
+            self.ui.widget(ids!(button_tooltip)).apply_over(cx, live!{ visible: true });
+            self.ui.redraw(cx);
+        }
+
+        // Open SidePanel Button
+        if self.ui.widget(ids!(side_panel_btn)).borrow::<Btn>().map(|b| b.clicked(actions)).unwrap_or(false) {
+            if let Some(mut modal) = self.ui.widget(ids!(side_panel_view)).borrow_mut::<Modal>() {
+                modal.open(cx);
             }
-            
-            // Tooltip Trigger Action
-            let mut open_trigger_tooltip = false;
-            for action in actions {
-                if let TooltipTriggerAction::ShowTooltip = action.as_widget_action().cast() {
-                    open_trigger_tooltip = true;
-                }
-            }
-            
-            if open_trigger_tooltip {
-                 let modal_ref = self.ui.widget(ids!(trigger_tooltip));
-                 modal_ref.apply_over(cx, live!{visible: true});
-                 self.ui.redraw(cx);
-            }
-            
-            // Helper Button Tooltip
-            if self.ui.widget(ids!(help_btn)).borrow::<Btn>().map(|b| b.clicked(&actions)).unwrap_or(false) {
-                 let modal_ref = self.ui.widget(ids!(button_tooltip));
-                 modal_ref.apply_over(cx, live!{visible: true});
-                 self.ui.redraw(cx);
-            }
-            
-            // Handle Modal Results (Logging)
-            // Check specifically for demo_modal actions to log them
-            if let Some(action) = actions.find_widget_action(self.ui.widget(ids!(demo_modal)).widget_uid()) {
-                if let ModalAction::Accepted = action.cast() {
-                     // Log handled by content
-                } else if let ModalAction::Dismissed = action.cast() {
-                     // Log handled by content
-                }
-            }
-            
-            // Open SidePanel Button
-            if self.ui.widget(ids!(side_panel_btn)).borrow::<Btn>().map(|b| b.clicked(&actions)).unwrap_or(false) {
-                 if let Some(mut modal) = self.ui.widget(ids!(side_panel_view)).borrow_mut::<Modal>() {
-                    // Try borrow for side panel if simple apply doesn't animate? 
-                    // But to be safe let's use apply here too.
-                 }
-                 self.ui.widget(ids!(side_panel_view)).apply_over(cx, live!{visible: true});
-                 self.ui.redraw(cx); 
-            }
-            
+            self.ui.widget(ids!(side_panel_view)).apply_over(cx, live!{ visible: true });
+            self.ui.redraw(cx);
         }
     }
 }

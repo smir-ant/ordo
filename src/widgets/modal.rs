@@ -306,7 +306,6 @@ pub struct SidePanelContent {
 
 impl Widget for SidePanelContent {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event, scope: &mut Scope) {
-        let uid = self.widget_uid();
         self.view.handle_event(cx, event, scope);
     }
     fn draw_walk(&mut self, cx: &mut Cx2d, scope: &mut Scope, walk: Walk) -> DrawStep {
@@ -319,21 +318,34 @@ impl Widget for SidePanelContent {
 #[derive(Live, LiveHook, Widget)]
 pub struct Modal {
     #[deref] view: View,
+    #[rust] is_open: bool,
 }
 
 impl Modal {
+    pub fn is_open(&self) -> bool {
+        self.is_open
+    }
+
     pub fn open(&mut self, cx: &mut Cx) {
-        self.view.set_visible(cx, true);
-        self.view.redraw(cx);
+        log!("Modal::open called, is_open set to true");
+        self.is_open = true;
+        // Note: visible must be set via apply_over on WidgetRef from outside
+        // Block scrolling everywhere except inside modal content
+        let content = self.view.widget(ids!(content));
+        if content.area() != Area::Empty {
+            cx.block_scrolling_except_within(content.area());
+        }
     }
-    
+
     pub fn close(&mut self, cx: &mut Cx) {
-        self.view.set_visible(cx, false);
-        self.view.redraw(cx);
+        log!("Modal::close called");
+        self.is_open = false;
+        cx.unblock_scrolling();
+        // Note: visible must be set via apply_over on WidgetRef from outside
     }
-    
+
     pub fn toggle(&mut self, cx: &mut Cx) {
-        if self.view.visible() {
+        if self.is_open {
             self.close(cx);
         } else {
             self.open(cx);
@@ -343,63 +355,63 @@ impl Modal {
 
 impl Widget for Modal {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event, scope: &mut Scope) {
-        let uid = self.widget_uid();
-        if self.view.visible() {
+        if !self.is_open {
+            return;
+        }
 
-            // Forward events to content (child widgets)
-            self.view.handle_event(cx, event, scope);
-            
-            // Check for Actions from children (Close/Dismiss)
-            if let Event::Actions(actions) = event {
-                // Check direct children emission or bubbled actions
-                for action in actions {
-                     // Log every action seen by Modal
-                     // log!("Modal Action Loop: {:?}", action); 
-                     
-                     if let ModalAction::Dismissed = action.as_widget_action().cast() {
-                         self.close(cx);
-                         cx.widget_action(uid, &scope.path, ModalAction::Dismissed);
-                         break; // Handled
-                     }
-                     if let ModalAction::Accepted = action.as_widget_action().cast() {
-                         self.close(cx);
-                         cx.widget_action(uid, &scope.path, ModalAction::Accepted);
-                         break; // Handled
-                     }
+        let uid = self.widget_uid();
+
+        // Forward events to content (child widgets)
+        self.view.handle_event(cx, event, scope);
+
+        // Check for Actions from children (Close/Dismiss)
+        if let Event::Actions(actions) = event {
+            for action in actions {
+                if let ModalAction::Dismissed = action.as_widget_action().cast() {
+                    self.close(cx);
+                    cx.widget_action(uid, &scope.path, ModalAction::Dismissed);
+                    return;
                 }
-            }
-            
-            // Handle Key Events (Escape / Enter)
-            if let Event::KeyDown(ke) = event {
-                if ke.key_code == KeyCode::Escape {
-                     self.close(cx);
-                     cx.widget_action(uid, &scope.path, ModalAction::Dismissed);
-                } 
-            }
-            
-            // Handle External Interactions (Blocking & Dismiss on Click Outside)
-            match event.hits(cx, self.view.area()) {
-                Hit::FingerDown(fe) => {
-                    // Check if click is strictly *outside* the content
-                   let content = self.view.widget(ids!(content));
-                   if content.area() != Area::Empty {
-                       if !content.area().rect(cx).contains(fe.abs) {
-                            self.close(cx);
-                            cx.widget_action(uid, &scope.path, ModalAction::Dismissed);
-                       }
-                   }
+                if let ModalAction::Accepted = action.as_widget_action().cast() {
+                    self.close(cx);
+                    cx.widget_action(uid, &scope.path, ModalAction::Accepted);
+                    return;
                 }
-                
-                // Block other events
-                Hit::FingerMove(_) | Hit::FingerUp(_) | Hit::FingerScroll(_) => {
-                }
-                
-                _ => ()
             }
         }
+
+        // Handle Key Events (Escape)
+        if let Event::KeyDown(ke) = event {
+            if ke.key_code == KeyCode::Escape {
+                self.close(cx);
+                cx.widget_action(uid, &scope.path, ModalAction::Dismissed);
+                return;
+            }
+        }
+
+        // Handle click outside content (dismiss) - use FingerUp to prevent event leaking
+        match event.hits(cx, self.view.area()) {
+            Hit::FingerUp(fe) => {
+                let content = self.view.widget(ids!(content));
+                if content.area() != Area::Empty {
+                    if !content.area().rect(cx).contains(fe.abs) {
+                        self.close(cx);
+                        cx.widget_action(uid, &scope.path, ModalAction::Dismissed);
+                    }
+                }
+            }
+            _ => ()
+        }
     }
-    
+
     fn draw_walk(&mut self, cx: &mut Cx2d, scope: &mut Scope, walk: Walk) -> DrawStep {
+        // Re-apply scroll blocking after redraw (area may have changed)
+        if self.is_open {
+            let content = self.view.widget(ids!(content));
+            if content.area() != Area::Empty {
+                cx.block_scrolling_except_within(content.area());
+            }
+        }
         self.view.draw_walk(cx, scope, walk)
     }
 }
