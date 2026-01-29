@@ -98,8 +98,9 @@ impl Widget for DayOfWeek {
                 let current = self.hover_state[i];
 
                 if (current - target).abs() > 0.01 {
-                    // Lerp towards target (0.08 factor = ~0.2-0.25s feel at 60fps)
-                    self.hover_state[i] += (target - current) * 0.08;
+                    // Hover in: instant, hover out: smooth fade
+                    let factor = if target > current { 1.0 } else { 0.15 };
+                    self.hover_state[i] += (target - current) * factor;
                     any_animating = true;
                 } else {
                     self.hover_state[i] = target;
