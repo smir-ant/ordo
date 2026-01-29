@@ -6,6 +6,7 @@ use crate::widgets::text::Text;
 use crate::widgets::day_of_week::DayOfWeek;
 use crate::widgets::tabs::TabsAction;
 use crate::widgets::wheel_picker::{WheelPicker, WheelPickerAction};
+use crate::widgets::time_picker::{TimePicker, TimePickerAction};
 use makepad_widgets::keyboard_view::KeyboardView;
 
 live_design!{
@@ -32,6 +33,7 @@ live_design!{
     use crate::widgets::check::Check;
     use crate::widgets::details::Details;
     use crate::widgets::wheel_picker::WheelPicker;
+    use crate::widgets::time_picker::TimePicker;
     use crate::theme::*;
     use makepad_widgets::keyboard_view::KeyboardView;
     use makepad_widgets::drop_down::DropDown;
@@ -248,12 +250,38 @@ live_design!{
                                 width: 100.0, height: 160.0
                                 range_min: 0
                                 range_max: 23
-                                is_infinite: true
                             }
-                            
+
                             log_value_btn = <Btn> {
                                 width: Fit
                                 text: "Get Value"
+                            }
+                        }
+
+                        // TimePicker demos
+                        <View> {
+                            width: Fill, height: Fit
+                            flow: Right
+                            spacing: 10.0
+                            align: {y: 0.5}
+
+                            <Text> {
+                                width: Fit
+                                text: "TimePicker:"
+                                draw_text: {
+                                    color: #DDD
+                                    text_style: { font_size: 13.0 }
+                                }
+                            }
+
+                            open_time_picker_btn = <Btn> {
+                                width: Fit
+                                text: "HH:MM:SS"
+                            }
+
+                            open_time_picker_hm_btn = <Btn> {
+                                width: Fit
+                                text: "HH:MM"
                             }
                         }
 
@@ -389,6 +417,16 @@ live_design!{
                         }
                     }
                 }
+
+                // TimePicker with seconds
+                time_picker = <TimePicker> {
+                    with_seconds: true
+                }
+
+                // TimePicker without seconds (HH:MM only)
+                time_picker_hm = <TimePicker> {
+                    with_seconds: false
+                }
             }
         }
     }
@@ -424,6 +462,8 @@ impl AppMain for App {
             self.ui.widget(ids!(trigger_tooltip)).handle_event(cx, event, scope);
             self.ui.widget(ids!(button_tooltip)).handle_event(cx, event, scope);
             self.ui.widget(ids!(side_panel_view)).handle_event(cx, event, scope);
+            self.ui.widget(ids!(time_picker)).handle_event(cx, event, scope);
+            self.ui.widget(ids!(time_picker_hm)).handle_event(cx, event, scope);
         } else {
             // Normal event handling (draw, actions, key events, etc.)
             self.ui.handle_event(cx, event, scope);
@@ -457,6 +497,16 @@ impl App {
                 }
             }
         }
+
+        // Check TimePickers separately (they're not Modals)
+        for tp_id in [ids!(time_picker), ids!(time_picker_hm)] {
+            if let Some(tp) = self.ui.widget(tp_id).borrow::<TimePicker>() {
+                if tp.is_open() {
+                    return true;
+                }
+            }
+        }
+
         false
     }
 
@@ -594,6 +644,47 @@ impl App {
             }
             self.ui.widget(ids!(side_panel_view)).apply_over(cx, live!{ visible: true });
             self.ui.redraw(cx);
+        }
+
+        // Open TimePicker (HH:MM:SS)
+        if self.ui.widget(ids!(open_time_picker_btn)).borrow::<Btn>().map(|b| b.clicked(actions)).unwrap_or(false) {
+            if let Some(mut tp) = self.ui.widget(ids!(time_picker)).borrow_mut::<TimePicker>() {
+                tp.open(cx);
+            }
+            self.ui.widget(ids!(time_picker)).apply_over(cx, live!{ visible: true });
+            self.ui.redraw(cx);
+        }
+
+        // Open TimePicker (HH:MM only)
+        if self.ui.widget(ids!(open_time_picker_hm_btn)).borrow::<Btn>().map(|b| b.clicked(actions)).unwrap_or(false) {
+            if let Some(mut tp) = self.ui.widget(ids!(time_picker_hm)).borrow_mut::<TimePicker>() {
+                tp.open(cx);
+            }
+            self.ui.widget(ids!(time_picker_hm)).apply_over(cx, live!{ visible: true });
+            self.ui.redraw(cx);
+        }
+
+        // Handle TimePicker actions (both variants)
+        for action in actions {
+            match action.as_widget_action().cast() {
+                TimePickerAction::Accepted { hours, minutes, seconds } => {
+                    if let Some(secs) = seconds {
+                        log!("Time selected: {:02}:{:02}:{:02}", hours, minutes, secs);
+                    } else {
+                        log!("Time selected: {:02}:{:02}", hours, minutes);
+                    }
+                    self.ui.widget(ids!(time_picker)).apply_over(cx, live!{ visible: false });
+                    self.ui.widget(ids!(time_picker_hm)).apply_over(cx, live!{ visible: false });
+                    self.ui.redraw(cx);
+                }
+                TimePickerAction::Dismissed => {
+                    log!("Time picker: None (dismissed)");
+                    self.ui.widget(ids!(time_picker)).apply_over(cx, live!{ visible: false });
+                    self.ui.widget(ids!(time_picker_hm)).apply_over(cx, live!{ visible: false });
+                    self.ui.redraw(cx);
+                }
+                _ => {}
+            }
         }
     }
 }
