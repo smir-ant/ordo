@@ -364,7 +364,7 @@ live_design!{
                             text: "Tooltip opened via Right-Click or Long-Press!"
                             draw_text: { color: #ccc, wrap: Word, text_style: { font_size: 12.0 } }
                         }
-                        ok_button = <Btn> { width: Fill, text: "Got it", reset_hover_on_click: true }
+                        ok_button = <Btn> { width: Fill, text: "Got it" }
                     }
                 }
 
@@ -384,7 +384,6 @@ live_design!{
                             width: Fill
                             margin: {bottom: 16.0}
                             text: "Got it"
-                            reset_hover_on_click: true
                         }
                     }
                 }

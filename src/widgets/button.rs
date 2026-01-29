@@ -418,12 +418,6 @@ pub struct Button {
     #[live]
     pub enable_long_press: bool,
 
-    /// It indicates if the hover state will be reset when the button is clicked.
-    /// This could be useful for buttons that disappear when clicked, where the hover state
-    /// should not be preserved.
-    #[live]
-    reset_hover_on_click: bool,
-
     #[live]
     pub text: ArcStringMut,
     
@@ -506,33 +500,17 @@ impl Widget for Button {
                 cx.set_cursor(MouseCursor::Arrow);
                 self.animator_play(cx, ids!(hover.off));
             }
-            Hit::FingerMove(fe) => {
-                 // Scroll handled by TouchGesture. 
-                 // We don't need manual logic here.
-            }
+            Hit::FingerMove(_) => {}
             Hit::FingerLongPress(_lp) if self.enabled && self.enable_long_press => {
                 cx.widget_action_with_data(&self.action_data, uid, &scope.path, ButtonAction::LongPressed);
             }
             Hit::FingerUp(fe) if self.enabled && fe.is_primary_hit() => {
-                 if fe.was_tap() {
-                    let was_clicked = fe.is_over;
-                    if was_clicked {
-                        cx.widget_action_with_data(&self.action_data, uid, &scope.path, ButtonAction::Clicked(fe.modifiers));
-                        if self.reset_hover_on_click {
-                            self.animator_cut(cx, ids!(hover.off));
-                        } else if fe.has_hovers() {
-                            self.animator_play(cx, ids!(hover.on));
-                        } else {
-                            self.animator_play(cx, ids!(hover.off));
-                        }
-                    } else {
-                        cx.widget_action_with_data(&self.action_data, uid, &scope.path, ButtonAction::Released(fe.modifiers));
-                        self.animator_play(cx, ids!(hover.off));
-                    }
+                if fe.was_tap() && fe.is_over {
+                    cx.widget_action_with_data(&self.action_data, uid, &scope.path, ButtonAction::Clicked(fe.modifiers));
                 } else {
                     cx.widget_action_with_data(&self.action_data, uid, &scope.path, ButtonAction::Released(fe.modifiers));
-                    self.animator_play(cx, ids!(hover.off));
                 }
+                self.animator_cut(cx, ids!(hover.off));
             }
             _ => (),
         }
