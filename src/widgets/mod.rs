@@ -13,6 +13,7 @@ pub mod check;
 pub mod details;
 pub mod wheel_picker;
 pub mod time_picker;
+pub mod date_picker;
 
 pub fn live_design(cx: &mut Cx) {
     text::live_design(cx);
@@ -27,5 +28,6 @@ pub fn live_design(cx: &mut Cx) {
     details::live_design(cx);
     wheel_picker::live_design(cx);
     time_picker::live_design(cx);
+    date_picker::live_design(cx);
 }
 

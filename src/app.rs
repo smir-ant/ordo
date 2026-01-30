@@ -7,6 +7,7 @@ use crate::widgets::day_of_week::DayOfWeek;
 use crate::widgets::tabs::TabsAction;
 use crate::widgets::wheel_picker::{WheelPicker, WheelPickerAction};
 use crate::widgets::time_picker::{TimePicker, TimePickerAction};
+use crate::widgets::date_picker::{DatePicker, DatePickerAction};
 use makepad_widgets::keyboard_view::KeyboardView;
 
 live_design!{
@@ -34,6 +35,7 @@ live_design!{
     use crate::widgets::details::Details;
     use crate::widgets::wheel_picker::WheelPicker;
     use crate::widgets::time_picker::TimePicker;
+    use crate::widgets::date_picker::DatePicker;
     use crate::theme::*;
     use makepad_widgets::keyboard_view::KeyboardView;
     use makepad_widgets::drop_down::DropDown;
@@ -337,9 +339,31 @@ live_design!{
                                 text: "HH:MM"
                             }
                         }
+
+                        // DatePicker demo
+                        <View> {
+                            width: Fill, height: Fit
+                            flow: Right
+                            spacing: 10.0
+                            align: {y: 0.5}
+
+                            <Text> {
+                                width: Fit
+                                text: "DatePicker:"
+                                draw_text: {
+                                    color: #DDD
+                                    text_style: { font_size: 13.0 }
+                                }
+                            }
+
+                            open_date_picker_btn = <Btn> {
+                                width: Fit
+                                text: "Select Date"
+                            }
+                        }
                     }
                 }
-                
+
                 // --- MODAL INSTANCES (Overlay Layer) ---
 
                 demo_modal = <Modal> {
@@ -438,6 +462,9 @@ live_design!{
                 time_picker_hm = <TimePicker> {
                     with_seconds: false
                 }
+
+                // DatePicker
+                date_picker = <DatePicker> {}
             }
         }
     }
@@ -500,6 +527,7 @@ impl App {
             ids!(side_panel_view),
             ids!(time_picker),
             ids!(time_picker_hm),
+            ids!(date_picker),
         ]
     }
 
@@ -512,6 +540,9 @@ impl App {
             }
             if let Some(tp) = widget.borrow::<TimePicker>() {
                 if tp.is_open() { return true; }
+            }
+            if let Some(dp) = widget.borrow::<DatePicker>() {
+                if dp.is_open() { return true; }
             }
         }
         false
@@ -650,6 +681,26 @@ impl App {
                 }
                 TimePickerAction::Dismissed => {
                     log!("Time picker dismissed");
+                }
+                _ => {}
+            }
+        }
+
+        // Open DatePicker
+        if self.ui.widget(ids!(open_date_picker_btn)).borrow::<Btn>().map(|b| b.clicked(actions)).unwrap_or(false) {
+            if let Some(mut dp) = self.ui.widget(ids!(date_picker)).borrow_mut::<DatePicker>() {
+                dp.open(cx);
+            }
+        }
+
+        // Handle DatePicker actions
+        for action in actions {
+            match action.as_widget_action().cast() {
+                DatePickerAction::Accepted { year, month, day } => {
+                    log!("Date selected: {:04}-{:02}-{:02}", year, month, day);
+                }
+                DatePickerAction::Dismissed => {
+                    log!("Date picker dismissed");
                 }
                 _ => {}
             }
