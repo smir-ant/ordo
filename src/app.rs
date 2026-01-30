@@ -469,12 +469,9 @@ impl AppMain for App {
 
         if modal_is_open && is_input_event {
             // Route input events only to modals
-            self.ui.widget(ids!(demo_modal)).handle_event(cx, event, scope);
-            self.ui.widget(ids!(trigger_tooltip)).handle_event(cx, event, scope);
-            self.ui.widget(ids!(button_tooltip)).handle_event(cx, event, scope);
-            self.ui.widget(ids!(side_panel_view)).handle_event(cx, event, scope);
-            self.ui.widget(ids!(time_picker)).handle_event(cx, event, scope);
-            self.ui.widget(ids!(time_picker_hm)).handle_event(cx, event, scope);
+            for id in Self::modal_widget_ids() {
+                self.ui.widget(id).handle_event(cx, event, scope);
+            }
         } else {
             // Normal event handling (draw, actions, key events, etc.)
             self.ui.handle_event(cx, event, scope);
@@ -493,31 +490,30 @@ impl AppMain for App {
 }
 
 impl App {
-    fn any_modal_open(&self) -> bool {
-        let modals = [
+    /// All modal-like widgets (Modal and TimePicker)
+    /// Add new modals here - single place to update
+    fn modal_widget_ids() -> &'static [&'static [LiveId]] {
+        &[
             ids!(demo_modal),
             ids!(trigger_tooltip),
             ids!(button_tooltip),
             ids!(side_panel_view),
-        ];
+            ids!(time_picker),
+            ids!(time_picker_hm),
+        ]
+    }
 
-        for id in modals {
-            if let Some(modal) = self.ui.widget(id).borrow::<Modal>() {
-                if modal.is_open() {
-                    return true;
-                }
+    fn any_modal_open(&self) -> bool {
+        for id in Self::modal_widget_ids() {
+            let widget = self.ui.widget(id);
+
+            if let Some(modal) = widget.borrow::<Modal>() {
+                if modal.is_open() { return true; }
+            }
+            if let Some(tp) = widget.borrow::<TimePicker>() {
+                if tp.is_open() { return true; }
             }
         }
-
-        // Check TimePickers (wraps Modal internally)
-        for tp_id in [ids!(time_picker), ids!(time_picker_hm)] {
-            if let Some(tp) = self.ui.widget(tp_id).borrow::<TimePicker>() {
-                if tp.is_open() {
-                    return true;
-                }
-            }
-        }
-
         false
     }
 
