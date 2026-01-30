@@ -2077,12 +2077,6 @@ impl History {
             None
         }
     }
-
-    fn clear(&mut self) {
-        self.current_edit_kind = None;
-        self.undo_stack.clear();
-        self.redo_stack.clear();
-    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

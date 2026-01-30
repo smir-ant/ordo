@@ -30,11 +30,7 @@ live_design! {
             uniform color_hover: (THEME_COLOR_LABEL_INNER_HOVER)
             uniform color_down: (THEME_COLOR_LABEL_INNER_DOWN)
             uniform color_focus: (THEME_COLOR_LABEL_INNER_FOCUS)
-            color: (THEME_COLOR_LABEL_INNER)
-            uniform color_hover: (THEME_COLOR_LABEL_INNER_HOVER)
-            uniform color_down: (THEME_COLOR_LABEL_INNER_DOWN)
-            uniform color_focus: (THEME_COLOR_LABEL_INNER_FOCUS)
-            uniform color_disabled: #555  // Even duller text
+            uniform color_disabled: #555
 
             text_style: <THEME_FONT_REGULAR> {
                 font_size: (THEME_FONT_SIZE_P)
