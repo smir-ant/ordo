@@ -66,16 +66,9 @@ live_design!{
                                 smoothing: 0.15
                             }
                         }
-                        
-                        // Typography Section
-                        <Text> {
-                            text: "Regular Text (Inter)"
-                            draw_text: {
-                                color: #ffaa00
-                                text_style: { font_size: 20.0 }
-                            }
-                        }
-                        
+
+
+                        // ========== Typography ==========
                         <Text> {
                              text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
                              draw_text: {
@@ -91,44 +84,17 @@ live_design!{
                                  text_style: { font_size: 14.0 }
                              }
                         }
-                        
-                        input_group = <Group> {
-                            width: Fill, height: Fit
-                            input1 = <Input> {
-                                width: Fill, height: Fit
-                                empty_text: "* Morning Routine"
-                                is_numeric_only: true
-                                is_required: true
-                            }
 
-                            submit_btn = <Btn> {
-                                text: "Submit"
+                        <Text> {
+                            text: "Regular Text (Inter)"
+                            draw_text: {
+                                color: #ffaa00
+                                text_style: { font_size: 20.0 }
                             }
                         }
-                        
-                        <Group> {
-                            width: Fill, height: Fit
-                            flow: Down
-                            spacing: 10.0
-                            
-                            <Text> {
-                                text: "Regularity"
-                                draw_text: {
-                                    color: #DDD
-                                    text_style: { font_size: 13.0 }
-                                }
-                            }
-                            
-                            day_of_week = <DayOfWeek> {
-                                width: Fill, height: Fit
-                            }
-                            
-                            receive_dow_btn = <Btn> {
-                                width: Fit
-                                text: "Receive DOW"
-                            }
-                        }
-                        
+
+
+                        // ========== BUTTONS ==========
                         <View> {
                             width: Fill, height: Fit
                             flow: Right
@@ -147,8 +113,64 @@ live_design!{
                                 accent: true
                             }
                         }
+
+
+                        // ========== Inputs ==========
+                        <Group> {
+                            width: Fill, height: Fit
+                            <Input> {
+                                width: Fill, height: Fit
+                                is_numeric_only: true
+                                empty_text: "Numeric Only"
+                            }
+    
+                            <Input> {
+                                width: Fill, height: Fit
+                                empty_text: "Standard Text Input"
+                            }
+                        }
                         
-                        // Tabs Demo Section
+                        input_group = <Group> {
+                            width: Fill, height: Fit
+                            input1 = <Input> {
+                                width: Fill, height: Fit
+                                empty_text: "* Validate only num && !empty"
+                                is_numeric_only: true
+                                is_required: true
+                            }
+
+                            submit_btn = <Btn> {
+                                text: "Submit"
+                            }
+                        }
+
+                    
+                        // ========== Day Of Week ==========
+                        <Group> {
+                            width: Fill, height: Fit
+                            flow: Down
+                            spacing: 10.0
+
+                            <Text> {
+                                text: "Day Of Week"
+                                draw_text: {
+                                    color: #DDD
+                                    text_style: { font_size: 13.0 }
+                                }
+                            }
+                            
+                            day_of_week = <DayOfWeek> {
+                                width: Fill, height: Fit
+                            }
+                            
+                            receive_dow_btn = <Btn> {
+                                width: Fit
+                                text: "Receive DOW"
+                            }
+                        }
+                        
+                        
+                        // ========== TABS ==========
                         <Group> {
                             width: Fill, height: Fit
                             flow: Down
@@ -162,23 +184,21 @@ live_design!{
                                 }
                             }
                             
-                            // Single tab example
                             tabs_single = <Tabs> {
                                 labels: ["Only Option"]
                             }
                             
-                            // Two tabs example (like check.html)
                             tabs_two = <Tabs> {
                                 labels: ["Require All", "Require Any"]
                             }
                             
-                            // Six tabs example
                             tabs_six = <Tabs> {
                                 labels: ["Day", "Week", "Month", "Year", "All Time", "Custom"]
                             }
                         }
                         
-                        // Check Widget Demo
+
+                        // ========== CHECKBOX ==========
                         <Group> {
                             width: Fill, height: Fit
                             flow: Down
@@ -194,21 +214,12 @@ live_design!{
                             
                             check_demo = <Check> { label: "Enable feature" }
                             check_demo_2 = <Check> { checked: true, label: "Pre-checked option" }
-                            
                         }
 
-                        <Text> {
-                            margin: {top: 16.0}
-                            text: "Details Widget Demo"
-                            draw_text: {
-                                color: #DDD
-                                text_style: { font_size: 13.0 }
-                            }
-                        }
-                        
+                        // ========== Details ==========
                         <Group> {
                             details_demo = <Details> {
-                                summary: "Advanced Settings"
+                                summary: "Details section"
                                 
                                 content = {
                                     <Check> { label: "Allow skipping" }
@@ -222,7 +233,7 @@ live_design!{
                         }
                         
                         details_open = <Details> {
-                            summary: "Pre-opened Section"
+                            summary: "Pre-opened Section without frame"
                             open: true
                             
                             content = {
@@ -239,7 +250,7 @@ live_design!{
                             spacing: 10.0
                             
                             <Text> {
-                                text: "Time Picker"
+                                text: "Wheel Picker"
                                 draw_text: {
                                     color: #DDD
                                     text_style: { font_size: 13.0 }
@@ -255,6 +266,48 @@ live_design!{
                             log_value_btn = <Btn> {
                                 width: Fit
                                 text: "Get Value"
+                            }
+                        }
+
+                        <View> {
+                            width: Fill, height: Fit
+                            flow: Right
+                            spacing: 10.0
+                            align: {y: 0.5}
+
+                            <Text> {
+                                width: Fit
+                                text: "Modal:"
+                                draw_text: {
+                                    color: #DDD
+                                    text_style: { font_size: 13.0 }
+                                }
+                            }
+
+                            open_modal_btn = <Btn> {
+                                text: "Open Modal"
+                            }
+                            
+                            side_panel_btn = <Btn> {
+                                text: "Side Panel"
+                            }
+
+                            
+                            scroll_wrapper = <TooltipTrigger> {
+                                width: Fit, height: Fit
+                                
+                                <Text> {
+                                    text: "RMB or long press for tooltip!"
+                                    draw_text: {
+                                        color: #ffffff
+                                        text_style: { font_size: 12.0 }
+                                    }
+                                }
+                            }
+                
+                            help_btn = <Btn> {
+                                width: Fit, height: Fit
+                                text: "?"
                             }
                         }
 
@@ -283,47 +336,6 @@ live_design!{
                                 width: Fit
                                 text: "HH:MM"
                             }
-                        }
-
-                        open_modal_btn = <Btn> {
-                            margin: {top: 20.0}
-                            text: "Open Modal"
-                        }
-                        
-                        side_panel_btn = <Btn> {
-                            margin: {top: 10.0}
-                            text: "Side Panel"
-                        }
-
-                        <Group> {
-                            width: Fill, height: Fit
-                            <Input> {
-                                width: Fill, height: Fit
-                                is_numeric_only: true
-                                empty_text: "Numeric Only"
-                            }
-    
-                            <Input> {
-                                width: Fill, height: Fit, margin: {top: 10.0}
-                                empty_text: "Standard Text Input"
-                            }
-                        }
-                        
-                        scroll_wrapper = <TooltipTrigger> {
-                             width: Fit, height: Fit
-                            
-                              <Text> {
-                                text: "RMB or long press for tooltip!"
-                                draw_text: {
-                                    color: #ffffff
-                                    text_style: { font_size: 16.0 }
-                                }
-                            }
-                        }
-             
-                        help_btn = <Btn> {
-                            width: Fit, height: Fit
-                            text: "?"
                         }
                     }
                 }
