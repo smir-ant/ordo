@@ -214,21 +214,14 @@ impl Modal {
 
     pub fn open(&mut self, cx: &mut Cx) {
         self.is_open = true;
-        // Note: scroll blocking removed - was interfering with wheel scrolling inside modal
-        let _ = cx;
+        self.visible = true;
+        self.view.redraw(cx);
     }
 
     pub fn close(&mut self, cx: &mut Cx) {
         self.is_open = false;
-        let _ = cx;
-    }
-
-    pub fn toggle(&mut self, cx: &mut Cx) {
-        if self.is_open {
-            self.close(cx);
-        } else {
-            self.open(cx);
-        }
+        self.visible = false;
+        self.view.redraw(cx);
     }
 
     /// Recursively search for a button by id in content
