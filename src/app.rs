@@ -509,7 +509,7 @@ impl App {
             }
         }
 
-        // Check TimePickers separately (they're not Modals)
+        // Check TimePickers (wraps Modal internally)
         for tp_id in [ids!(time_picker), ids!(time_picker_hm)] {
             if let Some(tp) = self.ui.widget(tp_id).borrow::<TimePicker>() {
                 if tp.is_open() {
@@ -633,8 +633,6 @@ impl App {
             if let Some(mut tp) = self.ui.widget(ids!(time_picker)).borrow_mut::<TimePicker>() {
                 tp.open(cx);
             }
-            self.ui.widget(ids!(time_picker)).apply_over(cx, live!{ visible: true });
-            self.ui.redraw(cx);
         }
 
         // Open TimePicker (HH:MM only)
@@ -642,11 +640,9 @@ impl App {
             if let Some(mut tp) = self.ui.widget(ids!(time_picker_hm)).borrow_mut::<TimePicker>() {
                 tp.open(cx);
             }
-            self.ui.widget(ids!(time_picker_hm)).apply_over(cx, live!{ visible: true });
-            self.ui.redraw(cx);
         }
 
-        // Handle TimePicker actions (both variants)
+        // Handle TimePicker actions
         for action in actions {
             match action.as_widget_action().cast() {
                 TimePickerAction::Accepted { hours, minutes, seconds } => {
@@ -655,15 +651,9 @@ impl App {
                     } else {
                         log!("Time selected: {:02}:{:02}", hours, minutes);
                     }
-                    self.ui.widget(ids!(time_picker)).apply_over(cx, live!{ visible: false });
-                    self.ui.widget(ids!(time_picker_hm)).apply_over(cx, live!{ visible: false });
-                    self.ui.redraw(cx);
                 }
                 TimePickerAction::Dismissed => {
-                    log!("Time picker: None (dismissed)");
-                    self.ui.widget(ids!(time_picker)).apply_over(cx, live!{ visible: false });
-                    self.ui.widget(ids!(time_picker_hm)).apply_over(cx, live!{ visible: false });
-                    self.ui.redraw(cx);
+                    log!("Time picker dismissed");
                 }
                 _ => {}
             }
