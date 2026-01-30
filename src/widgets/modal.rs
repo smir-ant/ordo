@@ -215,13 +215,14 @@ impl Modal {
     pub fn open(&mut self, cx: &mut Cx) {
         self.is_open = true;
         self.visible = true;
-        self.view.redraw(cx);
+        // redraw_all needed because modal is in Overlay layer - parent must repaint
+        cx.redraw_all();
     }
 
     pub fn close(&mut self, cx: &mut Cx) {
         self.is_open = false;
         self.visible = false;
-        self.view.redraw(cx);
+        cx.redraw_all();
     }
 
     /// Recursively search for a button by id in content

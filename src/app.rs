@@ -1,7 +1,7 @@
 use makepad_widgets::*;
 use crate::widgets::input::{Input, InputAction};
 use crate::widgets::button::{Button as Btn, ButtonAction};
-use crate::widgets::modal::{Modal, ModalAction, TooltipTriggerAction};
+use crate::widgets::modal::{Modal, TooltipTriggerAction};
 use crate::widgets::text::Text;
 use crate::widgets::day_of_week::DayOfWeek;
 use crate::widgets::tabs::TabsAction;
@@ -593,25 +593,6 @@ impl App {
     }
 
     fn handle_modal_actions(&mut self, cx: &mut Cx, actions: &Actions) {
-        // Handle modal close actions (Dismissed/Accepted) - hide the modals
-        let modal_ids = [
-            ids!(demo_modal),
-            ids!(trigger_tooltip),
-            ids!(button_tooltip),
-            ids!(side_panel_view),
-        ];
-        for id in modal_ids {
-            if let Some(action) = actions.find_widget_action(self.ui.widget(id).widget_uid()) {
-                match action.cast() {
-                    ModalAction::Dismissed | ModalAction::Accepted => {
-                        self.ui.widget(id).apply_over(cx, live!{ visible: false });
-                        self.ui.redraw(cx);
-                    }
-                    _ => {}
-                }
-            }
-        }
-
         // Open Modal Button
         if self.ui.widget(ids!(open_modal_btn)).borrow::<Btn>().map(|b| b.clicked(actions)).unwrap_or(false) {
             // Set dynamic title
@@ -619,13 +600,9 @@ impl App {
             if let Some(mut title) = modal_ref.widget(ids!(content)).widget(ids!(title)).borrow_mut::<Text>() {
                 title.set_text(cx, "Dynamic Dialog Title");
             }
-            // Open modal - set is_open + block scroll
-            if let Some(mut modal) = self.ui.widget(ids!(demo_modal)).borrow_mut::<Modal>() {
+                if let Some(mut modal) = self.ui.widget(ids!(demo_modal)).borrow_mut::<Modal>() {
                 modal.open(cx);
             }
-            // Make visible via WidgetRef
-            self.ui.widget(ids!(demo_modal)).apply_over(cx, live!{ visible: true });
-            self.ui.redraw(cx);
         }
 
         // Tooltip Trigger Action (RMB / Long Press)
@@ -634,8 +611,6 @@ impl App {
                 if let Some(mut modal) = self.ui.widget(ids!(trigger_tooltip)).borrow_mut::<Modal>() {
                     modal.open(cx);
                 }
-                self.ui.widget(ids!(trigger_tooltip)).apply_over(cx, live!{ visible: true });
-                self.ui.redraw(cx);
             }
         }
 
@@ -644,8 +619,6 @@ impl App {
             if let Some(mut modal) = self.ui.widget(ids!(button_tooltip)).borrow_mut::<Modal>() {
                 modal.open(cx);
             }
-            self.ui.widget(ids!(button_tooltip)).apply_over(cx, live!{ visible: true });
-            self.ui.redraw(cx);
         }
 
         // Open SidePanel Button
@@ -653,8 +626,6 @@ impl App {
             if let Some(mut modal) = self.ui.widget(ids!(side_panel_view)).borrow_mut::<Modal>() {
                 modal.open(cx);
             }
-            self.ui.widget(ids!(side_panel_view)).apply_over(cx, live!{ visible: true });
-            self.ui.redraw(cx);
         }
 
         // Open TimePicker (HH:MM:SS)
