@@ -5,7 +5,7 @@ use crate::widgets::modal::{Modal, TooltipTriggerAction};
 use crate::widgets::text::Text;
 use crate::widgets::day_of_week::DayOfWeek;
 use crate::widgets::tabs::TabsAction;
-use crate::widgets::wheel_picker::{WheelPicker, WheelPickerAction};
+use crate::widgets::wheel_v::{WheelV, WheelVAction};
 use crate::widgets::time_picker::{TimePicker, TimePickerAction};
 use crate::widgets::date_picker::{DatePicker, DatePickerAction};
 use makepad_widgets::keyboard_view::KeyboardView;
@@ -33,7 +33,7 @@ live_design!{
     use crate::widgets::tabs::Tabs;
     use crate::widgets::check::Check;
     use crate::widgets::details::Details;
-    use crate::widgets::wheel_picker::WheelPicker;
+    use crate::widgets::wheel_v::WheelV;
     use crate::widgets::time_picker::TimePicker;
     use crate::widgets::date_picker::DatePicker;
     use crate::theme::*;
@@ -252,14 +252,14 @@ live_design!{
                             spacing: 10.0
                             
                             <Text> {
-                                text: "Wheel Picker"
+                                text: "Wheels"
                                 draw_text: {
                                     color: #DDD
                                     text_style: { font_size: 13.0 }
                                 }
                             }
                             
-                            hour_picker = <WheelPicker> {
+                            hour_picker = <WheelV> {
                                 width: 100.0, height: 160.0
                                 range_min: 0
                                 range_max: 23
@@ -606,14 +606,14 @@ impl App {
             if let TabsAction::Changed(idx) = action.cast() {
                 log!("Tab changed to index: {}", idx);
             }
-            if let WheelPickerAction::Changed(val) = action.cast() {
+            if let WheelVAction::Changed(val) = action.cast() {
                 log!("Hour picked: {}", val);
             }
         }
 
         // Get Value button
         if self.ui.widget(ids!(log_value_btn)).borrow::<Btn>().map(|b| b.clicked(actions)).unwrap_or(false) {
-            if let Some(picker) = self.ui.widget(ids!(hour_picker)).borrow::<WheelPicker>() {
+            if let Some(picker) = self.ui.widget(ids!(hour_picker)).borrow::<WheelV>() {
                 log!("Current WheelPicker Value: {}", picker.get_value());
             }
         }

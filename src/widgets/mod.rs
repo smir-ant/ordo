@@ -11,7 +11,7 @@ pub mod group;
 pub mod tabs;
 pub mod check;
 pub mod details;
-pub mod wheel_picker;
+pub mod wheel_v;
 pub mod time_picker;
 pub mod date_picker;
 
@@ -26,7 +26,7 @@ pub fn live_design(cx: &mut Cx) {
     tabs::live_design(cx);
     check::live_design(cx);
     details::live_design(cx);
-    wheel_picker::live_design(cx);
+    wheel_v::live_design(cx);
     time_picker::live_design(cx);
     date_picker::live_design(cx);
 }

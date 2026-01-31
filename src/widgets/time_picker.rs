@@ -1,6 +1,6 @@
 use makepad_widgets::*;
 use crate::widgets::modal::{Modal, ModalAction};
-use crate::widgets::wheel_picker::WheelPicker;
+use crate::widgets::wheel_v::WheelV;
 
 live_design! {
     use makepad_widgets::base::*;
@@ -11,7 +11,7 @@ live_design! {
     use crate::widgets::button::Btn;
     use crate::widgets::modal::Modal;
     use crate::widgets::modal::DialogStyle;
-    use crate::widgets::wheel_picker::WheelPicker;
+    use crate::widgets::wheel_v::WheelV;
 
     pub TimePicker = {{TimePicker}} {
         width: Fill, height: Fill
@@ -36,7 +36,7 @@ live_design! {
                     flow: Right
                     align: {y: 0.5}
 
-                    hour_picker = <WheelPicker> {
+                    hour_picker = <WheelV> {
                         width: 80.0, height: 160.0
                         range_min: 0
                         range_max: 23
@@ -52,7 +52,7 @@ live_design! {
                         text: ":"
                     }
 
-                    minute_picker = <WheelPicker> {
+                    minute_picker = <WheelV> {
                         width: 80.0, height: 160.0
                         range_min: 0
                         range_max: 59
@@ -73,7 +73,7 @@ live_design! {
                             text: ":"
                         }
 
-                        second_picker = <WheelPicker> {
+                        second_picker = <WheelV> {
                             width: 80.0, height: 160.0
                             range_min: 0
                             range_max: 59
@@ -148,18 +148,18 @@ impl TimePicker {
         let pickers_row = content.widget(ids!(pickers_row));
 
         let hours = pickers_row.widget(ids!(hour_picker))
-            .borrow::<WheelPicker>()
+            .borrow::<WheelV>()
             .map(|p| p.get_value())
             .unwrap_or(0);
 
         let minutes = pickers_row.widget(ids!(minute_picker))
-            .borrow::<WheelPicker>()
+            .borrow::<WheelV>()
             .map(|p| p.get_value())
             .unwrap_or(0);
 
         let seconds = if self.with_seconds {
             Some(pickers_row.widget(ids!(seconds_wrap)).widget(ids!(second_picker))
-                .borrow::<WheelPicker>()
+                .borrow::<WheelV>()
                 .map(|p| p.get_value())
                 .unwrap_or(0))
         } else {
@@ -173,14 +173,14 @@ impl TimePicker {
         let content = self.modal_ref().widget(ids!(content));
         let pickers_row = content.widget(ids!(pickers_row));
 
-        if let Some(mut picker) = pickers_row.widget(ids!(hour_picker)).borrow_mut::<WheelPicker>() {
+        if let Some(mut picker) = pickers_row.widget(ids!(hour_picker)).borrow_mut::<WheelV>() {
             picker.set_value(cx, hours);
         }
-        if let Some(mut picker) = pickers_row.widget(ids!(minute_picker)).borrow_mut::<WheelPicker>() {
+        if let Some(mut picker) = pickers_row.widget(ids!(minute_picker)).borrow_mut::<WheelV>() {
             picker.set_value(cx, minutes);
         }
         if let Some(secs) = seconds {
-            if let Some(mut picker) = pickers_row.widget(ids!(seconds_wrap)).widget(ids!(second_picker)).borrow_mut::<WheelPicker>() {
+            if let Some(mut picker) = pickers_row.widget(ids!(seconds_wrap)).widget(ids!(second_picker)).borrow_mut::<WheelV>() {
                 picker.set_value(cx, secs);
             }
         }

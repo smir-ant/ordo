@@ -1,7 +1,7 @@
 use makepad_widgets::*;
 
 #[derive(Clone, Debug, DefaultNone)]
-pub enum WheelPickerAction {
+pub enum WheelVAction {
     None,
     Changed(i32),
 }
@@ -11,7 +11,7 @@ live_design! {
     use link::shaders::*;
     use crate::styling::*;
 
-    pub WheelPicker = {{WheelPicker}} {
+    pub WheelV = {{WheelV}} {
         width: 100.0, height: 160.0
 
         draw_text: {
@@ -63,7 +63,7 @@ live_design! {
 }
 
 #[derive(Live, LiveHook, Widget)]
-pub struct WheelPicker {
+pub struct WheelV {
     #[redraw] #[live] draw_text: DrawText,
     #[live] draw_bg: DrawQuad,
     #[live] draw_selection: DrawQuad,
@@ -88,7 +88,7 @@ pub struct WheelPicker {
     #[rust] scroll_cooldown: Option<i32>,
 }
 
-impl Widget for WheelPicker {
+impl Widget for WheelV {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event, scope: &mut Scope) {
         // Animation
         if let Some(_) = self.next_frame.is_event(event) {
@@ -290,7 +290,7 @@ impl Widget for WheelPicker {
     }
 }
 
-impl WheelPicker {
+impl WheelV {
     fn finish_drag(&mut self, cx: &mut Cx) {
         cx.sweep_unlock(self.draw_bg.area());
         self.is_dragging = false;
@@ -343,7 +343,7 @@ impl WheelPicker {
         } else {
             raw_idx.clamp(0, range_len - 1) + self.range_min
         };
-        cx.widget_action(self.widget_uid(), path, WheelPickerAction::Changed(self.current_value));
+        cx.widget_action(self.widget_uid(), path, WheelVAction::Changed(self.current_value));
     }
 
     pub fn get_value(&self) -> i32 {
