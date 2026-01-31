@@ -186,28 +186,55 @@ impl Widget for WheelV {
             return;
         }
 
-        // sweep_lock blocks parent scrolling
-        match event {
-            Event::MouseDown(e) => {
-                if self.draw_bg.area().rect(cx).contains(e.abs) {
-                    cx.sweep_lock(self.draw_bg.area());
+        // Handle touch events directly for reliable mobile response
+        if let Event::TouchUpdate(tu) = event {
+            for touch in &tu.touches {
+                let dominated = self.draw_bg.area().rect(cx).contains(touch.abs);
+                match touch.state {
+                    makepad_widgets::event::TouchState::Start => {
+                        if dominated {
+                            cx.sweep_lock(self.draw_bg.area());
+                            touch.handled.set(self.draw_bg.area());
+                            self.is_dragging = true;
+                            self.is_outside_bounds = false;
+                            self.last_abs_y = touch.abs.y;
+                            self.drag_start_y = touch.abs.y;
+                            self.scroll_target = None;
+                            self.scroll_cooldown = None;
+                        }
+                    }
+                    makepad_widgets::event::TouchState::Move => {
+                        if self.is_dragging {
+                            touch.handled.set(self.draw_bg.area());
+                            let delta = touch.abs.y - self.last_abs_y;
+                            self.scroll_pos -= delta;
+                            if !self.is_infinite { self.clamp_scroll(); }
+                            self.last_abs_y = touch.abs.y;
+                            self.draw_bg.redraw(cx);
+                            self.draw_selection.redraw(cx);
+                            self.update_value(cx, &scope.path);
+                        }
+                    }
+                    makepad_widgets::event::TouchState::Stop => {
+                        if self.is_dragging {
+                            touch.handled.set(self.draw_bg.area());
+                            self.finish_drag(cx);
+                        }
+                    }
+                    _ => ()
                 }
             }
-            Event::TouchUpdate(tu) => {
-                for touch in &tu.touches {
-                    if matches!(touch.state, makepad_widgets::event::TouchState::Start)
-                        && self.draw_bg.area().rect(cx).contains(touch.abs) {
-                        cx.sweep_lock(self.draw_bg.area());
-                    }
-                    if self.is_dragging {
-                        touch.handled.set(self.draw_bg.area());
-                    }
-                }
-            }
-            _ => ()
+            return;
         }
 
-        // Track finger inside widget
+        // sweep_lock for mouse
+        if let Event::MouseDown(e) = event {
+            if self.draw_bg.area().rect(cx).contains(e.abs) {
+                cx.sweep_lock(self.draw_bg.area());
+            }
+        }
+
+        // Track mouse inside widget
         match event.hits_with_sweep_area(cx, self.draw_bg.area(), self.draw_bg.area()) {
             Hit::FingerDown(fe) => {
                 self.is_dragging = true;
@@ -231,7 +258,6 @@ impl Widget for WheelV {
             Hit::FingerUp(fe) => {
                 if self.is_dragging {
                     if fe.is_sweep {
-                        // Finger left bounds but still pressed - switch to raw tracking
                         self.is_outside_bounds = true;
                         self.last_abs_y = fe.abs.y;
                     } else {
