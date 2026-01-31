@@ -1,6 +1,7 @@
 pub mod app;
 pub mod widgets;
 pub mod styling;
+pub mod utils;
 
 use makepad_widgets::*;
 

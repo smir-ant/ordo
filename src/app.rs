@@ -752,7 +752,7 @@ impl App {
         for action in actions {
             match action.as_widget_action().cast() {
                 DatePickerAction::Accepted { year, month, day } => {
-                    log!("Date selected: {:04}-{:02}-{:02}", year, month, day);
+                    log!("Date selected: {:02}.{:02}.{:04}", day, month, year);
                 }
                 DatePickerAction::Dismissed => {
                     log!("Date picker dismissed");
