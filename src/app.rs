@@ -6,6 +6,7 @@ use crate::widgets::text::Text;
 use crate::widgets::day_of_week::DayOfWeek;
 use crate::widgets::tabs::TabsAction;
 use crate::widgets::wheel_v::{WheelV, WheelVAction};
+use crate::widgets::wheel_h::{WheelH, WheelHAction};
 use crate::widgets::time_picker::{TimePicker, TimePickerAction};
 use crate::widgets::date_picker::{DatePicker, DatePickerAction};
 use makepad_widgets::keyboard_view::KeyboardView;
@@ -34,6 +35,7 @@ live_design!{
     use crate::widgets::check::Check;
     use crate::widgets::details::Details;
     use crate::widgets::wheel_v::WheelV;
+    use crate::widgets::wheel_h::WheelH;
     use crate::widgets::time_picker::TimePicker;
     use crate::widgets::date_picker::DatePicker;
     use crate::theme::*;
@@ -250,24 +252,60 @@ live_design!{
                             width: Fill, height: Fit
                             flow: Down
                             spacing: 10.0
-                            
+
                             <Text> {
-                                text: "Wheels"
+                                text: "WheelV (vertical)"
                                 draw_text: {
                                     color: #DDD
                                     text_style: { font_size: 13.0 }
                                 }
                             }
-                            
+
                             hour_picker = <WheelV> {
                                 width: 100.0, height: 160.0
                                 range_min: 0
                                 range_max: 23
+                                initial_value: 12
                             }
 
                             log_value_btn = <Btn> {
                                 width: Fit
                                 text: "Get Value"
+                            }
+                        }
+
+                        <Group> {
+                            width: Fill, height: Fit
+                            flow: Down
+                            spacing: 10.0
+
+                            <Text> {
+                                text: "WheelH (horizontal) - Year"
+                                draw_text: {
+                                    color: #DDD
+                                    text_style: { font_size: 13.0 }
+                                }
+                            }
+
+                            year_picker = <WheelH> {
+                                width: Fill, height: 40.0
+                                range_min: 2001
+                                range_max: 2051
+                                initial_value: 2026
+                                is_infinite: false
+                            }
+
+                            <Text> {
+                                text: "WheelH - Month (with labels)"
+                                draw_text: {
+                                    color: #DDD
+                                    text_style: { font_size: 13.0 }
+                                }
+                            }
+
+                            month_picker = <WheelH> {
+                                width: Fill, height: 40.0
+                                is_infinite: true
                             }
                         }
 
@@ -473,6 +511,7 @@ live_design!{
 #[derive(Live, LiveHook)]
 pub struct App {
     #[live] ui: WidgetRef,
+    #[rust] initialized: bool,
 }
 
 impl LiveRegister for App {
@@ -482,6 +521,21 @@ impl LiveRegister for App {
 
 impl AppMain for App {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event) {
+        // Initialize month labels on first event
+        if !self.initialized {
+            self.initialized = true;
+            let months = vec![
+                "January".to_string(), "February".to_string(), "March".to_string(),
+                "April".to_string(), "May".to_string(), "June".to_string(),
+                "July".to_string(), "August".to_string(), "September".to_string(),
+                "October".to_string(), "November".to_string(), "December".to_string(),
+            ];
+            if let Some(mut picker) = self.ui.widget(ids!(month_picker)).borrow_mut::<WheelH>() {
+                picker.set_labels(months);
+                picker.set_value(cx, 0); // January
+            }
+        }
+
         let scope = &mut Scope::empty();
 
         // Check if any modal is open
