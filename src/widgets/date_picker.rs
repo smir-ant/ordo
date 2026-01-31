@@ -298,17 +298,18 @@ impl Widget for DayCell {
     }
 
     fn draw_walk(&mut self, cx: &mut Cx2d, _scope: &mut Scope, walk: Walk) -> DrawStep {
+        // Always reset shader instance values to current state
+        self.draw_bg.apply_over(cx, live!{
+            selected: (if self.is_selected && self.is_visible { 1.0 } else { 0.0 })
+            hover: (if self.is_hovered && self.is_visible { 1.0 } else { 0.0 })
+        });
+
         if !self.is_visible {
             // Draw invisible placeholder to maintain grid
             self.draw_bg.begin(cx, walk, self.layout);
             self.draw_bg.end(cx);
             return DrawStep::done();
         }
-
-        self.draw_bg.apply_over(cx, live!{
-            selected: (if self.is_selected { 1.0 } else { 0.0 })
-            hover: (if self.is_hovered { 1.0 } else { 0.0 })
-        });
 
         self.draw_text.apply_over(cx, live!{
             selected: (if self.is_selected { 1.0 } else { 0.0 })
@@ -421,7 +422,6 @@ impl DatePicker {
 
         // Get calendar grid data for DISPLAYED month/year
         let grid = calendar::calendar_grid(self.displayed_year, self.displayed_month, self.week_start);
-        let num_rows = calendar::calendar_rows(self.displayed_year, self.displayed_month, self.week_start);
 
         // Check if displayed month matches selected month (for showing selection)
         let is_selected_month = self.displayed_year == self.selected_year
@@ -437,7 +437,7 @@ impl DatePicker {
             day_map[row as usize][col as usize] = day;
         }
 
-        // Update each cell
+        // Update each cell (always show all 6 rows for consistent height)
         for row in 0..6u32 {
             let row_id = match row {
                 0 => ids!(row0), 1 => ids!(row1), 2 => ids!(row2),
@@ -445,13 +445,6 @@ impl DatePicker {
             };
 
             let row_widget = calendar_wrap.widget(row_id);
-
-            // Show/hide row based on whether it's needed
-            if row < num_rows {
-                row_widget.apply_over(cx, live!{ height: Fit });
-            } else {
-                row_widget.apply_over(cx, live!{ height: 0 });
-            }
 
             for col in 0..7u32 {
                 let cell_id = match (row, col) {
