@@ -1,5 +1,6 @@
 use makepad_widgets::*;
 use crate::widgets::modal::{Modal, ModalAction};
+use crate::widgets::button::{Button as Btn, ButtonAction};
 use crate::widgets::wheel_h::{WheelH, WheelHAction};
 use crate::utils::calendar::{self, WeekStart, SimpleDate, MONTH_NAMES_SHORT};
 
@@ -180,8 +181,12 @@ live_design! {
                     width: Fill, height: Fit
                     flow: Right
                     spacing: 10.0
-                    align: {x: 1.0}
                     margin: {top: 5.0}
+
+                    today_button = <Btn> { text: "Today" }
+
+                    // Spacer pushes cancel/ok to the right
+                    <View> { width: Fill, height: 1.0 }
 
                     cancel_button = <Btn> { text: "Cancel" }
                     ok_button = <Btn> { text: "OK", accent: true }
@@ -216,6 +221,7 @@ pub struct DatePicker {
     #[rust] initialized: bool,
     #[rust] year_picker_uid: Option<WidgetUid>,
     #[rust] month_picker_uid: Option<WidgetUid>,
+    #[rust] today_button_uid: Option<WidgetUid>,
 }
 
 // Make WeekStart work with live_design
@@ -348,13 +354,16 @@ impl DatePicker {
         self.displayed_year = self.selected_year;
         self.displayed_month = self.selected_month;
 
-        // Cache picker UIDs to avoid borrow conflicts in handle_event
+        // Cache widget UIDs to avoid borrow conflicts in handle_event
         let content = self.modal_ref().widget(ids!(content));
         if let Some(picker) = content.widget(ids!(year_picker)).borrow::<WheelH>() {
             self.year_picker_uid = Some(picker.widget_uid());
         }
         if let Some(picker) = content.widget(ids!(month_picker)).borrow::<WheelH>() {
             self.month_picker_uid = Some(picker.widget_uid());
+        }
+        if let Some(btn) = content.widget(ids!(buttons_wrap)).widget(ids!(today_button)).borrow::<Btn>() {
+            self.today_button_uid = Some(btn.widget_uid());
         }
 
         // Setup pickers
@@ -521,7 +530,7 @@ impl Widget for DatePicker {
                 }
             }
 
-            // Handle WheelH changes using cached UIDs - changes DISPLAYED month/year
+            // Handle WheelH changes and button clicks using cached UIDs
             for action in actions {
                 if let WheelHAction::Changed(val) = action.as_widget_action().cast() {
                     let Some(widget_action) = action.as_widget_action() else { continue };
@@ -546,6 +555,24 @@ impl Widget for DatePicker {
                     self.selected_month = self.displayed_month;
                     self.selected_day = day;
                     self.update_calendar_grid(cx);
+                }
+
+                // Handle Today button click
+                if let ButtonAction::Clicked(_) = action.as_widget_action().cast() {
+                    let Some(widget_action) = action.as_widget_action() else { continue };
+                    if Some(widget_action.widget_uid) == self.today_button_uid {
+                        // Update today in case date changed
+                        self.today = calendar::today();
+                        // Set both displayed and selected to today
+                        self.displayed_year = self.today.year;
+                        self.displayed_month = self.today.month;
+                        self.selected_year = self.today.year;
+                        self.selected_month = self.today.month;
+                        self.selected_day = self.today.day;
+                        // Update pickers and grid
+                        self.sync_pickers_to_displayed(cx);
+                        self.update_calendar_grid(cx);
+                    }
                 }
             }
         }
