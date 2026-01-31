@@ -463,6 +463,7 @@ impl WheelH {
         self.current_value = val.clamp(self.range_min, self.range_max);
         let idx = (self.current_value - self.range_min) as f64;
         self.scroll_pos = idx * self.step_width;
+        self.initialized = true; // Prevent draw_walk from resetting to initial_value
         self.draw_bg.redraw(cx);
         self.draw_selection.redraw(cx);
     }
