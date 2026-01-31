@@ -146,7 +146,7 @@ impl Widget for WheelH {
                 } else {
                     e.scroll.y
                 };
-                self.scroll_pos -= scroll_delta;
+                self.scroll_pos -= scroll_delta / 1.5;
                 if !self.is_infinite { self.clamp_scroll(); }
                 self.draw_bg.redraw(cx);
                 self.draw_selection.redraw(cx);
@@ -161,7 +161,7 @@ impl Widget for WheelH {
             match event {
                 Event::MouseMove(e) => {
                     let delta = e.abs.x - self.last_abs_x;
-                    self.scroll_pos -= delta;
+                    self.scroll_pos -= delta / 1.5;
                     if !self.is_infinite { self.clamp_scroll(); }
                     self.last_abs_x = e.abs.x;
                     self.draw_bg.redraw(cx);
@@ -177,7 +177,7 @@ impl Widget for WheelH {
                         match touch.state {
                             makepad_widgets::event::TouchState::Move => {
                                 let delta = touch.abs.x - self.last_abs_x;
-                                self.scroll_pos -= delta;
+                                self.scroll_pos -= delta / 1.5;
                                 if !self.is_infinite { self.clamp_scroll(); }
                                 self.last_abs_x = touch.abs.x;
                                 self.draw_bg.redraw(cx);
@@ -220,7 +220,7 @@ impl Widget for WheelH {
                         if self.is_dragging {
                             touch.handled.set(self.draw_bg.area());
                             let delta = touch.abs.x - self.last_abs_x;
-                            self.scroll_pos -= delta;
+                            self.scroll_pos -= delta / 1.5;
                             if !self.is_infinite { self.clamp_scroll(); }
                             self.last_abs_x = touch.abs.x;
                             self.draw_bg.redraw(cx);
@@ -264,7 +264,7 @@ impl Widget for WheelH {
             Hit::FingerMove(fe) => {
                 if self.is_dragging {
                     let delta = fe.abs.x - self.last_abs_x;
-                    self.scroll_pos -= delta;
+                    self.scroll_pos -= delta / 1.5;
                     if !self.is_infinite { self.clamp_scroll(); }
                     self.last_abs_x = fe.abs.x;
                     self.draw_bg.redraw(cx);
@@ -465,5 +465,42 @@ impl WheelH {
         self.scroll_pos = idx * self.step_width;
         self.draw_bg.redraw(cx);
         self.draw_selection.redraw(cx);
+    }
+
+    /// Apply external scroll delta (e.g., from calendar swipe)
+    /// Does NOT emit Changed action - caller should call trigger_snap() when done
+    pub fn apply_scroll_delta(&mut self, cx: &mut Cx, delta: f64) {
+        self.scroll_pos -= delta / 1.5;
+        if !self.is_infinite {
+            self.clamp_scroll();
+        }
+        self.draw_bg.redraw(cx);
+        self.draw_selection.redraw(cx);
+    }
+
+    /// Trigger async snap-to-grid after external scroll
+    /// Uses NextFrame animation, then emits WheelHAction::Changed when done
+    pub fn trigger_snap(&mut self, cx: &mut Cx) {
+        // Set cooldown to 0 so snap happens on next frame
+        self.scroll_cooldown = Some(0);
+        self.next_frame = cx.new_next_frame();
+    }
+
+    /// Get the step width for delta calculations
+    pub fn get_step_width(&self) -> f64 {
+        self.step_width
+    }
+
+    /// Get current visual value based on scroll position (without emitting action)
+    /// Useful for tracking value during external scroll
+    pub fn get_visual_value(&self) -> i32 {
+        let raw_idx = (self.scroll_pos / self.step_width).round() as i32;
+        let range_len = self.range_max - self.range_min + 1;
+
+        if self.is_infinite {
+            (raw_idx.rem_euclid(range_len)) + self.range_min
+        } else {
+            raw_idx.clamp(0, range_len - 1) + self.range_min
+        }
     }
 }

@@ -225,7 +225,9 @@ pub struct DatePicker {
 
     // Calendar swipe tracking
     #[rust] swipe_start_x: f64,
+    #[rust] last_swipe_x: f64,
     #[rust] is_swiping: bool,
+    #[rust] swipe_was_significant: bool, // Prevent day click after swipe
 }
 
 // Make WeekStart work with live_design
@@ -499,13 +501,41 @@ impl DatePicker {
                         if calendar_rect.contains(touch.abs) {
                             self.is_swiping = true;
                             self.swipe_start_x = touch.abs.x;
+                            self.last_swipe_x = touch.abs.x;
+                            self.swipe_was_significant = false;
+                        }
+                    }
+                    makepad_widgets::event::TouchState::Move => {
+                        if self.is_swiping {
+                            let delta = touch.abs.x - self.last_swipe_x;
+                            self.last_swipe_x = touch.abs.x;
+
+                            // Apply delta to month picker and get visual month (drop borrow first!)
+                            let visual_month = if let Some(mut picker) = content.widget(ids!(month_picker)).borrow_mut::<WheelH>() {
+                                picker.apply_scroll_delta(cx, delta);
+                                Some((picker.get_visual_value() + 1) as u32)
+                            } else { None };
+
+                            // Update calendar if month changed (after borrow is dropped)
+                            if let Some(month) = visual_month {
+                                if month != self.displayed_month {
+                                    self.displayed_month = month;
+                                    self.update_calendar_grid(cx);
+                                }
+                            }
+
+                            // Track if swipe became significant (to prevent day click)
+                            let total_delta = (touch.abs.x - self.swipe_start_x).abs();
+                            if total_delta >= swipe_threshold * 0.5 {
+                                self.swipe_was_significant = true;
+                            }
                         }
                     }
                     makepad_widgets::event::TouchState::Stop => {
                         if self.is_swiping {
-                            let delta = touch.abs.x - self.swipe_start_x;
-                            if delta.abs() >= swipe_threshold {
-                                self.finish_swipe(cx, delta, swipe_threshold);
+                            // Trigger snap on month wheel - it will emit Changed when done
+                            if let Some(mut picker) = content.widget(ids!(month_picker)).borrow_mut::<WheelH>() {
+                                picker.trigger_snap(cx);
                             }
                             self.is_swiping = false;
                         }
@@ -520,55 +550,51 @@ impl DatePicker {
             if calendar_rect.contains(e.abs) {
                 self.is_swiping = true;
                 self.swipe_start_x = e.abs.x;
+                self.last_swipe_x = e.abs.x;
+                self.swipe_was_significant = false;
             }
         }
 
-        if let Event::MouseUp(e) = event {
+        if let Event::MouseMove(e) = event {
             if self.is_swiping {
-                let delta = e.abs.x - self.swipe_start_x;
-                if delta.abs() >= swipe_threshold {
-                    self.finish_swipe(cx, delta, swipe_threshold);
+                let delta = e.abs.x - self.last_swipe_x;
+                self.last_swipe_x = e.abs.x;
+
+                // Apply delta to month picker and get visual month (drop borrow first!)
+                let visual_month = if let Some(mut picker) = content.widget(ids!(month_picker)).borrow_mut::<WheelH>() {
+                    picker.apply_scroll_delta(cx, delta);
+                    Some((picker.get_visual_value() + 1) as u32)
+                } else { None };
+
+                // Update calendar if month changed (after borrow is dropped)
+                if let Some(month) = visual_month {
+                    if month != self.displayed_month {
+                        self.displayed_month = month;
+                        self.update_calendar_grid(cx);
+                    }
+                }
+
+                // Track if swipe became significant
+                let total_delta = (e.abs.x - self.swipe_start_x).abs();
+                if total_delta >= swipe_threshold * 0.5 {
+                    self.swipe_was_significant = true;
+                }
+            }
+        }
+
+        if let Event::MouseUp(_) = event {
+            if self.is_swiping {
+                // Trigger snap on month wheel - it will emit Changed when done
+                if let Some(mut picker) = content.widget(ids!(month_picker)).borrow_mut::<WheelH>() {
+                    picker.trigger_snap(cx);
                 }
                 self.is_swiping = false;
             }
         }
     }
 
-    fn finish_swipe(&mut self, cx: &mut Cx, delta: f64, threshold: f64) {
-        if delta.abs() < threshold {
-            return;
-        }
-
-        if delta > 0.0 {
-            // Swipe right = previous month
-            self.go_to_previous_month(cx);
-        } else {
-            // Swipe left = next month
-            self.go_to_next_month(cx);
-        }
-    }
-
-    fn go_to_previous_month(&mut self, cx: &mut Cx) {
-        if self.displayed_month == 1 {
-            self.displayed_month = 12;
-            self.displayed_year -= 1;
-        } else {
-            self.displayed_month -= 1;
-        }
-        self.sync_pickers_to_displayed(cx);
-        self.update_calendar_grid(cx);
-    }
-
-    fn go_to_next_month(&mut self, cx: &mut Cx) {
-        if self.displayed_month == 12 {
-            self.displayed_month = 1;
-            self.displayed_year += 1;
-        } else {
-            self.displayed_month += 1;
-        }
-        self.sync_pickers_to_displayed(cx);
-        self.update_calendar_grid(cx);
-    }
+    // Month changes are now handled by WheelHAction::Changed from the month picker
+    // No separate go_to_previous/next_month logic needed - wheel controls everything
 
     pub fn set_date(&mut self, cx: &mut Cx, year: i32, month: u32, day: u32) {
         self.selected_year = year;
@@ -634,11 +660,16 @@ impl Widget for DatePicker {
                 }
 
                 // Handle day cell clicks - sets SELECTED date to displayed month/year + clicked day
+                // Skip if we just finished a significant swipe
                 if let DayCellAction::Clicked(day) = action.as_widget_action().cast() {
-                    self.selected_year = self.displayed_year;
-                    self.selected_month = self.displayed_month;
-                    self.selected_day = day;
-                    self.update_calendar_grid(cx);
+                    if !self.swipe_was_significant {
+                        self.selected_year = self.displayed_year;
+                        self.selected_month = self.displayed_month;
+                        self.selected_day = day;
+                        self.update_calendar_grid(cx);
+                    }
+                    // Reset swipe flag after handling
+                    self.swipe_was_significant = false;
                 }
 
                 // Handle Today button click

@@ -35,16 +35,24 @@ impl SimpleDate {
     }
 }
 
-/// Get the current date from system time
+/// Get the current date from system time (local timezone)
 pub fn today() -> SimpleDate {
-    // Get Unix timestamp in seconds
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs() as i64;
+    // Try to get local time first
+    if let Ok(local) = time::OffsetDateTime::now_local() {
+        return SimpleDate {
+            year: local.year(),
+            month: local.month() as u32,
+            day: local.day() as u32,
+        };
+    }
 
-    // Convert to date
-    unix_to_date(now)
+    // Fallback to UTC if local time fails
+    let utc = time::OffsetDateTime::now_utc();
+    SimpleDate {
+        year: utc.year(),
+        month: utc.month() as u32,
+        day: utc.day() as u32,
+    }
 }
 
 /// Convert Unix timestamp (seconds since 1970-01-01) to SimpleDate

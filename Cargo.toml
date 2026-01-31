@@ -33,3 +33,4 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 makepad-widgets = { path = "makepad/widgets" }
+time = { version = "0.3", features = ["local-offset"] }
