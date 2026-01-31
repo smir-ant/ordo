@@ -222,6 +222,10 @@ pub struct DatePicker {
     #[rust] year_picker_uid: Option<WidgetUid>,
     #[rust] month_picker_uid: Option<WidgetUid>,
     #[rust] today_button_uid: Option<WidgetUid>,
+
+    // Calendar swipe tracking
+    #[rust] swipe_start_x: f64,
+    #[rust] is_swiping: bool,
 }
 
 // Make WeekStart work with live_design
@@ -482,6 +486,90 @@ impl DatePicker {
         (self.selected_year, self.selected_month, self.selected_day)
     }
 
+    fn handle_calendar_swipe(&mut self, cx: &mut Cx, event: &Event) {
+        let content = self.modal_ref().widget(ids!(content));
+        let calendar_area = content.widget(ids!(calendar_wrap)).area();
+        let swipe_threshold = 50.0; // Minimum horizontal distance to trigger month change
+
+        // Handle touch events
+        if let Event::TouchUpdate(tu) = event {
+            for touch in &tu.touches {
+                if !calendar_area.rect(cx).contains(touch.abs) && !self.is_swiping {
+                    continue;
+                }
+
+                match touch.state {
+                    makepad_widgets::event::TouchState::Start => {
+                        if calendar_area.rect(cx).contains(touch.abs) {
+                            self.is_swiping = true;
+                            self.swipe_start_x = touch.abs.x;
+                        }
+                    }
+                    makepad_widgets::event::TouchState::Stop => {
+                        if self.is_swiping {
+                            let delta = touch.abs.x - self.swipe_start_x;
+                            self.finish_swipe(cx, delta, swipe_threshold);
+                            self.is_swiping = false;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        // Handle mouse events
+        match event.hits(cx, calendar_area) {
+            Hit::FingerDown(fe) => {
+                self.is_swiping = true;
+                self.swipe_start_x = fe.abs.x;
+            }
+            Hit::FingerUp(fe) => {
+                if self.is_swiping {
+                    let delta = fe.abs.x - self.swipe_start_x;
+                    self.finish_swipe(cx, delta, swipe_threshold);
+                    self.is_swiping = false;
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn finish_swipe(&mut self, cx: &mut Cx, delta: f64, threshold: f64) {
+        if delta.abs() < threshold {
+            return;
+        }
+
+        if delta > 0.0 {
+            // Swipe right = previous month
+            self.go_to_previous_month(cx);
+        } else {
+            // Swipe left = next month
+            self.go_to_next_month(cx);
+        }
+    }
+
+    fn go_to_previous_month(&mut self, cx: &mut Cx) {
+        if self.displayed_month == 1 {
+            self.displayed_month = 12;
+            self.displayed_year -= 1;
+        } else {
+            self.displayed_month -= 1;
+        }
+        self.sync_pickers_to_displayed(cx);
+        self.update_calendar_grid(cx);
+    }
+
+    fn go_to_next_month(&mut self, cx: &mut Cx) {
+        if self.displayed_month == 12 {
+            self.displayed_month = 1;
+            self.displayed_year += 1;
+        } else {
+            self.displayed_month += 1;
+        }
+        self.sync_pickers_to_displayed(cx);
+        self.update_calendar_grid(cx);
+    }
+
     pub fn set_date(&mut self, cx: &mut Cx, year: i32, month: u32, day: u32) {
         self.selected_year = year;
         self.selected_month = month.clamp(1, 12);
@@ -502,6 +590,9 @@ impl Widget for DatePicker {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event, scope: &mut Scope) {
         let uid = self.widget_uid();
         let modal_uid = self.modal_ref().borrow::<Modal>().map(|m| m.widget_uid());
+
+        // Handle calendar swipe for month navigation
+        self.handle_calendar_swipe(cx, event);
 
         self.view.handle_event(cx, event, scope);
 
