@@ -488,19 +488,15 @@ impl DatePicker {
 
     fn handle_calendar_swipe(&mut self, cx: &mut Cx, event: &Event) {
         let content = self.modal_ref().widget(ids!(content));
-        let calendar_area = content.widget(ids!(calendar_wrap)).area();
+        let calendar_rect = content.widget(ids!(calendar_wrap)).area().rect(cx);
         let swipe_threshold = 50.0; // Minimum horizontal distance to trigger month change
 
-        // Handle touch events
+        // Handle touch events (track without consuming)
         if let Event::TouchUpdate(tu) = event {
             for touch in &tu.touches {
-                if !calendar_area.rect(cx).contains(touch.abs) && !self.is_swiping {
-                    continue;
-                }
-
                 match touch.state {
                     makepad_widgets::event::TouchState::Start => {
-                        if calendar_area.rect(cx).contains(touch.abs) {
+                        if calendar_rect.contains(touch.abs) {
                             self.is_swiping = true;
                             self.swipe_start_x = touch.abs.x;
                         }
@@ -508,7 +504,9 @@ impl DatePicker {
                     makepad_widgets::event::TouchState::Stop => {
                         if self.is_swiping {
                             let delta = touch.abs.x - self.swipe_start_x;
-                            self.finish_swipe(cx, delta, swipe_threshold);
+                            if delta.abs() >= swipe_threshold {
+                                self.finish_swipe(cx, delta, swipe_threshold);
+                            }
                             self.is_swiping = false;
                         }
                     }
@@ -517,20 +515,22 @@ impl DatePicker {
             }
         }
 
-        // Handle mouse events
-        match event.hits(cx, calendar_area) {
-            Hit::FingerDown(fe) => {
+        // Handle mouse events (track without consuming - don't use hits())
+        if let Event::MouseDown(e) = event {
+            if calendar_rect.contains(e.abs) {
                 self.is_swiping = true;
-                self.swipe_start_x = fe.abs.x;
+                self.swipe_start_x = e.abs.x;
             }
-            Hit::FingerUp(fe) => {
-                if self.is_swiping {
-                    let delta = fe.abs.x - self.swipe_start_x;
+        }
+
+        if let Event::MouseUp(e) = event {
+            if self.is_swiping {
+                let delta = e.abs.x - self.swipe_start_x;
+                if delta.abs() >= swipe_threshold {
                     self.finish_swipe(cx, delta, swipe_threshold);
-                    self.is_swiping = false;
                 }
+                self.is_swiping = false;
             }
-            _ => {}
         }
     }
 
