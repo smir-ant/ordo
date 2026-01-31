@@ -296,10 +296,9 @@ impl Widget for WheelH {
                 };
 
                 let opacity = 1.0 - (dist / max_dist).powf(1.5);
-                let scale = 1.0 - (dist / max_dist) * 0.2;
 
                 self.draw_text.color.w = opacity as f32;
-                self.draw_text.text_style.font_size = (16.0 * scale) as f32;
+                self.draw_text.text_style.font_size = 16.0;
 
                 // Get text: either from labels or format as number
                 let text = self.get_label(val);

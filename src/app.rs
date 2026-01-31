@@ -525,10 +525,10 @@ impl AppMain for App {
         if !self.initialized {
             self.initialized = true;
             let months = vec![
-                "January".to_string(), "February".to_string(), "March".to_string(),
-                "April".to_string(), "May".to_string(), "June".to_string(),
-                "July".to_string(), "August".to_string(), "September".to_string(),
-                "October".to_string(), "November".to_string(), "December".to_string(),
+                "Jan".to_string(), "Feb".to_string(), "Mar".to_string(),
+                "Apr".to_string(), "May".to_string(), "Jun".to_string(),
+                "Jul".to_string(), "Aug".to_string(), "Sep".to_string(),
+                "Oct".to_string(), "Nov".to_string(), "Dec".to_string(),
             ];
             if let Some(mut picker) = self.ui.widget(ids!(month_picker)).borrow_mut::<WheelH>() {
                 picker.set_labels(months);
