@@ -203,9 +203,15 @@ pub struct DatePicker {
     #[deref] view: View,
     #[live] week_start: WeekStart,
 
+    // Currently displayed month/year (changes on wheel scroll)
+    #[rust] displayed_year: i32,
+    #[rust] displayed_month: u32,  // 1-12
+
+    // Actually selected date (changes only on day click)
     #[rust] selected_year: i32,
     #[rust] selected_month: u32,  // 1-12
     #[rust] selected_day: u32,    // 1-31
+
     #[rust] today: SimpleDate,
     #[rust] initialized: bool,
     #[rust] year_picker_uid: Option<WidgetUid>,
@@ -329,7 +335,7 @@ impl DatePicker {
     }
 
     pub fn open(&mut self, cx: &mut Cx) {
-        // Initialize to today on open
+        // Initialize to today on first open
         if !self.initialized {
             self.today = calendar::today();
             self.selected_year = self.today.year;
@@ -337,6 +343,10 @@ impl DatePicker {
             self.selected_day = self.today.day;
             self.initialized = true;
         }
+
+        // Set displayed to selected date
+        self.displayed_year = self.selected_year;
+        self.displayed_month = self.selected_month;
 
         // Cache picker UIDs to avoid borrow conflicts in handle_event
         let content = self.modal_ref().widget(ids!(content));
@@ -349,7 +359,7 @@ impl DatePicker {
 
         // Setup pickers
         self.setup_month_picker(cx);
-        self.sync_pickers_to_selection(cx);
+        self.sync_pickers_to_displayed(cx);
         self.update_calendar_grid(cx);
 
         if let Some(mut modal) = self.modal_ref().borrow_mut::<Modal>() {
@@ -371,15 +381,15 @@ impl DatePicker {
         }
     }
 
-    fn sync_pickers_to_selection(&mut self, cx: &mut Cx) {
+    fn sync_pickers_to_displayed(&mut self, cx: &mut Cx) {
         let content = self.modal_ref().widget(ids!(content));
 
         if let Some(mut picker) = content.widget(ids!(year_picker)).borrow_mut::<WheelH>() {
-            picker.set_value(cx, self.selected_year);
+            picker.set_value(cx, self.displayed_year);
         }
 
         if let Some(mut picker) = content.widget(ids!(month_picker)).borrow_mut::<WheelH>() {
-            picker.set_value(cx, (self.selected_month - 1) as i32); // 0-indexed
+            picker.set_value(cx, (self.displayed_month - 1) as i32); // 0-indexed
         }
     }
 
@@ -400,9 +410,17 @@ impl DatePicker {
             }
         }
 
-        // Get calendar grid data
-        let grid = calendar::calendar_grid(self.selected_year, self.selected_month, self.week_start);
-        let num_rows = calendar::calendar_rows(self.selected_year, self.selected_month, self.week_start);
+        // Get calendar grid data for DISPLAYED month/year
+        let grid = calendar::calendar_grid(self.displayed_year, self.displayed_month, self.week_start);
+        let num_rows = calendar::calendar_rows(self.displayed_year, self.displayed_month, self.week_start);
+
+        // Check if displayed month matches selected month (for showing selection)
+        let is_selected_month = self.displayed_year == self.selected_year
+            && self.displayed_month == self.selected_month;
+
+        // Check if displayed month is today's month (for showing today marker)
+        let is_today_month = self.displayed_year == self.today.year
+            && self.displayed_month == self.today.month;
 
         // Create a lookup: (row, col) -> day
         let mut day_map = [[0u32; 7]; 6];
@@ -446,25 +464,16 @@ impl DatePicker {
                     let day = day_map[row as usize][col as usize];
                     cell.day = day;
                     cell.is_visible = day > 0;
-                    cell.is_selected = day == self.selected_day && day > 0;
-                    cell.is_today = day > 0
-                        && self.selected_year == self.today.year
-                        && self.selected_month == self.today.month
-                        && day == self.today.day;
+                    // Only show selection if this is the selected month/year
+                    cell.is_selected = is_selected_month && day == self.selected_day && day > 0;
+                    // Only show today marker if this is today's month/year
+                    cell.is_today = is_today_month && day == self.today.day && day > 0;
                     cell.is_hovered = false;
                 }
             }
         }
 
         self.view.redraw(cx);
-    }
-
-    /// Clamp selected day to valid range for current month
-    fn clamp_selected_day(&mut self) {
-        let max_day = calendar::days_in_month(self.selected_year, self.selected_month);
-        if self.selected_day > max_day {
-            self.selected_day = max_day;
-        }
     }
 
     fn get_selected_date(&self) -> (i32, u32, u32) {
@@ -474,11 +483,14 @@ impl DatePicker {
     pub fn set_date(&mut self, cx: &mut Cx, year: i32, month: u32, day: u32) {
         self.selected_year = year;
         self.selected_month = month.clamp(1, 12);
-        self.selected_day = day;
-        self.clamp_selected_day();
+        self.selected_day = day.clamp(1, calendar::days_in_month(year, self.selected_month));
+
+        // Also update displayed to match
+        self.displayed_year = self.selected_year;
+        self.displayed_month = self.selected_month;
 
         if self.is_open() {
-            self.sync_pickers_to_selection(cx);
+            self.sync_pickers_to_displayed(cx);
             self.update_calendar_grid(cx);
         }
     }
@@ -509,29 +521,29 @@ impl Widget for DatePicker {
                 }
             }
 
-            // Handle WheelH changes using cached UIDs
+            // Handle WheelH changes using cached UIDs - changes DISPLAYED month/year
             for action in actions {
                 if let WheelHAction::Changed(val) = action.as_widget_action().cast() {
                     let Some(widget_action) = action.as_widget_action() else { continue };
                     let action_uid = widget_action.widget_uid;
 
-                    // Check year picker
+                    // Check year picker - changes displayed year
                     if Some(action_uid) == self.year_picker_uid {
-                        self.selected_year = val;
-                        self.clamp_selected_day();
+                        self.displayed_year = val;
                         self.update_calendar_grid(cx);
                     }
 
-                    // Check month picker
+                    // Check month picker - changes displayed month
                     if Some(action_uid) == self.month_picker_uid {
-                        self.selected_month = (val + 1) as u32; // Convert 0-indexed to 1-indexed
-                        self.clamp_selected_day();
+                        self.displayed_month = (val + 1) as u32; // Convert 0-indexed to 1-indexed
                         self.update_calendar_grid(cx);
                     }
                 }
 
-                // Handle day cell clicks
+                // Handle day cell clicks - sets SELECTED date to displayed month/year + clicked day
                 if let DayCellAction::Clicked(day) = action.as_widget_action().cast() {
+                    self.selected_year = self.displayed_year;
+                    self.selected_month = self.displayed_month;
                     self.selected_day = day;
                     self.update_calendar_grid(cx);
                 }
