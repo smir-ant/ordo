@@ -199,7 +199,10 @@ impl Widget for WheelV {
                             self.is_outside_bounds = false;
                             self.last_abs_y = touch.abs.y;
                             self.drag_start_y = touch.abs.y;
-                            self.scroll_target = None;
+                            // Complete pending animation before starting new interaction
+                            if let Some(target) = self.scroll_target.take() {
+                                self.scroll_pos = target;
+                            }
                             self.scroll_cooldown = None;
                         }
                     }
@@ -218,6 +221,7 @@ impl Widget for WheelV {
                     makepad_widgets::event::TouchState::Stop => {
                         if self.is_dragging {
                             touch.handled.set(self.draw_bg.area());
+                            self.last_abs_y = touch.abs.y;  // Update before finish for tap detection
                             self.finish_drag(cx);
                         }
                     }
@@ -241,7 +245,10 @@ impl Widget for WheelV {
                 self.is_outside_bounds = false;
                 self.last_abs_y = fe.abs.y;
                 self.drag_start_y = fe.abs.y;
-                self.scroll_target = None;
+                // Complete pending animation before starting new interaction
+                if let Some(target) = self.scroll_target.take() {
+                    self.scroll_pos = target;
+                }
                 self.scroll_cooldown = None;
             }
             Hit::FingerMove(fe) => {
@@ -344,6 +351,14 @@ impl WheelV {
         self.is_dragging = false;
         self.is_outside_bounds = false;
 
+        // Always snap scroll_pos to grid first
+        let mut snapped_idx = (self.scroll_pos / self.step_height).round();
+        if !self.is_infinite {
+            let max_idx = (self.range_max - self.range_min) as f64;
+            snapped_idx = snapped_idx.clamp(0.0, max_idx);
+        }
+        let snapped_pos = snapped_idx * self.step_height;
+
         let rect = self.draw_bg.area().rect(cx);
         // Tap detection - select item by position
         if (self.last_abs_y - self.drag_start_y).abs() < 10.0 {
@@ -351,7 +366,9 @@ impl WheelV {
             let touch_offset = self.last_abs_y - center_y;
             let steps_offset = (touch_offset / self.step_height).round();
             if steps_offset != 0.0 {
-                let target_pos = self.scroll_pos + steps_offset * self.step_height;
+                // Animate to tapped element
+                self.scroll_pos = snapped_pos;
+                let target_pos = snapped_pos + steps_offset * self.step_height;
                 self.scroll_target = Some(target_pos);
                 self.next_frame = cx.new_next_frame();
                 self.draw_bg.redraw(cx);
@@ -359,7 +376,14 @@ impl WheelV {
                 return;
             }
         }
-        self.snap_to_grid(cx);
+
+        // For swipe: animate to snapped position
+        if (self.scroll_pos - snapped_pos).abs() > 0.5 {
+            self.scroll_target = Some(snapped_pos);
+            self.next_frame = cx.new_next_frame();
+        } else {
+            self.scroll_pos = snapped_pos;
+        }
         self.draw_bg.redraw(cx);
         self.draw_selection.redraw(cx);
     }
