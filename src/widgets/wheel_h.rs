@@ -303,7 +303,8 @@ impl Widget for WheelH {
         self.draw_selection.draw_abs(cx, selection_rect);
 
         let center_idx = (self.scroll_pos / self.step_width).round() as i32;
-        let window = 5;
+        // Calculate window dynamically based on widget width and step
+        let window = ((rect.size.x * 0.5) / self.step_width).ceil() as i32 + 1;
         let range_len = self.range_max - self.range_min + 1;
 
         for i in (center_idx - window)..=(center_idx + window) {

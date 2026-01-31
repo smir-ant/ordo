@@ -289,6 +289,7 @@ live_design!{
 
                             year_picker = <WheelH> {
                                 width: Fill, height: 40.0
+                                step_width: 80.0
                                 range_min: 2001
                                 range_max: 2051
                                 initial_value: 2026

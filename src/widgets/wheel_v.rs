@@ -292,7 +292,8 @@ impl Widget for WheelV {
         self.draw_selection.draw_abs(cx, selection_rect);
 
         let center_idx = (self.scroll_pos / self.step_height).round() as i32;
-        let window = 10;
+        // Calculate window dynamically based on widget height and step
+        let window = ((rect.size.y * 0.5) / self.step_height).ceil() as i32 + 1;
 
         for i in (center_idx - window)..=(center_idx + window) {
             let offset = (i as f64) * self.step_height - self.scroll_pos;
