@@ -9,6 +9,7 @@ use crate::widgets::wheel_v::{WheelV, WheelVAction};
 use crate::widgets::wheel_h::{WheelH, WheelHAction};
 use crate::widgets::time_picker::{TimePicker, TimePickerAction};
 use crate::widgets::date_picker::{DatePicker, DatePickerAction};
+use crate::utils::calendar;
 use makepad_widgets::keyboard_view::KeyboardView;
 
 live_design!{
@@ -522,9 +523,11 @@ impl LiveRegister for App {
 
 impl AppMain for App {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event) {
-        // Initialize month labels on first event
+        // Initialize on first event
         if !self.initialized {
             self.initialized = true;
+
+            // Month picker labels
             let months = vec![
                 "Jan".to_string(), "Feb".to_string(), "Mar".to_string(),
                 "Apr".to_string(), "May".to_string(), "Jun".to_string(),
@@ -534,6 +537,13 @@ impl AppMain for App {
             if let Some(mut picker) = self.ui.widget(ids!(month_picker)).borrow_mut::<WheelH>() {
                 picker.set_labels(months);
                 picker.set_value(cx, 0); // January
+            }
+
+            // DatePicker button: show today's date
+            let today = calendar::today();
+            let date_text = format!("{:02}.{:02}.{:04}", today.day, today.month, today.year);
+            if let Some(mut btn) = self.ui.widget(ids!(open_date_picker_btn)).borrow_mut::<Btn>() {
+                btn.set_text(cx, &date_text);
             }
         }
 
@@ -753,6 +763,10 @@ impl App {
             match action.as_widget_action().cast() {
                 DatePickerAction::Accepted { year, month, day } => {
                     log!("Date selected: {:02}.{:02}.{:04}", day, month, year);
+                    let date_text = format!("{:02}.{:02}.{:04}", day, month, year);
+                    if let Some(mut btn) = self.ui.widget(ids!(open_date_picker_btn)).borrow_mut::<Btn>() {
+                        btn.set_text(cx, &date_text);
+                    }
                 }
                 DatePickerAction::Dismissed => {
                     log!("Date picker dismissed");
