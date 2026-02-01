@@ -157,6 +157,7 @@ pub struct Wheel {
     #[live] range_max: i32,
     #[live(true)] is_infinite: bool,
     #[live(0)] initial_value: i32,
+    #[live(true)] invert_scroll: bool,  // Invert mouse wheel direction
 
     #[rust] labels: Vec<String>,
     #[layout] layout: Layout,
@@ -394,7 +395,8 @@ impl Widget for Wheel {
                 e.handled_y.set(true);
                 self.scroll_target = None;
                 let delta = self.scroll_axis(e.scroll);
-                self.scroll_pos -= delta * SCROLL_SPEED;
+                let direction = if self.invert_scroll { 1.0 } else { -1.0 };
+                self.scroll_pos += delta * SCROLL_SPEED * direction;
                 if !self.is_infinite { self.clamp_scroll(); }
                 self.redraw(cx);
                 self.update_value(cx, &scope.path);
