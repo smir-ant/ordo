@@ -20,7 +20,7 @@ use {
         mem,
         rc::Rc,
     },
-    unicode_segmentation::UnicodeSegmentation,
+    // unicode_segmentation::UnicodeSegmentation,
 };
 
 const LPXS_PER_INCH: f32 = 96.0;
@@ -207,15 +207,10 @@ impl LayoutContext {
         );
         while !fitter.is_empty() {
             match fitter.fit(self.remaining_width_in_lpxs().unwrap()) {
-                Some(text) => {
-                    self.append_text(&text)
-                },
+                Some(text) => self.append_text(&text),
                 None => {
-                    let next_word = &self.text[self.current_row_end..][..fitter.next_len()];
-                    if next_word.chars().all(|char| char.is_whitespace()) {
-                        self.layout_directly(fitter.pop_next_len());
-                    } else if self.current_row_is_empty() && !self.current_row_is_continuation() {
-                        self.layout_by_grapheme(fitter.pop_next_len());
+                    if self.current_row_is_empty() && !self.current_row_is_continuation() {
+                        self.layout_by_grapheme(fitter.pop());
                     } else {
                         self.finish_current_row(false);
                     }
@@ -236,7 +231,7 @@ impl LayoutContext {
                 Some(text) => self.append_text(&text),
                 None => {
                     if self.current_row_is_empty() {
-                        self.layout_directly(fitter.pop_next_len());
+                        self.layout_directly(fitter.pop());
                     } else {
                         self.finish_current_row(false);
                     }
@@ -350,11 +345,28 @@ impl Fitter {
         segment_kind: SegmentKind,
     ) -> Self {
         let lens: Vec<_> = match segment_kind {
-            SegmentKind::Word => text
-                .split_word_bounds()
-                .map(|segment| segment.len())
-                .collect(),
-            SegmentKind::Grapheme => text.graphemes(true).map(|segment| segment.len()).collect(),
+            SegmentKind::Word => {
+                let mut lenses = Vec::new();
+                let mut iter = text.char_indices().peekable();
+                
+                while let Some((_, c)) = iter.next() {
+                    let is_whitespace = c.is_whitespace();
+                    let mut current_len = c.len_utf8();
+                    
+                    // Consume sequence of same type (whitespace vs non-whitespace)
+                    while let Some((_, next_c)) = iter.peek() {
+                        if next_c.is_whitespace() != is_whitespace {
+                            break;
+                        }
+                        // Advance iterator
+                        let (_, next_c) = iter.next().unwrap();
+                        current_len += next_c.len_utf8();
+                    }
+                    lenses.push(current_len);
+                }
+                lenses
+            },
+            SegmentKind::Grapheme => text.chars().map(|c| c.len_utf8()).collect(),
         };
         let widths_in_lpxs: Vec<_> = lens
             .iter()
@@ -379,10 +391,6 @@ impl Fitter {
 
     fn is_empty(&self) -> bool {
         self.text.is_empty()
-    }
-
-    fn next_len(&self) -> usize {
-        self.lens[0]
     }
 
     fn fit(&mut self, wrap_width_in_lpxs: f32) -> Option<Rc<ShapedText>> {
@@ -424,7 +432,7 @@ impl Fitter {
         true
     }
 
-    fn pop_next_len(&mut self) -> usize {
+    fn pop(&mut self) -> usize {
         let len = self.lens.remove(0);
         self.widths_in_lpxs.remove(0);
         self.text = self.text.substr(len..);
@@ -801,7 +809,7 @@ impl LaidoutRow {
     }
 
     pub fn x_in_lpxs_to_index(&self, x_in_lpxs: f32) -> usize {
-        use {super::slice::SliceExt, unicode_segmentation::UnicodeSegmentation};
+        use {super::slice::SliceExt};
 
         let mut glyph_groups = self
             .glyphs
@@ -818,21 +826,21 @@ impl LaidoutRow {
                 next_glyph_group[0].origin_in_lpxs.x
             });
             let width_in_lpxs = end_x_in_lpxs - start_x_in_lpxs;
-            let grapheme_count = self.text[start..end].graphemes(true).count();
-            let grapheme_width_in_lpxs = width_in_lpxs / grapheme_count as f32;
+            let char_count = self.text.as_str()[start..end].chars().count();
+            let char_width_in_lpxs = width_in_lpxs / char_count as f32;
             let mut current_x_in_lpxs = start_x_in_lpxs;
-            for (grapheme_start, _) in self.text[start..end].grapheme_indices(true) {
-                if x_in_lpxs < current_x_in_lpxs + 0.5 * grapheme_width_in_lpxs {
-                    return start + grapheme_start;
+            for (char_start, _) in self.text.as_str()[start..end].char_indices() {
+                if x_in_lpxs < current_x_in_lpxs + 0.5 * char_width_in_lpxs {
+                    return start + char_start;
                 }
-                current_x_in_lpxs += grapheme_width_in_lpxs;
+                current_x_in_lpxs += char_width_in_lpxs;
             }
         }
         self.text.len()
     }
 
     pub fn index_to_x_in_lpxs(&self, index: usize) -> f32 {
-        use {super::slice::SliceExt, unicode_segmentation::UnicodeSegmentation};
+        use {super::slice::SliceExt};
 
         let mut glyph_groups = self
             .glyphs
@@ -852,15 +860,15 @@ impl LaidoutRow {
                     next_glyph_group[0].origin_in_lpxs.x
                 });
             let width_in_lpxs = end_x_in_lpxs - start_x_in_lpxs;
-            let grapheme_count = self.text[start..end].graphemes(true).count();
-            let grapheme_width_in_lpxs = width_in_lpxs / grapheme_count as f32;
+            let char_count = self.text.as_str()[start..end].chars().count();
+            let char_width_in_lpxs = width_in_lpxs / char_count as f32;
             let mut current_x_in_lpxs = start_x_in_lpxs;
-            for (grapheme_start, _) in self.text[start..end].grapheme_indices(true) {
-                let grapheme_start = start + grapheme_start;
-                if index == grapheme_start {
+            for (char_start, _) in self.text.as_str()[start..end].char_indices() {
+                let char_start = start + char_start;
+                if index == char_start {
                     return current_x_in_lpxs;
                 }
-                current_x_in_lpxs += grapheme_width_in_lpxs;
+                current_x_in_lpxs += char_width_in_lpxs;
             }
         }
         self.width_in_lpxs

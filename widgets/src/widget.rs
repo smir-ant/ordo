@@ -1,7 +1,7 @@
 pub use crate::register_widget;
 use {
     crate::makepad_draw::*,
-    crate::designer_data::DesignerDataToWidget,
+    // crate::designer_data::DesignerDataToWidget,
     std::any::TypeId,
     std::cell::RefCell,
     std::collections::BTreeMap,
@@ -737,10 +737,10 @@ impl WidgetRef {
     fn store_designer_backref(&self, cx:&mut Cx, apply:&mut Apply, index:usize){
         if let Some(scope) = &mut apply.scope{
             if let Some(file_id) = apply.from.file_id(){
-                if let Some(dd) = scope.data.get_mut::<DesignerDataToWidget>(){
-                    let ptr = cx.live_registry.borrow().file_id_index_to_live_ptr(file_id, index);
-                    dd.live_ptr_to_widget.insert(ptr, self.clone());
-                }
+                // if let Some(dd) = scope.data.get_mut::<DesignerDataToWidget>(){
+                //     let ptr = cx.live_registry.borrow().file_id_index_to_live_ptr(file_id, index);
+                //     dd.live_ptr_to_widget.insert(ptr, self.clone());
+                // }
             }                        
         }
     }

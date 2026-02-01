@@ -479,7 +479,7 @@ impl ScrollBar {
             return;
         }
 
-        match event.hits(cx, scroll_area) {
+        match event.hits_with_capture_overload(cx, scroll_area, true) {
             Hit::FingerDown(fe) if fe.is_primary_hit() => {
                 let abs = match self.axis {
                     ScrollAxis::Horizontal => fe.abs.x,
@@ -488,6 +488,9 @@ impl ScrollBar {
                 self.scroll_state = ScrollState::Drag {
                     samples: vec![ScrollSample { abs, time: fe.time }]
                 };
+            }
+            Hit::FingerHoverIn(_) => {
+                cx.set_cursor(MouseCursor::Default);
             }
             Hit::FingerMove(e) => {
                 match &mut self.scroll_state {

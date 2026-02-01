@@ -20,7 +20,6 @@ use {
         widget::*,
     },
     std::rc::Rc,
-    unicode_segmentation::{GraphemeCursor, UnicodeSegmentation},
 };
 
 
@@ -198,22 +197,24 @@ live_design! {
                         mix(
                             mix(
                                 mix(
-                                    mix(self.border_color, border_color_2, gradient_border_dir),
-                                    mix(self.border_color_empty, border_color_2_empty, gradient_border_dir),
-                                    self.empty
+                                    mix(
+                                        mix(self.border_color, border_color_2, gradient_border_dir),
+                                        mix(self.border_color_empty, border_color_2_empty, gradient_border_dir),
+                                        self.empty
+                                    ),
+                                    mix(self.border_color_focus, border_color_2_focus, gradient_border_dir),
+                                    self.focus
                                 ),
-                                mix(self.border_color_focus, border_color_2_focus, gradient_border_dir),
-                                self.focus
+                                mix(
+                                    mix(self.border_color_hover, border_color_2_hover, gradient_border_dir),
+                                    mix(self.border_color_down, border_color_2_down, gradient_border_dir),
+                                    self.down
+                                ),
+                                self.hover
                             ),
-                            mix(
-                                mix(self.border_color_hover, border_color_2_hover, gradient_border_dir),
-                                mix(self.border_color_down, border_color_2_down, gradient_border_dir),
-                                self.down
-                            ),
-                            self.hover
-                        ),
-                        mix(self.border_color_disabled, border_color_2_disabled, gradient_border_dir),
-                        self.disabled
+                            mix(self.border_color_disabled, border_color_2_disabled, gradient_border_dir),
+                            self.disabled
+                        )
                     ),
                     self.border_size
                 );
@@ -632,9 +633,9 @@ pub struct TextInput {
         }
         nodes.skip_node(index)
      }
-     fn after_new_from_doc(&mut self, cx:&mut Cx){
-         self.check_text_is_empty(cx);
-     }
+    fn after_new_from_doc(&mut self, cx:&mut Cx){
+        self.check_text_is_empty(cx);
+    }
  }
 
 impl TextInput {
@@ -679,6 +680,7 @@ impl TextInput {
     pub fn toggle_is_numeric_only(&mut self, cx: &mut Cx) {
         self.set_is_numeric_only(cx, !self.is_numeric_only);
     }
+
 
     pub fn empty_text(&self) -> &str {
         &self.empty_text
@@ -786,20 +788,22 @@ impl TextInput {
         if !self.is_password {
             return index;
         }
-        let grapheme_index = self.text[..index].graphemes(true).count();
+        let char_count = self.text[..index].chars().count();
         self.password_text
-            .grapheme_indices(true)
-            .nth(grapheme_index).map_or(self.password_text.len(), |(index, _)| index)
+            .char_indices()
+            .nth(char_count)
+            .map_or(self.password_text.len(), |(index, _)| index)
     }
 
     fn password_index_to_index(&self, password_index: usize) -> usize {
         if !self.is_password {
             return password_index;
         }
-        let grapheme_index = self.password_text[..password_index].graphemes(true).count();
+        let char_count = self.password_text[..password_index].chars().count();
         self.text
-            .grapheme_indices(true)
-            .nth(grapheme_index).map_or(self.text.len(), |(index, _)| index)
+            .char_indices()
+            .nth(char_count)
+            .map_or(self.text.len(), |(index, _)| index)
     }
 
     fn inner_walk(&self) -> Walk {
@@ -816,8 +820,8 @@ impl TextInput {
         }
         let text = if self.is_password {
             self.password_text.clear();
-            for grapheme in self.text.graphemes(true) {
-                self.password_text.push(if grapheme == "\n" {
+            for c in self.text.chars() {
+                self.password_text.push(if c == '\n' {
                     '\n'
                 } else {
                     '•'
@@ -866,7 +870,7 @@ impl TextInput {
         text_rect
     }
 
-    fn draw_cursor(&mut self, cx: &mut Cx2d, text_rect: Rect) -> Rect {
+    fn draw_cursor(&mut self, cx: &mut Cx2d, text_rect: Rect) -> Vec2d {
         let CursorPosition {
             row_index,
             x_in_lpxs,
@@ -874,20 +878,25 @@ impl TextInput {
             .cursor_to_position(self.selection.cursor)
             .ok()
             .expect("layout should not be `None` because we called `layout_text` in `draw_walk`");
-        let x_in_lpxs = x_in_lpxs.min(cx.turtle().inner_rect().size.x as f32 - 2.0);
         let laidout_text = self
             .laidout_text
             .as_ref()
             .expect("layout should not be `None` because we called `layout_text` in `draw_walk`");
         let row = &laidout_text.rows[row_index];
-        let cursor_rect = rect(
+        let cursor_pos = dvec2(
             (x_in_lpxs - 1.0 * self.draw_text.font_scale) as f64,
             ((row.origin_in_lpxs.y - row.ascender_in_lpxs) * self.draw_text.font_scale) as f64,
-            (2.0 * self.draw_text.font_scale) as f64,
-            ((row.ascender_in_lpxs - row.descender_in_lpxs) * self.draw_text.font_scale) as f64,
         );
-        self.draw_cursor.draw_abs(cx, cursor_rect.translate(text_rect.pos));
-        cursor_rect
+        self.draw_cursor.draw_abs(
+            cx,
+            rect(
+                text_rect.pos.x + cursor_pos.x,
+                text_rect.pos.y + cursor_pos.y,
+                (2.0 * self.draw_text.font_scale) as f64,
+                ((row.ascender_in_lpxs - row.descender_in_lpxs) * self.draw_text.font_scale) as f64,
+            )
+        );
+        cursor_pos
     }
 
     fn draw_selection(&mut self, cx: &mut Cx2d, text_rect: Rect) {
@@ -1149,49 +1158,57 @@ impl TextInput {
     }
 
     fn ceil_word_boundary(&self, index: usize) -> usize {
-        let mut prev_word_boundary_index = 0;
-        for (word_boundary_index, _) in self.text.split_word_bound_indices() {
-            if word_boundary_index > index {
-                return prev_word_boundary_index;
+        if index >= self.text.len() { return self.text.len(); }
+        
+        // Find next boundary where char class changes
+        let mut chars = self.text[index..].char_indices().peekable();
+        let first_char_class = chars.peek().map(|(_, c)| Self::char_class(*c)).unwrap_or(0);
+        
+        for (i, c) in chars {
+            if Self::char_class(c) != first_char_class {
+                return index + i;
             }
-            prev_word_boundary_index = word_boundary_index;
         }
-        prev_word_boundary_index
+        self.text.len()
     }
 
     fn floor_word_boundary(&self, index: usize) -> usize {
-        let mut prev_word_boundary_index = self.text.len();
-        for (word_boundary_index, _) in self.text.split_word_bound_indices().rev() {
-            if word_boundary_index < index {
-                return prev_word_boundary_index;
-            }
-            prev_word_boundary_index = word_boundary_index;
+        if index == 0 { return 0; }
+        
+        // Walk backwards
+        let mut indices = self.text.char_indices().rev();
+        // Skip until we find strict less than index (handle if index is not boundary)
+        let _ = indices.by_ref().skip_while(|(i, _)| *i >= index);
+        
+        // Get char before index
+        if let Some((start_i, start_c)) = indices.next() {
+             let start_class = Self::char_class(start_c);
+             let mut last_i = start_i;
+             
+             for (i, c) in indices {
+                 if Self::char_class(c) != start_class {
+                     return last_i;
+                 }
+                 last_i = i;
+             }
+             return 0;
         }
-        prev_word_boundary_index
+        0
+    }
+    
+    fn char_class(c: char) -> u8 {
+        if c.is_whitespace() { 0 }
+        else if c.is_alphanumeric() { 1 }
+        else { 2 }
     }
 
-    fn filter_input(&self, input: &str, is_set_text: bool) -> String {
+    fn filter_input(&self, input: &str, _is_set_text: bool) -> String {
         // strip out escape sequences and tabs sometimes sent from the IME
         if input.len() == 1 && input.chars().next().unwrap() <= '\u{1d}'{
             return String::new();
         }
         if self.is_numeric_only {
-            let mut contains_dot = if is_set_text {
-                false   
-            } else {
-                let before_selection = self.text[..self.selection.start().index].to_string();
-                let after_selection = self.text[self.selection.end().index..].to_string();
-                before_selection.contains('.') || after_selection.contains('.')
-            };
-            input.chars().filter(|char| {
-                match char {
-                    '.' | ',' if !contains_dot => {
-                        contains_dot = true;
-                        true
-                    },
-                    char => char.is_ascii_digit(),
-                }
-            }).collect()
+            input.chars().filter(|c| c.is_ascii_digit()).collect()
         } else {
             input.to_string()
         }
@@ -1273,15 +1290,14 @@ impl Widget for TextInput {
         self.draw_selection.append_to_draw_call(cx);
         self.layout_text(cx);
         let text_rect = self.draw_text(cx);
-        let cursor_rect = self.draw_cursor(cx, text_rect);
+        let cursor_pos = self.draw_cursor(cx, text_rect);
         self.draw_selection(cx, text_rect);
         self.scroll_to_cursor(cx);
         self.draw_bg.end(cx);
         if cx.has_key_focus(self.draw_bg.area()) {
-            let cursor_bottom_pos = cursor_rect.pos + cursor_rect.size;
             cx.show_text_ime(
-                self.draw_bg.area(),
-                dvec2(cursor_bottom_pos.x, cursor_bottom_pos.y - self.scroll_y)
+                self.draw_bg.area(), 
+                cursor_pos - self.scroll_y,
             );
         }
         cx.add_nav_stop(self.draw_bg.area(), NavRole::TextInput, Margin::default());
@@ -1715,7 +1731,7 @@ impl Widget for TextInput {
                         self.composition_length = 0;
                         self.draw_bg.redraw(cx);
                         cx.widget_action(uid, &scope.path, TextInputAction::Changed(self.text.clone()));
-                    }
+                            }
                     return;
                 }
 
@@ -1831,7 +1847,7 @@ impl Widget for TextInput {
                     );
                     self.draw_bg.redraw(cx);
                     cx.widget_action(uid, &scope.path, TextInputAction::Changed(self.text.clone()));
-                }
+                    }
             }
             Hit::KeyDown(event) => {
                 cx.widget_action(uid, &scope.path, TextInputAction::KeyDownUnhandled(event));
@@ -1898,6 +1914,7 @@ impl TextInputRef {
             inner.set_is_numeric_only(cx, is_numeric_only);
         }
     }
+
 
     pub fn toggle_is_numeric_only(&self, cx: &mut Cx) {
         if let Some(mut inner) = self.borrow_mut(){
@@ -2199,11 +2216,23 @@ impl Edit {
 }
 
 fn prev_grapheme_boundary(text: &str, index: usize) -> usize {
-    let mut cursor = GraphemeCursor::new(index, text.len(), true);
-    cursor.prev_boundary(text, 0).unwrap().unwrap_or(0)
+    if index == 0 {
+        return 0;
+    }
+    let mut i = index - 1;
+    while !text.is_char_boundary(i) && i > 0 {
+        i -= 1;
+    }
+    i
 }
 
 fn next_grapheme_boundary(text: &str, index: usize) -> usize {
-    let mut cursor = GraphemeCursor::new(index, text.len(), true);
-    cursor.next_boundary(text, 0).unwrap().unwrap_or(text.len())
+    if index >= text.len() {
+        return text.len();
+    }
+    let mut i = index + 1;
+    while i < text.len() && !text.is_char_boundary(i) {
+        i += 1;
+    }
+    i
 }

@@ -62,9 +62,9 @@ import java.util.concurrent.CompletableFuture;
 //% IMPORTS
 
 class MakepadSurface
-    extends
+        extends
         SurfaceView
-    implements
+        implements
         View.OnTouchListener,
         View.OnKeyListener,
         View.OnLongClickListener,
@@ -92,7 +92,7 @@ class MakepadSurface
         requestFocus();
         setOnTouchListener(this);
         setOnKeyListener(this);
-        setOnLongClickListener(this);        
+        setOnLongClickListener(this);
 
         getViewTreeObserver().addOnGlobalLayoutListener(this);
     }
@@ -114,9 +114,9 @@ class MakepadSurface
 
     @Override
     public void surfaceChanged(SurfaceHolder holder,
-                               int format,
-                               int width,
-                               int height) {
+            int format,
+            int width,
+            int height) {
         Log.i("SAPP", "surfaceChanged");
         Surface surface = holder.getSurface();
         //surface.setFrameRate(120f,0);
@@ -209,7 +209,8 @@ class MakepadSurface
         int visibleHeight = r.height();
         int keyboardHeight = screenHeight - visibleHeight;
 
-        MakepadNative.surfaceOnResizeTextIME(keyboardHeight, insets.isVisible(WindowInsets.Type.ime()));
+        // MakepadNative.surfaceOnResizeTextIME(keyboardHeight,
+        // insets.isVisible(WindowInsets.Type.ime()));
     }
 
     // docs says getCharacters are deprecated
@@ -267,9 +268,9 @@ class MakepadSurface
 }
 
 class ResizingLayout
-    extends
+        extends
         LinearLayout
-    implements
+        implements
         View.OnApplyWindowInsetsListener {
 
     public ResizingLayout(Context context){
@@ -282,14 +283,18 @@ class ResizingLayout
 
     @Override
     public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
+        // In edge-to-edge mode, we want to handle insets manually or let the view fill the screen.
+        // We only care about IME (keyboard) here, but since we are LAYOUT_NO_LIMITS,
+        // standard system insets might behave differently.
+        // For now, let's keep IME handling but ensure we don't accidentally pad the status bar.
         Insets imeInsets = insets.getInsets(WindowInsets.Type.ime());
-        v.setPadding(0, 0, 0, imeInsets.bottom);
+        MakepadNative.surfaceOnResizeTextIME(imeInsets.bottom, insets.isVisible(WindowInsets.Type.ime()));
         return insets;
     }
 }
 
 public class MakepadActivity
-    extends Activity
+        extends Activity
     implements MidiManager.OnDeviceOpenedListener
 {
     //% MAIN_ACTIVITY_BODY
@@ -318,14 +323,23 @@ public class MakepadActivity
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        
+
         HandlerThread webSocketsThreadHandler = new HandlerThread("WebSocketsThread");
         webSocketsThreadHandler.start();
         mWebSocketsHandler = new Handler(webSocketsThreadHandler.getLooper());
-        
+
         super.onCreate(savedInstanceState);
-        
+
         this.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        Window window = getWindow();
+        window.setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        window.setStatusBarColor(Color.TRANSPARENT);
+        window.setNavigationBarColor(Color.TRANSPARENT);
+
+        if (Build.VERSION.SDK_INT >= 30) {
+            window.setDecorFitsSystemWindows(false);
+        }
 
         view = new MakepadSurface(this);
         // Put it inside a parent layout which can resize it using padding
@@ -359,15 +373,15 @@ public class MakepadActivity
         float refreshRate = getDeviceRefreshRate();
         MakepadNative.initChoreographer(refreshRate, sdkVersion);
         //% MAIN_ACTIVITY_ON_CREATE
-        
+
     }
 
     @Override
     protected void onStart() {
         super.onStart();
 
-       // this forces a high framerate default 
-           /*
+        // this forces a high framerate default
+        /*
         Window w = getWindow();
         WindowManager.LayoutParams p = w.getAttributes();
         Display.Mode[] modes = getDisplay().getSupportedModes();
@@ -380,7 +394,7 @@ public class MakepadActivity
                 break;
             }
         }
-*/      
+         */
         MakepadNative.activityOnStart();
     }
 
@@ -445,7 +459,7 @@ public class MakepadActivity
                     status = 3; // DeniedPermanent (user selected "Don't ask again" or hit limit)
                 }
             }
-            
+
             // Use the new unified callback
             MakepadNative.onPermissionResult(permissions[i], requestId, status);
         }
@@ -461,7 +475,7 @@ public class MakepadActivity
                     return 2; // DeniedCanRetry (user previously declined but can show rationale)
                 } else {
                     // This could be either:
-                    // - NotDetermined (never asked before) 
+                    // - NotDetermined (never asked before)
                     // - DeniedPermanent (user selected "Don't ask again" or hit Android 11+ limit)
                     // We return 0 for NotDetermined as the safest assumption - let the app request and find out
                     return 0; // NotDetermined (assume we can still ask)
@@ -490,38 +504,38 @@ public class MakepadActivity
     @SuppressWarnings("deprecation")
     public void setFullScreen(final boolean fullscreen) {
         runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    View decorView = getWindow().getDecorView();
+            @Override
+            public void run() {
+                View decorView = getWindow().getDecorView();
 
-                    if (fullscreen) {
-                        getWindow().setFlags(LayoutParams.FLAG_LAYOUT_NO_LIMITS, LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+                if (fullscreen) {
+                    getWindow().setFlags(LayoutParams.FLAG_LAYOUT_NO_LIMITS, LayoutParams.FLAG_LAYOUT_NO_LIMITS);
                         getWindow().getAttributes().layoutInDisplayCutoutMode = LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
-                        if (Build.VERSION.SDK_INT >= 30) {
-                            getWindow().setDecorFitsSystemWindows(false);
-                        } else {
+                    if (Build.VERSION.SDK_INT >= 30) {
+                        getWindow().setDecorFitsSystemWindows(false);
+                    } else {
                             int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
-                            decorView.setSystemUiVisibility(uiOptions);
-                        }
+                        decorView.setSystemUiVisibility(uiOptions);
+                    }
                     }
                     else {
-                        if (Build.VERSION.SDK_INT >= 30) {
-                            getWindow().setDecorFitsSystemWindows(true);
-                        } else {
-                          decorView.setSystemUiVisibility(0);
-                        }
-
+                    if (Build.VERSION.SDK_INT >= 30) {
+                        getWindow().setDecorFitsSystemWindows(true);
+                    } else {
+                        decorView.setSystemUiVisibility(0);
                     }
+
                 }
-            });
+            }
+        });
     }
-    
+
     public void switchActivityClass(Class c){
         Intent intent = new Intent(getApplicationContext(), c);
         startActivity(intent);
         finish();
     }
-    
+
     public void showKeyboard(final boolean show) {
         runOnUiThread(new Runnable() {
             @Override
@@ -756,7 +770,7 @@ public class MakepadActivity
     }
 
     public void openWebSocket(long id, String url, long callback) {
-        
+
         MakepadWebSocket webSocket = new MakepadWebSocket(id, url, callback);
         mActiveWebsockets.put(id, webSocket);
         webSocket.connect();
@@ -769,7 +783,7 @@ public class MakepadActivity
     }
 
     public void sendWebSocketMessage(long id, byte[] message) {
-      
+
         MakepadWebSocket webSocket = mActiveWebsockets.get(id);
         if (webSocket != null) {
             webSocket.sendMessage(message);
@@ -777,7 +791,7 @@ public class MakepadActivity
     }
 
     public void closeWebSocket(long id) {
-        
+
         MakepadWebSocket socket = mActiveWebsockets.get(id);
         if (socket != null) {
             socket.closeSocketAndClearCallback();
@@ -786,7 +800,7 @@ public class MakepadActivity
         if (reader != null) {
             mWebSocketsHandler.removeCallbacks(reader);
         }
-        
+
         mActiveWebsocketsReaders.remove(id);
         mActiveWebsockets.remove(id);
     }
@@ -812,10 +826,10 @@ public class MakepadActivity
                 int[] channel_counts = device.getChannelCounts();
                 for(int cc: channel_counts){
                     out.add(String.format(
-                        "%d$$%d$$%d$$%s",
-                        device.getId(),
-                        device.getType(),
-                        cc,
+                            "%d$$%d$$%d$$%s",
+                            device.getId(),
+                            device.getType(),
+                            cc,
                         device.getProductName().toString()
                     ));
                 }
@@ -939,18 +953,18 @@ public class MakepadActivity
         }
     }
     
-                
+
     public boolean isEmulator() {
         // hints that the app is running on emulator
         return Build.MODEL.startsWith("sdk")
-            || "google_sdk".equals(Build.MODEL)
-            || Build.MODEL.contains("Emulator")
-            || Build.MODEL.contains("Android SDK")
-            || Build.MODEL.toLowerCase().contains("droid4x")
-            || Build.FINGERPRINT.startsWith("generic")
-            || Build.PRODUCT == "sdk"
-            || Build.PRODUCT == "google_sdk"
-            || (Build.BRAND.startsWith("generic") && Build.DEVICE.startsWith("generic"));
+                || "google_sdk".equals(Build.MODEL)
+                || Build.MODEL.contains("Emulator")
+                || Build.MODEL.contains("Android SDK")
+                || Build.MODEL.toLowerCase().contains("droid4x")
+                || Build.FINGERPRINT.startsWith("generic")
+                || Build.PRODUCT == "sdk"
+                || Build.PRODUCT == "google_sdk"
+                || (Build.BRAND.startsWith("generic") && Build.DEVICE.startsWith("generic"));
     }
 
     private String getKernelVersion() {

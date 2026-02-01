@@ -4,21 +4,19 @@ use {
         slice::SliceExt,
         substr::Substr,
     },
-    makepad_rustybuzz as rustybuzz,
-    rustybuzz::UnicodeBuffer,
+    ttf_parser,
     std::{
         collections::{HashMap, VecDeque},
         hash::Hash,
         mem,
         rc::Rc,
     },
-    unicode_segmentation::UnicodeSegmentation,
+    // unicode_segmentation::UnicodeSegmentation,
 };
 
 #[derive(Debug)]
 pub struct Shaper {
     reusable_glyphs: Vec<Vec<ShapedGlyph>>,
-    reusable_unicode_buffer: UnicodeBuffer,
     cache_size: usize,
     cached_params: VecDeque<ShapeParams>,
     cached_results: HashMap<ShapeParams, Rc<ShapedText>>,
@@ -28,7 +26,6 @@ impl Shaper {
     pub fn new(settings: Settings) -> Self {
         Self {
             reusable_glyphs: Vec::new(),
-            reusable_unicode_buffer: UnicodeBuffer::new(),
             cache_size: settings.cache_size,
             cached_params: VecDeque::with_capacity(settings.cache_size),
             cached_results: HashMap::with_capacity(settings.cache_size),
@@ -112,64 +109,23 @@ impl Shaper {
         end: usize,
         out_glyphs: &mut Vec<ShapedGlyph>,
     ) {
-        let mut unicode_buffer = mem::take(&mut self.reusable_unicode_buffer);
-        for (index, grapheme) in text[start..end].grapheme_indices(true) {
-            let cluster = start + index;
-            for char in grapheme.chars() {
-                unicode_buffer.add(char, cluster as u32);
-            }
-        }
-        let mut glyph_buffer = rustybuzz::shape(font.rustybuzz_face(), &[], unicode_buffer);
-        let out_glyph_start = out_glyphs.len();
-        out_glyphs.extend(
-            glyph_buffer
-                .glyph_infos()
-                .iter()
-                .zip(glyph_buffer.glyph_positions())
-                .map(|(glyph_info, glyph_position)| ShapedGlyph {
-                    font: font.clone(),
-                    id: glyph_info.glyph_id as u16,
-                    cluster: glyph_info.cluster as usize,
-                    advance_in_ems: glyph_position.x_advance as f32 / font.units_per_em(),
-                    offset_in_ems: glyph_position.x_offset as f32 / font.units_per_em(),
-                }),
-        );
+        let face = font.ttf_parser_face();
+        let units_per_em = font.units_per_em();
+        let scale = 1.0 / units_per_em;
 
-        // HACK: We don't support right-to-left scripts yet. When such scripts are used, cluster
-        // values may be monotonically decreasing instead of increasing, as we assume. This should
-        // be fixed by properly handling bidirectional text (by further breaking up spans into
-        // spans with a single direction), but for now we just check if the cluster values are
-        // monotonically increasing. If they are not, we re-shape the text by replacing each
-        // grapheme with a single character. This is not ideal, but it works for now.
-        if out_glyphs[out_glyph_start..]
-            .windows(2)
-            .any(|glyphs| {
-                glyphs[0].cluster > glyphs[1].cluster
-            })
-        {
-            out_glyphs.truncate(out_glyph_start);
-            let mut unicode_buffer = glyph_buffer.clear();
-            for (index, _) in text[start..end].grapheme_indices(true) {
-                let cluster = start + index;
-                unicode_buffer.add('□', cluster as u32);
-            }
-            glyph_buffer = rustybuzz::shape(font.rustybuzz_face(), &[], unicode_buffer);
-            out_glyphs.extend(
-                glyph_buffer
-                    .glyph_infos()
-                    .iter()
-                    .zip(glyph_buffer.glyph_positions())
-                    .map(|(glyph_info, glyph_position)| ShapedGlyph {
-                        font: font.clone(),
-                        id: glyph_info.glyph_id as u16,
-                        cluster: glyph_info.cluster as usize,
-                        advance_in_ems: glyph_position.x_advance as f32 / font.units_per_em(),
-                        offset_in_ems: glyph_position.x_offset as f32 / font.units_per_em(),
-                    }),
-            );
+        for (index, char) in text[start..end].char_indices() {
+             let cluster = start + index;
+             let glyph_id = face.glyph_index(char).unwrap_or(ttf_parser::GlyphId(0));
+             let advance = face.glyph_hor_advance(glyph_id).unwrap_or(0);
+             
+             out_glyphs.push(ShapedGlyph {
+                 font: font.clone(),
+                 id: glyph_id.0,
+                 cluster,
+                 advance_in_ems: advance as f32 * scale,
+                 offset_in_ems: 0.0,
+             });
         }
-
-        self.reusable_unicode_buffer = glyph_buffer.clear();
     }
 }
 

@@ -1,10 +1,9 @@
 use crate::{
     makepad_derive_widget::*,
-    debug_view::DebugView,
-    performance_view::PerformanceView,
+    // debug_view::DebugView,
+    // performance_view::PerformanceView,
     makepad_draw::*,
-    nav_control::NavControl,
-    desktop_button::*,
+    // desktop_button::*,
     view::*,
     widget::*,
 };
@@ -19,36 +18,9 @@ live_design!{
     pub Window = <WindowBase> {
         pass: { clear_color: (THEME_COLOR_BG_APP) }
         flow: Down
-        nav_control: <NavControl> {}
-        caption_bar = <SolidView> {
-            visible: false,
-            
-            flow: Right
-            
-            draw_bg: {color: (THEME_COLOR_APP_CAPTION_BAR)}
-            height: 27,
-            caption_label = <View> {
-                width: Fill, height: Fill,
-                align: {x: 0.5, y: 0.5},
-                label = <Label> {text: "Makepad", margin: {left: 100}}
-            }
-            windows_buttons = <View> {
-                visible: false,
-                width: Fit, height: Fit,
-                min = <DesktopButton> {draw_bg: {button_type: WindowsMin}}
-                max = <DesktopButton> {draw_bg: {button_type: WindowsMax}}
-                close = <DesktopButton> {draw_bg: {button_type: WindowsClose}}
-            }
-            web_fullscreen = <View> {
-                visible: false,
-                width: Fit, height: Fit,
-                fullscreen = <DesktopButton> {draw_bg: {button_type: Fullscreen}}
-            }
-            web_xr = <View> {
-                visible: false,
-                width: Fit, height: Fit,
-                xr_on = <DesktopButton> {draw_bg: {button_type: XRMode}}
-            }
+        
+        caption_bar = <View> {
+            visible: false
         }
         
         window_menu = <WindowMenu> {
@@ -61,9 +33,9 @@ live_design!{
                 enabled: true
             }
         }
-        body = <KeyboardView> {
+        
+        body = <View> {
             width: Fill, height: Fill,
-            keyboard_min_shift: 30,
         }
         
         cursor: Default
@@ -110,9 +82,9 @@ pub struct Window {
     #[rust] demo_next_frame: NextFrame,
     #[live] cursor_draw_list: DrawList2d,
     #[live] draw_cursor: DrawQuad,
-    #[live] debug_view: DebugView,
-    #[live] performance_view: PerformanceView,
-    #[live] nav_control: NavControl,
+    // #[live] debug_view: DebugView,
+    // #[live] performance_view: PerformanceView,
+    // #[live] nav_control: NavControl,
     #[live] window: WindowHandle,
     #[live] stdin_size: DrawColor,
     #[rust] last_known_area: Area,
@@ -121,7 +93,7 @@ pub struct Window {
     #[live] pass: Pass,
     #[rust(Texture::new(cx))] depth_texture: Texture,
     #[live] hide_caption_on_fullscreen: bool, 
-    #[live] show_performance_view: bool,
+    // #[live] show_performance_view: bool,
     #[rust(Mat4f::nonuniform_scaled_translation(vec3(0.0004,-0.0004,-0.0004),vec3(-0.25,0.25,-0.5)))] xr_view_matrix: Mat4f,
     #[deref] view: View,
     // #[rust(WindowMenu::new(cx))] _window_menu: WindowMenu,
@@ -231,7 +203,7 @@ impl Window {
     
     pub fn end(&mut self, cx: &mut Cx2d) {
         //while self.frame.draw_widget_continue(cx).is_not_done() {}
-        self.debug_view.draw(cx);
+        // self.debug_view.draw(cx);
         
         // lets draw our cursor
         if let OsType::LinuxDirect = cx.os_type() {
@@ -262,9 +234,9 @@ impl Window {
             self.stdin_size.draw_abs(cx, Rect{pos:dvec2(1.0/df,0.0),size:dvec2(1.0/df,1.0/df)});
         }
 
-        if self.show_performance_view {
-            self.performance_view.draw_all(cx, &mut Scope::empty());
-        }
+        // if self.show_performance_view {
+        //     self.performance_view.draw_all(cx, &mut Scope::empty());
+        // }
 
         cx.end_pass_sized_turtle();
         
@@ -356,12 +328,11 @@ impl Widget for Window {
         
         let uid = self.widget_uid();
         
-        self.debug_view.handle_event(cx, event);
-        if self.show_performance_view {
-            self.performance_view.handle_widget(cx, event);
-        }
+        // self.debug_view.handle_event(cx, event);
+        //     self.performance_view.handle_widget(cx, event);
+        // }
         
-        self.nav_control.handle_event(cx, event, self.main_draw_list.draw_list_id());
+        // self.nav_control.handle_event(cx, event, self.main_draw_list.draw_list_id());
         self.overlay.handle_event(cx, event);
         if self.demo_next_frame.is_event(event).is_some(){
             if self.demo{
@@ -465,25 +436,25 @@ impl Widget for Window {
             }
         }
         
-        if let Event::Actions(actions) = event{
-            if self.desktop_button(ids!(windows_buttons.min)).clicked(&actions) {
-                self.window.minimize(cx);
-            }
-            if self.desktop_button(ids!(windows_buttons.max)).clicked(&actions) {
-                if self.window.is_fullscreen(cx) {
-                    self.window.restore(cx);
-                }
-                else {
-                    self.window.maximize(cx);
-                }
-            }
-            if self.desktop_button(ids!(windows_buttons.close)).clicked(&actions) {
-                self.window.close(cx);
-            }
-            if self.desktop_button(ids!(web_xr.xr_on)).clicked(&actions) {
-                cx.xr_start_presenting();
-            }
-        }
+        // if let Event::Actions(actions) = event{
+        //     if self.desktop_button(ids!(windows_buttons.min)).clicked(&actions) {
+        //         self.window.minimize(cx);
+        //     }
+        //     if self.desktop_button(ids!(windows_buttons.max)).clicked(&actions) {
+        //         if self.window.is_fullscreen(cx) {
+        //             self.window.restore(cx);
+        //         }
+        //         else {
+        //             self.window.maximize(cx);
+        //         }
+        //     }
+        //     if self.desktop_button(ids!(windows_buttons.close)).clicked(&actions) {
+        //         self.window.close(cx);
+        //     }
+        //     if self.desktop_button(ids!(web_xr.xr_on)).clicked(&actions) {
+        //         cx.xr_start_presenting();
+        //     }
+        // }
                 
         if let Event::ClearAtlasses = event {
             CxDraw::reset_icon_atlas(cx);
@@ -531,7 +502,7 @@ impl Widget for Window {
         
         self.view.draw_walk_all(cx, scope, Walk::default());
         
-        self.debug_view.draw(cx);
+        // self.debug_view.draw(cx);
                         
         self.main_draw_list.set_view_transform(cx, &self.xr_view_matrix);
         

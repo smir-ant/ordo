@@ -23,8 +23,8 @@ use {
         draw_list_2d::DrawList2d,
         text::{loader::FontFamilyDefinition, fonts::Fonts, layouter},
     },
-    makepad_rustybuzz::UnicodeBuffer,
 };
+
 
 pub struct PassStackItem {
     pub pass_id: PassId,
@@ -42,7 +42,6 @@ pub struct CxDraw<'a> {
     pub fonts: Rc<RefCell<Fonts>>,
     pub icon_atlas_rc: CxIconAtlasRc,
     pub nav_tree_rc: CxNavTreeRc,
-    pub rustybuzz_buffer: Option<UnicodeBuffer>, 
 }
 
 impl<'a> Deref for CxDraw<'a> {type Target = Cx; fn deref(&self) -> &Self::Target {self.cx}}
@@ -75,7 +74,6 @@ impl<'a> CxDraw<'a> {
             draw_list_stack: Vec::with_capacity(64),
             nav_tree_rc,
             icon_atlas_rc,
-            rustybuzz_buffer: Some(UnicodeBuffer::new()),
         }
     }
 }

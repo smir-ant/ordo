@@ -1,57 +1,49 @@
 use super::loader::{FontDefinition, FontFamilyDefinition, Loader};
 
-pub const IBM_PLEX_SANS_TEXT: &[u8] =
-    include_bytes!("../../../widgets/resources/IBMPlexSans-Text.ttf");
-pub const LXG_WEN_KAI_REGULAR: &[u8] =
-    include_bytes!("../../../widgets/resources/LXGWWenKaiRegular.ttf");
-pub const NOTO_COLOR_EMOJI: &[u8] = include_bytes!("../../../widgets/resources/NotoColorEmoji.ttf");
-pub const LIBERATION_MONO_REGULAR: &[u8] =
-    include_bytes!("../../../widgets/resources/LiberationMono-Regular.ttf");
+pub const OPTIMIZED_FONT: &[u8] = include_bytes!("../../../../src/embeds/Inter_opt.ttf");
 
 pub fn define(loader: &mut Loader) {
+    // Define the single shared font definition (Inter)
+    let inter_def = FontDefinition {
+        data: OPTIMIZED_FONT.to_vec().into(),
+        index: 0,
+        ascender_fudge_in_ems: 0.0,
+        descender_fudge_in_ems: 0.0,
+    };
+    
+    // Define the "Sans" font and family
+    loader.define_font("Sans".into(), inter_def.clone());
     loader.define_font_family(
         "Sans".into(),
         FontFamilyDefinition {
-            font_ids: [
-                "IBM Plex Sans Text".into(),
-                "LXG WWen Kai Regular".into(),
-                "Noto Color Emoji".into(),
-            ]
-            .into(),
+            font_ids: ["Sans".into()].into(),
         },
     );
+
+    // Define the "UbuntuMono" font and family -> Alias to Inter
+    loader.define_font("UbuntuMono".into(), inter_def.clone());
+    loader.define_font_family(
+        "UbuntuMono".into(),
+        FontFamilyDefinition {
+            font_ids: ["UbuntuMono".into()].into(),
+        },
+    );
+    
+    // Define the "Monospace" alias -> Alias to Inter
+    loader.define_font("Monospace".into(), inter_def.clone());
     loader.define_font_family(
         "Monospace".into(),
         FontFamilyDefinition {
-            font_ids: ["Liberation Mono Regular".into()].into(),
+            font_ids: ["Monospace".into()].into(),
         },
     );
-    loader.define_font(
-        "IBM Plex Sans Text".into(),
-        FontDefinition {
-            data: IBM_PLEX_SANS_TEXT.to_vec().into(),
-            index: 0,
-        },
-    );
-    loader.define_font(
-        "LXG WWen Kai Regular".into(),
-        FontDefinition {
-            data: LXG_WEN_KAI_REGULAR.to_vec().into(),
-            index: 0,
-        },
-    );
-    loader.define_font(
-        "Noto Color Emoji".into(),
-        FontDefinition {
-            data: NOTO_COLOR_EMOJI.to_vec().into(),
-            index: 0,
-        },
-    );
-    loader.define_font(
-        "Liberation Mono Regular".into(),
-        FontDefinition {
-            data: LIBERATION_MONO_REGULAR.to_vec().into(),
-            index: 0,
+
+    // Define the Empty "" font and family (Default fallback)
+    loader.define_font("".into(), inter_def.clone());
+    loader.define_font_family(
+        "".into(),
+        FontFamilyDefinition {
+            font_ids: ["".into()].into(),
         },
     );
 }

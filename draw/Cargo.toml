@@ -17,13 +17,13 @@ makepad-live-id = { path = "../libs/live_id", version = "1.0.0" }
 
 # HACK(eddyb) only a git dep until https://github.com/RazrFalcon/rustybuzz/pull/71
 # ends up being published in a release (only affects build times, not behavior).
-makepad-rustybuzz = { version = "0.8.0", path = "../libs/rustybuzz" }
-unicode-bidi = "0.3"
+# makepad-rustybuzz = { version = "0.8.0", path = "../libs/rustybuzz" }
+# unicode-bidi = "0.3"  # Removed - not used, saves binary size
 ab_glyph_rasterizer = { version = "0.1.8", path = "../libs/ab_glyph_rasterizer"}
 sdfer = { path = "../libs/sdfer", version = "0.2.1" }
 fxhash = "0.2.1"
-unicode-linebreak = "0.1.5"
-unicode-segmentation = "1.11.0"
+# unicode-linebreak = "0.1.5"  # Removed - not used, saves binary size
+
 png = "0.17.13"
 ttf-parser = "0.25.1"
 serde = { version = "1.0", optional = true, features = ["derive"] }

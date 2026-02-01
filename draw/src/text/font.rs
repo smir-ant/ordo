@@ -8,8 +8,7 @@ use {
         intern::Intern,
         rasterizer::{RasterizedGlyph, Rasterizer},
     },
-    makepad_rustybuzz as rustybuzz,
-    rustybuzz::ttf_parser,
+    ttf_parser,
     std::{
         cell::RefCell,
         collections::HashMap,
@@ -69,9 +68,7 @@ impl Font {
         self.face.as_ttf_parser_face()
     }
 
-    pub(super) fn rustybuzz_face(&self) -> &rustybuzz::Face<'_> {
-        self.face.as_rustybuzz_face()
-    }
+
 
     pub fn units_per_em(&self) -> f32 {
         self.ttf_parser_face().units_per_em() as f32
