@@ -6,7 +6,7 @@ use crate::widgets::text::Text;
 use crate::widgets::day_of_week::DayOfWeek;
 use crate::widgets::tabs::TabsAction;
 use crate::widgets::wheel_v::{WheelV, WheelVAction};
-use crate::widgets::wheel_h::{WheelH, WheelHAction};
+use crate::widgets::wheel_h::WheelH;
 use crate::widgets::time_picker::{TimePicker, TimePickerAction};
 use crate::widgets::date_picker::{DatePicker, DatePickerAction};
 use crate::utils::calendar;
@@ -527,16 +527,10 @@ impl AppMain for App {
         if !self.initialized {
             self.initialized = true;
 
-            // Month picker labels
-            let months = vec![
-                "Jan".to_string(), "Feb".to_string(), "Mar".to_string(),
-                "Apr".to_string(), "May".to_string(), "Jun".to_string(),
-                "Jul".to_string(), "Aug".to_string(), "Sep".to_string(),
-                "Oct".to_string(), "Nov".to_string(), "Dec".to_string(),
-            ];
+            // Month picker labels (demo WheelH on main page)
             if let Some(mut picker) = self.ui.widget(ids!(month_picker)).borrow_mut::<WheelH>() {
-                picker.set_labels(months);
-                picker.set_value(cx, 0); // January
+                picker.set_labels(calendar::MONTH_NAMES_SHORT.iter().map(|s| s.to_string()).collect());
+                picker.set_value(cx, 0);
             }
 
             // DatePicker button: show today's date
@@ -582,6 +576,11 @@ impl AppMain for App {
 }
 
 impl App {
+    /// Check if button was clicked
+    fn btn_clicked(&self, id: &[LiveId], actions: &Actions) -> bool {
+        self.ui.widget(id).borrow::<Btn>().map(|b| b.clicked(actions)).unwrap_or(false)
+    }
+
     /// All modal-like widgets (Modal and TimePicker)
     /// Add new modals here - single place to update
     fn modal_widget_ids() -> &'static [&'static [LiveId]] {
@@ -637,10 +636,7 @@ impl App {
         }
 
         // Input Validation
-        let submit_clicked = self.ui.widget(ids!(submit_btn))
-            .borrow::<Btn>()
-            .map(|btn| btn.clicked(actions))
-            .unwrap_or(false);
+        let submit_clicked = self.btn_clicked(ids!(submit_btn), actions);
 
         let input_returned = self.ui.widget(ids!(input1))
             .borrow::<Input>()
@@ -658,11 +654,9 @@ impl App {
         }
 
         // Handle Receive DOW
-        if let Some(btn) = self.ui.widget(ids!(receive_dow_btn)).borrow::<Btn>() {
-            if btn.clicked(actions) {
-                if let Some(dow) = self.ui.widget(ids!(day_of_week)).borrow::<DayOfWeek>() {
-                    log!("Selected Days Indices: {:?}", dow.get_selected_days());
-                }
+        if self.btn_clicked(ids!(receive_dow_btn), actions) {
+            if let Some(dow) = self.ui.widget(ids!(day_of_week)).borrow::<DayOfWeek>() {
+                log!("Selected Days Indices: {:?}", dow.get_selected_days());
             }
         }
 
@@ -677,7 +671,7 @@ impl App {
         }
 
         // Get Value button
-        if self.ui.widget(ids!(log_value_btn)).borrow::<Btn>().map(|b| b.clicked(actions)).unwrap_or(false) {
+        if self.btn_clicked(ids!(log_value_btn), actions) {
             if let Some(picker) = self.ui.widget(ids!(hour_picker)).borrow::<WheelV>() {
                 log!("Current WheelPicker Value: {}", picker.get_value());
             }
@@ -686,7 +680,7 @@ impl App {
 
     fn handle_modal_actions(&mut self, cx: &mut Cx, actions: &Actions) {
         // Open Modal Button
-        if self.ui.widget(ids!(open_modal_btn)).borrow::<Btn>().map(|b| b.clicked(actions)).unwrap_or(false) {
+        if self.btn_clicked(ids!(open_modal_btn), actions) {
             // Set dynamic title
             let modal_ref = self.ui.widget(ids!(demo_modal));
             if let Some(mut title) = modal_ref.widget(ids!(content)).widget(ids!(title)).borrow_mut::<Text>() {
@@ -707,28 +701,28 @@ impl App {
         }
 
         // Helper Button Tooltip
-        if self.ui.widget(ids!(help_btn)).borrow::<Btn>().map(|b| b.clicked(actions)).unwrap_or(false) {
+        if self.btn_clicked(ids!(help_btn), actions) {
             if let Some(mut modal) = self.ui.widget(ids!(button_tooltip)).borrow_mut::<Modal>() {
                 modal.open(cx);
             }
         }
 
         // Open SidePanel Button
-        if self.ui.widget(ids!(side_panel_btn)).borrow::<Btn>().map(|b| b.clicked(actions)).unwrap_or(false) {
+        if self.btn_clicked(ids!(side_panel_btn), actions) {
             if let Some(mut modal) = self.ui.widget(ids!(side_panel_view)).borrow_mut::<Modal>() {
                 modal.open(cx);
             }
         }
 
         // Open TimePicker (HH:MM:SS)
-        if self.ui.widget(ids!(open_time_picker_btn)).borrow::<Btn>().map(|b| b.clicked(actions)).unwrap_or(false) {
+        if self.btn_clicked(ids!(open_time_picker_btn), actions) {
             if let Some(mut tp) = self.ui.widget(ids!(time_picker)).borrow_mut::<TimePicker>() {
                 tp.open(cx);
             }
         }
 
         // Open TimePicker (HH:MM only)
-        if self.ui.widget(ids!(open_time_picker_hm_btn)).borrow::<Btn>().map(|b| b.clicked(actions)).unwrap_or(false) {
+        if self.btn_clicked(ids!(open_time_picker_hm_btn), actions) {
             if let Some(mut tp) = self.ui.widget(ids!(time_picker_hm)).borrow_mut::<TimePicker>() {
                 tp.open(cx);
             }
@@ -752,7 +746,7 @@ impl App {
         }
 
         // Open DatePicker
-        if self.ui.widget(ids!(open_date_picker_btn)).borrow::<Btn>().map(|b| b.clicked(actions)).unwrap_or(false) {
+        if self.btn_clicked(ids!(open_date_picker_btn), actions) {
             if let Some(mut dp) = self.ui.widget(ids!(date_picker)).borrow_mut::<DatePicker>() {
                 dp.open(cx);
             }

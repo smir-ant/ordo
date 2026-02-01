@@ -114,8 +114,7 @@ impl Widget for WheelV {
                     self.next_frame = cx.new_next_frame();
                 }
                 if !self.is_infinite { self.clamp_scroll(); }
-                self.draw_bg.redraw(cx);
-                self.draw_selection.redraw(cx);
+                self.redraw(cx);
                 self.update_value(cx, &scope.path);
             } else if let Some(cooldown) = self.scroll_cooldown {
                 if cooldown > 0 {
@@ -124,8 +123,7 @@ impl Widget for WheelV {
                 } else {
                     self.scroll_cooldown = None;
                     self.snap_to_grid(cx);
-                    self.draw_bg.redraw(cx);
-                    self.draw_selection.redraw(cx);
+                    self.redraw(cx);
                 }
             }
         }
@@ -138,8 +136,7 @@ impl Widget for WheelV {
                 self.scroll_target = None;
                 self.scroll_pos += e.scroll.y;
                 if !self.is_infinite { self.clamp_scroll(); }
-                self.draw_bg.redraw(cx);
-                self.draw_selection.redraw(cx);
+                self.redraw(cx);
                 self.update_value(cx, &scope.path);
                 self.scroll_cooldown = Some(10);
                 self.next_frame = cx.new_next_frame();
@@ -154,8 +151,7 @@ impl Widget for WheelV {
                     self.scroll_pos -= delta;
                     if !self.is_infinite { self.clamp_scroll(); }
                     self.last_abs_y = e.abs.y;
-                    self.draw_bg.redraw(cx);
-                    self.draw_selection.redraw(cx);
+                    self.redraw(cx);
                     self.update_value(cx, &scope.path);
                 }
                 Event::MouseUp(_) => {
@@ -170,8 +166,7 @@ impl Widget for WheelV {
                                 self.scroll_pos -= delta;
                                 if !self.is_infinite { self.clamp_scroll(); }
                                 self.last_abs_y = touch.abs.y;
-                                self.draw_bg.redraw(cx);
-                                self.draw_selection.redraw(cx);
+                                self.redraw(cx);
                                 self.update_value(cx, &scope.path);
                             }
                             makepad_widgets::event::TouchState::Stop => {
@@ -257,8 +252,7 @@ impl Widget for WheelV {
                     self.scroll_pos -= delta;
                     if !self.is_infinite { self.clamp_scroll(); }
                     self.last_abs_y = fe.abs.y;
-                    self.draw_bg.redraw(cx);
-                    self.draw_selection.redraw(cx);
+                    self.redraw(cx);
                     self.update_value(cx, &scope.path);
                 }
             }
@@ -346,6 +340,11 @@ impl Widget for WheelV {
 }
 
 impl WheelV {
+    fn redraw(&mut self, cx: &mut Cx) {
+        self.draw_bg.redraw(cx);
+        self.draw_selection.redraw(cx);
+    }
+
     fn finish_drag(&mut self, cx: &mut Cx) {
         cx.sweep_unlock(self.draw_bg.area());
         self.is_dragging = false;
@@ -368,11 +367,9 @@ impl WheelV {
             if steps_offset != 0.0 {
                 // Animate to tapped element
                 self.scroll_pos = snapped_pos;
-                let target_pos = snapped_pos + steps_offset * self.step_height;
-                self.scroll_target = Some(target_pos);
+                self.scroll_target = Some(snapped_pos + steps_offset * self.step_height);
                 self.next_frame = cx.new_next_frame();
-                self.draw_bg.redraw(cx);
-                self.draw_selection.redraw(cx);
+                self.redraw(cx);
                 return;
             }
         }
@@ -384,8 +381,7 @@ impl WheelV {
         } else {
             self.scroll_pos = snapped_pos;
         }
-        self.draw_bg.redraw(cx);
-        self.draw_selection.redraw(cx);
+        self.redraw(cx);
     }
 
     fn clamp_scroll(&mut self) {
@@ -429,9 +425,7 @@ impl WheelV {
 
     pub fn set_value(&mut self, cx: &mut Cx, val: i32) {
         self.current_value = val.clamp(self.range_min, self.range_max);
-        let idx = (self.current_value - self.range_min) as f64;
-        self.scroll_pos = idx * self.step_height;
-        self.draw_bg.redraw(cx);
-        self.draw_selection.redraw(cx);
+        self.scroll_pos = (self.current_value - self.range_min) as f64 * self.step_height;
+        self.redraw(cx);
     }
 }
