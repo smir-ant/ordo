@@ -13,7 +13,7 @@
 use makepad_widgets::*;
 use crate::widgets::modal::{Modal, ModalAction};
 use crate::widgets::button::{Button as Btn, ButtonAction};
-use crate::widgets::wheel_h::{WheelH, WheelHAction};
+use crate::widgets::wheel::{Wheel, WheelAction};
 use crate::utils::calendar::{self, WeekStart, SimpleDate, MONTH_NAMES_SHORT};
 
 live_design! {
@@ -26,7 +26,7 @@ live_design! {
     use crate::widgets::button::Btn;
     use crate::widgets::modal::Modal;
     use crate::widgets::modal::DialogStyle;
-    use crate::widgets::wheel_h::WheelH;
+    use crate::widgets::wheel::WheelH;
 
     DayCell = {{DayCell}} {
         width: 36.0, height: 36.0
@@ -90,7 +90,7 @@ live_design! {
 
                 year_picker = <WheelH> {
                     width: 280.0, height: 40.0
-                    step_width: 80.0
+                    step_size: 80.0
                     range_min: 2001, range_max: 2051
                     initial_value: 2026
                     is_infinite: false
@@ -98,7 +98,7 @@ live_design! {
 
                 month_picker = <WheelH> {
                     width: 280.0, height: 40.0
-                    step_width: 80.0
+                    step_size: 80.0
                     is_infinite: true
                 }
 
@@ -294,12 +294,12 @@ impl DatePicker {
 
         // Cache widget UIDs
         let content = self.content_ref();
-        self.year_picker_uid = content.widget(ids!(year_picker)).borrow::<WheelH>().map(|w| w.widget_uid());
-        self.month_picker_uid = content.widget(ids!(month_picker)).borrow::<WheelH>().map(|w| w.widget_uid());
+        self.year_picker_uid = content.widget(ids!(year_picker)).borrow::<Wheel>().map(|w| w.widget_uid());
+        self.month_picker_uid = content.widget(ids!(month_picker)).borrow::<Wheel>().map(|w| w.widget_uid());
         self.today_button_uid = content.widget(ids!(buttons_wrap)).widget(ids!(today_button)).borrow::<Btn>().map(|b| b.widget_uid());
 
         // Setup month labels
-        if let Some(mut picker) = content.widget(ids!(month_picker)).borrow_mut::<WheelH>() {
+        if let Some(mut picker) = content.widget(ids!(month_picker)).borrow_mut::<Wheel>() {
             picker.set_labels(MONTH_NAMES_SHORT.iter().map(|s| s.to_string()).collect());
         }
 
@@ -320,10 +320,10 @@ impl DatePicker {
     /// Sync wheel pickers to displayed_year/month
     fn sync_pickers(&mut self, cx: &mut Cx) {
         let content = self.content_ref();
-        if let Some(mut p) = content.widget(ids!(year_picker)).borrow_mut::<WheelH>() {
+        if let Some(mut p) = content.widget(ids!(year_picker)).borrow_mut::<Wheel>() {
             p.set_value(cx, self.displayed_year);
         }
-        if let Some(mut p) = content.widget(ids!(month_picker)).borrow_mut::<WheelH>() {
+        if let Some(mut p) = content.widget(ids!(month_picker)).borrow_mut::<Wheel>() {
             p.set_value(cx, (self.displayed_month - 1) as i32);
         }
     }
@@ -421,7 +421,7 @@ impl DatePicker {
             self.last_swipe_x = x;
 
             // Apply to wheel and check month change (must drop borrow before update_calendar)
-            let visual_month = if let Some(mut p) = self.content_ref().widget(ids!(month_picker)).borrow_mut::<WheelH>() {
+            let visual_month = if let Some(mut p) = self.content_ref().widget(ids!(month_picker)).borrow_mut::<Wheel>() {
                 p.apply_scroll_delta(cx, delta);
                 Some((p.get_visual_value() + 1) as u32)
             } else { None };
@@ -439,7 +439,7 @@ impl DatePicker {
         }
 
         if end {
-            if let Some(mut p) = self.content_ref().widget(ids!(month_picker)).borrow_mut::<WheelH>() {
+            if let Some(mut p) = self.content_ref().widget(ids!(month_picker)).borrow_mut::<Wheel>() {
                 p.trigger_snap(cx);
             }
             self.is_swiping = false;
@@ -488,7 +488,7 @@ impl Widget for DatePicker {
                 let Some(wa) = action.as_widget_action() else { continue };
 
                 // Wheel changes
-                if let WheelHAction::Changed(val) = wa.cast() {
+                if let WheelAction::Changed(val) = wa.cast() {
                     if Some(wa.widget_uid) == self.year_picker_uid {
                         self.displayed_year = val;
                         self.update_calendar(cx);

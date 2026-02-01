@@ -5,8 +5,7 @@ use crate::widgets::modal::{Modal, TooltipTriggerAction};
 use crate::widgets::text::Text;
 use crate::widgets::day_of_week::DayOfWeek;
 use crate::widgets::tabs::TabsAction;
-use crate::widgets::wheel_v::{WheelV, WheelVAction};
-use crate::widgets::wheel_h::WheelH;
+use crate::widgets::wheel::{Wheel, WheelAction};
 use crate::widgets::time_picker::{TimePicker, TimePickerAction};
 use crate::widgets::date_picker::{DatePicker, DatePickerAction};
 use crate::utils::calendar;
@@ -35,8 +34,8 @@ live_design!{
     use crate::widgets::tabs::Tabs;
     use crate::widgets::check::Check;
     use crate::widgets::details::Details;
-    use crate::widgets::wheel_v::WheelV;
-    use crate::widgets::wheel_h::WheelH;
+    use crate::widgets::wheel::WheelH;
+    use crate::widgets::wheel::WheelV;
     use crate::widgets::time_picker::TimePicker;
     use crate::widgets::date_picker::DatePicker;
     use crate::theme::*;
@@ -290,7 +289,7 @@ live_design!{
 
                             year_picker = <WheelH> {
                                 width: Fill, height: 40.0
-                                step_width: 80.0
+                                step_size: 80.0
                                 range_min: 2001
                                 range_max: 2051
                                 initial_value: 2026
@@ -528,7 +527,7 @@ impl AppMain for App {
             self.initialized = true;
 
             // Month picker labels (demo WheelH on main page)
-            if let Some(mut picker) = self.ui.widget(ids!(month_picker)).borrow_mut::<WheelH>() {
+            if let Some(mut picker) = self.ui.widget(ids!(month_picker)).borrow_mut::<Wheel>() {
                 picker.set_labels(calendar::MONTH_NAMES_SHORT.iter().map(|s| s.to_string()).collect());
                 picker.set_value(cx, 0);
             }
@@ -665,14 +664,14 @@ impl App {
             if let TabsAction::Changed(idx) = action.cast() {
                 log!("Tab changed to index: {}", idx);
             }
-            if let WheelVAction::Changed(val) = action.cast() {
+            if let WheelAction::Changed(val) = action.cast() {
                 log!("Hour picked: {}", val);
             }
         }
 
         // Get Value button
         if self.btn_clicked(ids!(log_value_btn), actions) {
-            if let Some(picker) = self.ui.widget(ids!(hour_picker)).borrow::<WheelV>() {
+            if let Some(picker) = self.ui.widget(ids!(hour_picker)).borrow::<Wheel>() {
                 log!("Current WheelPicker Value: {}", picker.get_value());
             }
         }

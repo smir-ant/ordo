@@ -1,4 +1,4 @@
-//! Horizontal wheel picker widget.
+//! Unified wheel picker widget (horizontal and vertical).
 //!
 //! # Architecture
 //! - `scroll_pos`: Current scroll position in pixels (continuous)
@@ -13,9 +13,55 @@
 use makepad_widgets::*;
 
 #[derive(Clone, Debug, DefaultNone)]
-pub enum WheelHAction {
+pub enum WheelAction {
     None,
     Changed(i32),
+}
+
+// Keep old action types for backwards compatibility
+pub type WheelHAction = WheelAction;
+pub type WheelVAction = WheelAction;
+
+/// Wheel orientation
+#[derive(Clone, Copy, Debug, PartialEq, Default)]
+pub enum Orientation {
+    #[default]
+    Horizontal,
+    Vertical,
+}
+
+impl LiveHook for Orientation {}
+
+impl LiveRead for Orientation {
+    fn live_read_to(&self, id: LiveId, out: &mut Vec<LiveNode>) {
+        let atom = match self {
+            Orientation::Horizontal => live_id!(Horizontal),
+            Orientation::Vertical => live_id!(Vertical),
+        };
+        out.push(LiveNode::from_id_value(id, LiveValue::Id(atom)));
+    }
+}
+
+impl LiveApply for Orientation {
+    fn apply(&mut self, _cx: &mut Cx, _apply: &mut Apply, index: usize, nodes: &[LiveNode]) -> usize {
+        if let LiveValue::Id(id) = &nodes[index].value {
+            *self = if *id == live_id!(Vertical) { Orientation::Vertical } else { Orientation::Horizontal };
+        }
+        index + 1
+    }
+}
+
+impl LiveNew for Orientation {
+    fn live_type_info(_cx: &mut Cx) -> LiveTypeInfo {
+        LiveTypeInfo {
+            module_id: LiveModuleId::from_str(&module_path!()).unwrap(),
+            live_type: std::any::TypeId::of::<Self>(),
+            live_ignore: true,
+            fields: Vec::new(),
+            type_name: live_id!(Orientation),
+        }
+    }
+    fn new(_cx: &mut Cx) -> Self { Orientation::Horizontal }
 }
 
 live_design! {
@@ -23,8 +69,14 @@ live_design! {
     use link::shaders::*;
     use crate::styling::*;
 
-    pub WheelH = {{WheelH}} {
+    // Horizontal wheel
+    pub WheelH = {{Wheel}} {
         width: 280.0, height: 40.0
+        orientation: Horizontal
+        step_size: 60.0
+        range_min: 0
+        range_max: 11
+        is_infinite: true
 
         draw_text: {
             text_style: <THEME_FONT_BOLD> { font_size: 16.0 }
@@ -58,17 +110,59 @@ live_design! {
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size)
                 sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, self.border_radius)
-                sdf.fill_keep(vec4(self.color.xyz, 1));
+                sdf.fill_keep(vec4(self.color.xyz, 1.0));
                 let stroke_color = mix(#fff5, #0005, self.pos.x);
                 return sdf.stroke(stroke_color, 1.0);
             }
         }
+    }
 
-        step_width: 60.0
+    // Vertical wheel
+    pub WheelV = {{Wheel}} {
+        width: 100.0, height: 160.0
+        orientation: Vertical
+        step_size: 40.0
         range_min: 0
-        range_max: 11
+        range_max: 23
         is_infinite: true
-        initial_value: 0
+
+        draw_text: {
+            text_style: <THEME_FONT_BOLD> { font_size: 20.0 }
+            color: #FFF
+        }
+
+        draw_bg: {
+            instance color: #0000
+            instance border_color: #FFF3
+            instance border_width: 1.0
+            instance border_radius: 2.0
+
+            fn pixel(self) -> vec4 {
+                let sdf = Sdf2d::viewport(self.pos * self.rect_size)
+                sdf.box(
+                    self.border_width,
+                    self.border_width,
+                    self.rect_size.x - self.border_width * 2.0,
+                    self.rect_size.y - self.border_width * 2.0,
+                    self.border_radius
+                )
+                sdf.fill_keep(self.color)
+                return sdf.stroke(self.border_color, self.border_width)
+            }
+        }
+
+        draw_selection: {
+            instance color: (THEME_COLOR_ACCENT)
+            instance border_radius: 2.0
+
+            fn pixel(self) -> vec4 {
+                let sdf = Sdf2d::viewport(self.pos * self.rect_size)
+                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, self.border_radius)
+                sdf.fill_keep(vec4(self.color.xyz, 1.0));
+                let stroke_color = mix(#fff5, #0005, self.pos.y);
+                return sdf.stroke(stroke_color, 1.0);
+            }
+        }
     }
 }
 
@@ -76,12 +170,13 @@ live_design! {
 const SCROLL_SPEED: f64 = 1.0 / 1.5;
 
 #[derive(Live, LiveHook, Widget)]
-pub struct WheelH {
+pub struct Wheel {
     #[redraw] #[live] draw_text: DrawText,
     #[live] draw_bg: DrawQuad,
     #[live] draw_selection: DrawQuad,
 
-    #[live] step_width: f64,
+    #[live] orientation: Orientation,
+    #[live] step_size: f64,
     #[live] range_min: i32,
     #[live] range_max: i32,
     #[live(true)] is_infinite: bool,
@@ -95,8 +190,8 @@ pub struct WheelH {
     #[rust] current_value: i32,
     #[rust] is_dragging: bool,
     #[rust] is_outside_bounds: bool,
-    #[rust] last_abs_x: f64,
-    #[rust] drag_start_x: f64,
+    #[rust] last_abs: f64,
+    #[rust] drag_start: f64,
 
     #[rust] next_frame: NextFrame,
     #[rust] scroll_target: Option<f64>,
@@ -104,14 +199,38 @@ pub struct WheelH {
     #[rust] initialized: bool,
 }
 
-impl WheelH {
-    /// Initialize from initial_value if not yet set programmatically
+// Type aliases for backwards compatibility
+pub type WheelH = Wheel;
+pub type WheelV = Wheel;
+
+impl Wheel {
+    /// Get primary axis value from position
+    #[inline]
+    fn axis(&self, pos: DVec2) -> f64 {
+        match self.orientation {
+            Orientation::Horizontal => pos.x,
+            Orientation::Vertical => pos.y,
+        }
+    }
+
+    /// Get primary axis value from scroll event
+    #[inline]
+    fn scroll_axis(&self, scroll: DVec2) -> f64 {
+        match self.orientation {
+            Orientation::Horizontal => {
+                if scroll.x.abs() > scroll.y.abs() { scroll.x } else { scroll.y }
+            }
+            Orientation::Vertical => scroll.y,
+        }
+    }
+
+    /// Initialize from initial_value if not yet set
     fn ensure_initialized(&mut self) {
         if self.initialized { return; }
         self.initialized = true;
         let val = self.initial_value.clamp(self.range_min, self.range_max);
         self.current_value = val;
-        self.scroll_pos = (val - self.range_min) as f64 * self.step_width;
+        self.scroll_pos = (val - self.range_min) as f64 * self.step_size;
     }
 
     /// Apply scroll delta and update display
@@ -123,13 +242,12 @@ impl WheelH {
     }
 
     /// Start drag interaction
-    fn start_drag(&mut self, cx: &mut Cx, abs_x: f64) {
+    fn start_drag(&mut self, cx: &mut Cx, abs: f64) {
         cx.sweep_lock(self.draw_bg.area());
         self.is_dragging = true;
         self.is_outside_bounds = false;
-        self.last_abs_x = abs_x;
-        self.drag_start_x = abs_x;
-        // Complete pending animation
+        self.last_abs = abs;
+        self.drag_start = abs;
         if let Some(target) = self.scroll_target.take() {
             self.scroll_pos = target;
         }
@@ -144,21 +262,20 @@ impl WheelH {
 
         let snapped_pos = self.get_snapped_pos();
 
-        // Tap detection: if barely moved, select tapped item
-        if (self.last_abs_x - self.drag_start_x).abs() < 10.0 {
+        // Tap detection
+        if (self.last_abs - self.drag_start).abs() < 10.0 {
             let rect = self.draw_bg.area().rect(cx);
-            let center_x = rect.pos.x + rect.size.x * 0.5;
-            let steps_offset = ((self.last_abs_x - center_x) / self.step_width).round();
+            let center = self.axis(rect.pos) + self.axis(rect.size) * 0.5;
+            let steps_offset = ((self.last_abs - center) / self.step_size).round();
             if steps_offset != 0.0 {
                 self.scroll_pos = snapped_pos;
-                self.scroll_target = Some(snapped_pos + steps_offset * self.step_width);
+                self.scroll_target = Some(snapped_pos + steps_offset * self.step_size);
                 self.next_frame = cx.new_next_frame();
                 self.redraw(cx);
                 return;
             }
         }
 
-        // Animate to snapped position
         if (self.scroll_pos - snapped_pos).abs() > 0.5 {
             self.scroll_target = Some(snapped_pos);
             self.next_frame = cx.new_next_frame();
@@ -169,16 +286,16 @@ impl WheelH {
     }
 
     fn get_snapped_pos(&self) -> f64 {
-        let mut idx = (self.scroll_pos / self.step_width).round();
+        let mut idx = (self.scroll_pos / self.step_size).round();
         if !self.is_infinite {
             idx = idx.clamp(0.0, (self.range_max - self.range_min) as f64);
         }
-        idx * self.step_width
+        idx * self.step_size
     }
 
     fn clamp_scroll(&mut self) {
         if !self.is_infinite {
-            let max_pos = (self.range_max - self.range_min) as f64 * self.step_width;
+            let max_pos = (self.range_max - self.range_min) as f64 * self.step_size;
             self.scroll_pos = self.scroll_pos.clamp(0.0, max_pos);
         }
     }
@@ -189,14 +306,14 @@ impl WheelH {
     }
 
     fn update_value(&mut self, cx: &mut Cx, path: &HeapLiveIdPath) {
-        let raw_idx = (self.scroll_pos / self.step_width).round() as i32;
+        let raw_idx = (self.scroll_pos / self.step_size).round() as i32;
         let range_len = self.range_max - self.range_min + 1;
         self.current_value = if self.is_infinite {
             raw_idx.rem_euclid(range_len) + self.range_min
         } else {
             raw_idx.clamp(0, range_len - 1) + self.range_min
         };
-        cx.widget_action(self.widget_uid(), path, WheelHAction::Changed(self.current_value));
+        cx.widget_action(self.widget_uid(), path, WheelAction::Changed(self.current_value));
     }
 
     fn redraw(&mut self, cx: &mut Cx) {
@@ -206,7 +323,10 @@ impl WheelH {
 
     fn get_label(&self, val: i32) -> String {
         if self.labels.is_empty() {
-            format!("{}", val)
+            match self.orientation {
+                Orientation::Horizontal => format!("{}", val),
+                Orientation::Vertical => format!("{:02}", val),
+            }
         } else {
             let idx = (val - self.range_min) as usize;
             self.labels.get(idx).cloned().unwrap_or_else(|| format!("{}", val))
@@ -230,31 +350,29 @@ impl WheelH {
         self.labels = labels;
     }
 
-    /// Set value programmatically (prevents initial_value override)
     pub fn set_value(&mut self, cx: &mut Cx, val: i32) {
         self.current_value = val.clamp(self.range_min, self.range_max);
-        self.scroll_pos = (self.current_value - self.range_min) as f64 * self.step_width;
+        self.scroll_pos = (self.current_value - self.range_min) as f64 * self.step_size;
         self.initialized = true;
         self.redraw(cx);
     }
 
-    /// Apply external scroll delta (e.g., from calendar swipe).
-    /// Call trigger_snap() when done to animate to nearest value.
+    /// Apply external scroll delta (e.g., from calendar swipe)
     pub fn apply_scroll_delta(&mut self, cx: &mut Cx, delta: f64) {
         self.scroll_pos -= delta * SCROLL_SPEED;
         if !self.is_infinite { self.clamp_scroll(); }
         self.redraw(cx);
     }
 
-    /// Trigger async snap animation. Emits Changed when complete.
+    /// Trigger async snap animation
     pub fn trigger_snap(&mut self, cx: &mut Cx) {
         self.scroll_cooldown = Some(0);
         self.next_frame = cx.new_next_frame();
     }
 
-    /// Get current visual value (for real-time tracking during external scroll)
+    /// Get current visual value during scroll
     pub fn get_visual_value(&self) -> i32 {
-        let raw_idx = (self.scroll_pos / self.step_width).round() as i32;
+        let raw_idx = (self.scroll_pos / self.step_size).round() as i32;
         let range_len = self.range_max - self.range_min + 1;
         if self.is_infinite {
             raw_idx.rem_euclid(range_len) + self.range_min
@@ -264,7 +382,7 @@ impl WheelH {
     }
 }
 
-impl Widget for WheelH {
+impl Widget for Wheel {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event, scope: &mut Scope) {
         self.ensure_initialized();
 
@@ -299,7 +417,7 @@ impl Widget for WheelH {
                 e.handled_x.set(true);
                 e.handled_y.set(true);
                 self.scroll_target = None;
-                let delta = if e.scroll.x.abs() > e.scroll.y.abs() { e.scroll.x } else { e.scroll.y };
+                let delta = self.scroll_axis(e.scroll);
                 self.scroll_pos -= delta * SCROLL_SPEED;
                 if !self.is_infinite { self.clamp_scroll(); }
                 self.redraw(cx);
@@ -309,21 +427,23 @@ impl Widget for WheelH {
             }
         }
 
-        // Outside bounds tracking (drag beyond widget)
+        // Outside bounds tracking
         if self.is_outside_bounds {
             match event {
                 Event::MouseMove(e) => {
-                    self.apply_delta(cx, e.abs.x - self.last_abs_x, &scope.path);
-                    self.last_abs_x = e.abs.x;
+                    let abs = self.axis(e.abs);
+                    self.apply_delta(cx, abs - self.last_abs, &scope.path);
+                    self.last_abs = abs;
                 }
                 Event::MouseUp(_) => self.finish_drag(cx),
                 Event::TouchUpdate(tu) => {
                     for touch in &tu.touches {
                         touch.handled.set(self.draw_bg.area());
+                        let abs = self.axis(touch.abs);
                         match touch.state {
                             makepad_widgets::event::TouchState::Move => {
-                                self.apply_delta(cx, touch.abs.x - self.last_abs_x, &scope.path);
-                                self.last_abs_x = touch.abs.x;
+                                self.apply_delta(cx, abs - self.last_abs, &scope.path);
+                                self.last_abs = abs;
                             }
                             makepad_widgets::event::TouchState::Stop => self.finish_drag(cx),
                             _ => ()
@@ -339,19 +459,20 @@ impl Widget for WheelH {
         if let Event::TouchUpdate(tu) = event {
             for touch in &tu.touches {
                 let in_bounds = self.draw_bg.area().rect(cx).contains(touch.abs);
+                let abs = self.axis(touch.abs);
                 match touch.state {
                     makepad_widgets::event::TouchState::Start if in_bounds => {
                         touch.handled.set(self.draw_bg.area());
-                        self.start_drag(cx, touch.abs.x);
+                        self.start_drag(cx, abs);
                     }
                     makepad_widgets::event::TouchState::Move if self.is_dragging => {
                         touch.handled.set(self.draw_bg.area());
-                        self.apply_delta(cx, touch.abs.x - self.last_abs_x, &scope.path);
-                        self.last_abs_x = touch.abs.x;
+                        self.apply_delta(cx, abs - self.last_abs, &scope.path);
+                        self.last_abs = abs;
                     }
                     makepad_widgets::event::TouchState::Stop if self.is_dragging => {
                         touch.handled.set(self.draw_bg.area());
-                        self.last_abs_x = touch.abs.x;
+                        self.last_abs = abs;
                         self.finish_drag(cx);
                     }
                     _ => ()
@@ -368,15 +489,16 @@ impl Widget for WheelH {
         }
 
         match event.hits_with_sweep_area(cx, self.draw_bg.area(), self.draw_bg.area()) {
-            Hit::FingerDown(fe) => self.start_drag(cx, fe.abs.x),
+            Hit::FingerDown(fe) => self.start_drag(cx, self.axis(fe.abs)),
             Hit::FingerMove(fe) if self.is_dragging => {
-                self.apply_delta(cx, fe.abs.x - self.last_abs_x, &scope.path);
-                self.last_abs_x = fe.abs.x;
+                let abs = self.axis(fe.abs);
+                self.apply_delta(cx, abs - self.last_abs, &scope.path);
+                self.last_abs = abs;
             }
             Hit::FingerUp(fe) if self.is_dragging => {
                 if fe.is_sweep {
                     self.is_outside_bounds = true;
-                    self.last_abs_x = fe.abs.x;
+                    self.last_abs = self.axis(fe.abs);
                 } else {
                     self.finish_drag(cx);
                 }
@@ -390,23 +512,45 @@ impl Widget for WheelH {
         self.draw_bg.begin(cx, walk, self.layout);
 
         let rect = cx.turtle().rect();
-        let center = dvec2(rect.size.x * 0.5, rect.size.y * 0.5);
+
+        // Auto-detect orientation from dimensions
+        let orientation = if rect.size.y > rect.size.x {
+            Orientation::Vertical
+        } else {
+            Orientation::Horizontal
+        };
+        self.orientation = orientation;
+
+        let (center, size) = match orientation {
+            Orientation::Horizontal => (rect.size.x * 0.5, rect.size.x),
+            Orientation::Vertical => (rect.size.y * 0.5, rect.size.y),
+        };
 
         // Selection indicator
-        self.draw_selection.draw_abs(cx, Rect {
-            pos: dvec2(rect.pos.x + center.x - self.step_width * 0.5, rect.pos.y),
-            size: dvec2(self.step_width, rect.size.y),
-        });
+        let selection_rect = match self.orientation {
+            Orientation::Horizontal => Rect {
+                pos: dvec2(rect.pos.x + center - self.step_size * 0.5, rect.pos.y),
+                size: dvec2(self.step_size, rect.size.y),
+            },
+            Orientation::Vertical => Rect {
+                pos: dvec2(rect.pos.x, rect.pos.y + center - self.step_size * 0.5),
+                size: dvec2(rect.size.x, self.step_size),
+            },
+        };
+        self.draw_selection.draw_abs(cx, selection_rect);
 
         // Visible items
-        let center_idx = (self.scroll_pos / self.step_width).round() as i32;
-        let window = (center.x / self.step_width).ceil() as i32 + 1;
+        let center_idx = (self.scroll_pos / self.step_size).round() as i32;
+        let window = (center / self.step_size).ceil() as i32 + 1;
         let range_len = self.range_max - self.range_min + 1;
+        let max_dist = match self.orientation {
+            Orientation::Horizontal => center,
+            Orientation::Vertical => size * 0.6,
+        };
 
         for i in (center_idx - window)..=(center_idx + window) {
-            let offset = i as f64 * self.step_width - self.scroll_pos;
+            let offset = i as f64 * self.step_size - self.scroll_pos;
             let dist = offset.abs();
-            let max_dist = center.x;
 
             if dist >= max_dist { continue; }
 
@@ -417,14 +561,35 @@ impl Widget for WheelH {
                 i + self.range_min
             };
 
-            self.draw_text.color.w = (1.0 - (dist / max_dist).powf(1.5)) as f32;
+            let opacity = 1.0 - (dist / max_dist).powf(1.5);
+            self.draw_text.color.w = opacity as f32;
+
+            // Vertical has scale effect
+            if self.orientation == Orientation::Vertical {
+                let scale = 1.0 - (dist / max_dist) * 0.3;
+                self.draw_text.text_style.font_size = (20.0 * scale) as f32;
+            }
+
             let text = self.get_label(val);
             let layout = self.draw_text.layout(cx, 0.0, 0.0, None, false, Align::default(), &text);
-            let size = dvec2(
+            let text_size = dvec2(
                 layout.size_in_lpxs.width as f64 * self.draw_text.font_scale as f64,
                 layout.size_in_lpxs.height as f64 * self.draw_text.font_scale as f64,
             );
-            self.draw_text.draw_abs(cx, rect.pos + center + dvec2(offset, 0.0) - size * 0.5, &text);
+
+            let pos = match self.orientation {
+                Orientation::Horizontal => {
+                    rect.pos + dvec2(center + offset, rect.size.y * 0.5) - text_size * 0.5
+                }
+                Orientation::Vertical => {
+                    dvec2(
+                        rect.pos.x + (rect.size.x - text_size.x) * 0.5,
+                        rect.pos.y + center + offset - text_size.y * 0.5
+                    )
+                }
+            };
+
+            self.draw_text.draw_abs(cx, pos, &text);
         }
 
         self.draw_bg.end(cx);
