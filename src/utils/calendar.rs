@@ -55,42 +55,6 @@ pub fn today() -> SimpleDate {
     }
 }
 
-/// Convert Unix timestamp (seconds since 1970-01-01) to SimpleDate
-fn unix_to_date(timestamp: i64) -> SimpleDate {
-    // Days since epoch
-    let mut days = (timestamp / 86400) as i32;
-
-    // Start from 1970
-    let mut year = 1970;
-
-    // Find the year
-    loop {
-        let days_in_year = if is_leap_year(year) { 366 } else { 365 };
-        if days < days_in_year {
-            break;
-        }
-        days -= days_in_year;
-        year += 1;
-    }
-
-    // Find the month
-    let mut month = 1u32;
-    loop {
-        let days_in_month = days_in_month(year, month);
-        if days < days_in_month as i32 {
-            break;
-        }
-        days -= days_in_month as i32;
-        month += 1;
-    }
-
-    SimpleDate {
-        year,
-        month,
-        day: (days + 1) as u32,
-    }
-}
-
 /// Check if a year is a leap year
 pub fn is_leap_year(year: i32) -> bool {
     (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)

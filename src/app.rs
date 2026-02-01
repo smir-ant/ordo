@@ -594,21 +594,16 @@ impl App {
         ]
     }
 
-    fn any_modal_open(&self) -> bool {
-        for id in Self::modal_widget_ids() {
-            let widget = self.ui.widget(id);
-
-            if let Some(modal) = widget.borrow::<Modal>() {
-                if modal.is_open() { return true; }
-            }
-            if let Some(tp) = widget.borrow::<TimePicker>() {
-                if tp.is_open() { return true; }
-            }
-            if let Some(dp) = widget.borrow::<DatePicker>() {
-                if dp.is_open() { return true; }
-            }
-        }
+    /// Check if widget is open (Modal, TimePicker, or DatePicker)
+    fn widget_is_open(widget: &WidgetRef) -> bool {
+        if let Some(m) = widget.borrow::<Modal>() { return m.is_open(); }
+        if let Some(tp) = widget.borrow::<TimePicker>() { return tp.is_open(); }
+        if let Some(dp) = widget.borrow::<DatePicker>() { return dp.is_open(); }
         false
+    }
+
+    fn any_modal_open(&self) -> bool {
+        Self::modal_widget_ids().iter().any(|id| Self::widget_is_open(&self.ui.widget(id)))
     }
 
     fn handle_main_content_actions(&mut self, cx: &mut Cx, actions: &Actions) {
