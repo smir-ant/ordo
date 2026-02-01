@@ -3,12 +3,12 @@ use makepad_widgets::*;
 live_design! {
     use makepad_widgets::base::*;
     use makepad_widgets::theme_desktop_dark::*;
-    use crate::theme::*;
+    use crate::styling::*;
 
     pub Text = {{Text}} {
         width: Fit, height: Fit
         draw_text: {
-            color: #fff
+            color: (THEME_COLOR_TEXT_PRIMARY)
             wrap: Word
             text_style: <THEME_FONT_REGULAR> {
                 font_size: (THEME_FONT_SIZE_BASE)

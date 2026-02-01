@@ -7,6 +7,7 @@ live_design! {
     use makepad_draw::shader::std::*;
     use makepad_widgets::view_ui::View;
     use makepad_widgets::scroll_bars::ScrollBars;
+    use crate::styling::*;
 
     // --- Style Templates ---
 
@@ -17,7 +18,7 @@ live_design! {
         padding: 20.0
         show_bg: true
         draw_bg: {
-            color: #333
+            color: (THEME_COLOR_BG_SECONDARY)
             instance radius: 6.0
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
@@ -40,7 +41,7 @@ live_design! {
         padding: 24.0
         show_bg: true
         draw_bg: {
-            color: #2a2a2a
+            color: (THEME_COLOR_BG_PRIMARY)
             instance radius: 8.0
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
@@ -61,7 +62,7 @@ live_design! {
         flow: Down
         padding: 16.0
         show_bg: true
-        draw_bg: { color: #232323 }
+        draw_bg: { color: (THEME_COLOR_BG_PRIMARY) }
     }
 
     // --- Main Modal Widget ---
@@ -89,12 +90,14 @@ live_design! {
 
         draw_underline: {
             instance hover: 0.0
+            uniform color_base: (THEME_COLOR_TEXT_TERTIARY)
+            uniform color_hover: (THEME_COLOR_TEXT_SECONDARY)
 
             fn pixel(self) -> vec4 {
                 // Dotted pattern: 2px dot + 2px gap
                 let phase = mod(self.pos.x * self.rect_size.x, 4.0);
                 if phase < 2.0 {
-                    return mix(#666, #999, self.hover);
+                    return mix(self.color_base, self.color_hover, self.hover);
                 }
                 return vec4(0.0, 0.0, 0.0, 0.0);
             }

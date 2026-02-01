@@ -32,10 +32,33 @@ live_design! {
     pub THEME_FONT_SIZE_BASE = 14.0
     
     // --- Global Theme Colors ---
-    
+
     // Theme Mode (1.0 = Dark, 0.0 = Light)
     pub THEME_IS_DARK = 1.0
-    
+
     // Accent Color - Single value, variants computed via mix() in shaders
     pub THEME_COLOR_ACCENT = #FF5C39
+
+    // --- Semantic Colors (Dark Theme) ---
+    // Background hierarchy (dark to light)
+    pub THEME_COLOR_BG_DARK = #1f1f1f       // App background
+    pub THEME_COLOR_BG_PRIMARY = #2a2a2a    // Cards, modals
+    pub THEME_COLOR_BG_SECONDARY = #333     // Inputs, buttons
+    pub THEME_COLOR_BG_TERTIARY = #444      // Hover states, borders
+    pub THEME_COLOR_BG_ELEVATED = #4a4a4a   // Focus states
+
+    // Text hierarchy
+    pub THEME_COLOR_TEXT_PRIMARY = #fff
+    pub THEME_COLOR_TEXT_SECONDARY = #888
+    pub THEME_COLOR_TEXT_TERTIARY = #666
+    pub THEME_COLOR_TEXT_DISABLED = #555
+
+    // Stroke/border colors
+    pub THEME_COLOR_STROKE_DARK = #222
+    pub THEME_COLOR_STROKE_LIGHT = #444
+    pub THEME_COLOR_STROKE_HOVER = #555
+
+    // State colors
+    pub THEME_COLOR_ERROR = #ff4444
+    pub THEME_COLOR_SUCCESS = #44ff44
 }

@@ -21,7 +21,7 @@ live_design! {
     use makepad_widgets::theme_desktop_dark::*;
     use makepad_widgets::view_ui::View;
     use makepad_draw::shader::std::*;
-    use link::styling::*;
+    use crate::styling::*;
     use crate::widgets::text::Text;
     use crate::widgets::button::Btn;
     use crate::widgets::modal::Modal;
@@ -37,6 +37,7 @@ live_design! {
             instance selected: 0.0
             instance hover: 0.0
             uniform accent_color: (THEME_COLOR_ACCENT)
+            uniform hover_tint: (THEME_COLOR_TEXT_PRIMARY)
 
             fn pixel(self) -> vec4 {
                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
@@ -44,7 +45,7 @@ live_design! {
                 let center = self.rect_size * 0.5;
                 sdf.circle(center.x, center.y, radius);
                 let bg = mix(self.color, self.accent_color, self.selected);
-                let bg = mix(bg, mix(self.color, #fff, 0.1), self.hover * (1.0 - self.selected));
+                let bg = mix(bg, mix(self.color, self.hover_tint, 0.1), self.hover * (1.0 - self.selected));
                 sdf.fill(bg);
                 return sdf.result;
             }
@@ -52,7 +53,7 @@ live_design! {
 
         draw_text: {
             text_style: <THEME_FONT_REGULAR> { font_size: 14.0 }
-            color: #fff
+            color: (THEME_COLOR_TEXT_PRIMARY)
             instance selected: 0.0
             instance is_today: 0.0
             uniform accent_color: (THEME_COLOR_ACCENT)
@@ -68,7 +69,7 @@ live_design! {
         align: {x: 0.5, y: 0.5}
         label = <Text> {
             width: Fit, height: Fit
-            draw_text: { text_style: <THEME_FONT_REGULAR> { font_size: 12.0 }, color: #888 }
+            draw_text: { text_style: <THEME_FONT_REGULAR> { font_size: 12.0 }, color: (THEME_COLOR_TEXT_SECONDARY) }
         }
     }
 
@@ -89,7 +90,7 @@ live_design! {
 
                 title = <Text> {
                     width: Fit, height: Fit
-                    draw_text: { text_style: <THEME_FONT_BOLD> { font_size: 14.0 }, color: #fff }
+                    draw_text: { text_style: <THEME_FONT_BOLD> { font_size: 14.0 }, color: (THEME_COLOR_TEXT_PRIMARY) }
                     text: "Select Date"
                 }
 

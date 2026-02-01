@@ -6,7 +6,7 @@ live_design! {
     use makepad_widgets::base::*;
     use makepad_widgets::theme_desktop_dark::*;
     use makepad_widgets::view_ui::View;
-    use link::styling::*;
+    use crate::styling::*;
     use crate::widgets::text::Text;
     use crate::widgets::button::Btn;
     use crate::widgets::modal::Modal;
@@ -26,7 +26,7 @@ live_design! {
                     width: Fit, height: Fit
                     draw_text: {
                         text_style: <THEME_FONT_BOLD> { font_size: 14.0 }
-                        color: #fff
+                        color: (THEME_COLOR_TEXT_PRIMARY)
                     }
                     text: "Select Time"
                 }
@@ -47,7 +47,7 @@ live_design! {
                         align: {x: 0.5}
                         draw_text: {
                             text_style: <THEME_FONT_BOLD> { font_size: 24.0 }
-                            color: #fff
+                            color: (THEME_COLOR_TEXT_PRIMARY)
                         }
                         text: ":"
                     }
@@ -68,7 +68,7 @@ live_design! {
                             align: {x: 0.5}
                             draw_text: {
                                 text_style: <THEME_FONT_BOLD> { font_size: 24.0 }
-                                color: #fff
+                                color: (THEME_COLOR_TEXT_PRIMARY)
                             }
                             text: ":"
                         }
