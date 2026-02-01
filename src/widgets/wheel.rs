@@ -67,7 +67,45 @@ impl LiveNew for Orientation {
 live_design! {
     use link::theme::*;
     use link::shaders::*;
+    use makepad_draw::shader::draw_quad::DrawQuad;
     use crate::styling::*;
+
+    // Shared draw_bg shader (inherits from DrawQuad)
+    WheelDrawBg = <DrawQuad> {
+        instance color: #0000
+        instance border_color: #FFF3
+        instance border_width: 1.0
+        instance border_radius: 2.0
+
+        fn pixel(self) -> vec4 {
+            let sdf = Sdf2d::viewport(self.pos * self.rect_size)
+            sdf.box(
+                self.border_width,
+                self.border_width,
+                self.rect_size.x - self.border_width * 2.0,
+                self.rect_size.y - self.border_width * 2.0,
+                self.border_radius
+            )
+            sdf.fill_keep(self.color)
+            return sdf.stroke(self.border_color, self.border_width)
+        }
+    }
+
+    // Shared draw_selection shader with axis parameter
+    WheelDrawSelection = <DrawQuad> {
+        instance color: (THEME_COLOR_ACCENT)
+        instance border_radius: 2.0
+        instance axis: 0.0  // 0.0 = horizontal (X), 1.0 = vertical (Y)
+
+        fn pixel(self) -> vec4 {
+            let sdf = Sdf2d::viewport(self.pos * self.rect_size)
+            sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, self.border_radius)
+            sdf.fill_keep(vec4(self.color.xyz, 1.0));
+            let pos_axis = mix(self.pos.x, self.pos.y, self.axis);
+            let stroke_color = mix(#fff5, #0005, pos_axis);
+            return sdf.stroke(stroke_color, 1.0);
+        }
+    }
 
     // Horizontal wheel
     pub WheelH = {{Wheel}} {
@@ -82,39 +120,8 @@ live_design! {
             text_style: <THEME_FONT_BOLD> { font_size: 16.0 }
             color: #FFF
         }
-
-        draw_bg: {
-            instance color: #0000
-            instance border_color: #FFF3
-            instance border_width: 1.0
-            instance border_radius: 2.0
-
-            fn pixel(self) -> vec4 {
-                let sdf = Sdf2d::viewport(self.pos * self.rect_size)
-                sdf.box(
-                    self.border_width,
-                    self.border_width,
-                    self.rect_size.x - self.border_width * 2.0,
-                    self.rect_size.y - self.border_width * 2.0,
-                    self.border_radius
-                )
-                sdf.fill_keep(self.color)
-                return sdf.stroke(self.border_color, self.border_width)
-            }
-        }
-
-        draw_selection: {
-            instance color: (THEME_COLOR_ACCENT)
-            instance border_radius: 2.0
-
-            fn pixel(self) -> vec4 {
-                let sdf = Sdf2d::viewport(self.pos * self.rect_size)
-                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, self.border_radius)
-                sdf.fill_keep(vec4(self.color.xyz, 1.0));
-                let stroke_color = mix(#fff5, #0005, self.pos.x);
-                return sdf.stroke(stroke_color, 1.0);
-            }
-        }
+        draw_bg: <WheelDrawBg> {}
+        draw_selection: <WheelDrawSelection> { axis: 0.0 }
     }
 
     // Vertical wheel
@@ -130,39 +137,8 @@ live_design! {
             text_style: <THEME_FONT_BOLD> { font_size: 20.0 }
             color: #FFF
         }
-
-        draw_bg: {
-            instance color: #0000
-            instance border_color: #FFF3
-            instance border_width: 1.0
-            instance border_radius: 2.0
-
-            fn pixel(self) -> vec4 {
-                let sdf = Sdf2d::viewport(self.pos * self.rect_size)
-                sdf.box(
-                    self.border_width,
-                    self.border_width,
-                    self.rect_size.x - self.border_width * 2.0,
-                    self.rect_size.y - self.border_width * 2.0,
-                    self.border_radius
-                )
-                sdf.fill_keep(self.color)
-                return sdf.stroke(self.border_color, self.border_width)
-            }
-        }
-
-        draw_selection: {
-            instance color: (THEME_COLOR_ACCENT)
-            instance border_radius: 2.0
-
-            fn pixel(self) -> vec4 {
-                let sdf = Sdf2d::viewport(self.pos * self.rect_size)
-                sdf.box(0.0, 0.0, self.rect_size.x, self.rect_size.y, self.border_radius)
-                sdf.fill_keep(vec4(self.color.xyz, 1.0));
-                let stroke_color = mix(#fff5, #0005, self.pos.y);
-                return sdf.stroke(stroke_color, 1.0);
-            }
-        }
+        draw_bg: <WheelDrawBg> {}
+        draw_selection: <WheelDrawSelection> { axis: 1.0 }
     }
 }
 
