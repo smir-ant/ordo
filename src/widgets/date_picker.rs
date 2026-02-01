@@ -72,6 +72,11 @@ live_design! {
         }
     }
 
+    // Calendar row template (7 cells per row)
+    CalendarRow = <View> {
+        width: Fill, height: Fit, flow: Right, spacing: 2.0
+    }
+
     pub DatePicker = {{DatePicker}} {
         width: Fill, height: Fill
         flow: Overlay
@@ -112,30 +117,12 @@ live_design! {
                         d3 = <DayHeader> {} d4 = <DayHeader> {} d5 = <DayHeader> {} d6 = <DayHeader> {}
                     }
 
-                    row0 = <View> { width: Fill, height: Fit, flow: Right, spacing: 2.0
-                        c0_0 = <DayCell> {} c0_1 = <DayCell> {} c0_2 = <DayCell> {}
-                        c0_3 = <DayCell> {} c0_4 = <DayCell> {} c0_5 = <DayCell> {} c0_6 = <DayCell> {}
-                    }
-                    row1 = <View> { width: Fill, height: Fit, flow: Right, spacing: 2.0
-                        c1_0 = <DayCell> {} c1_1 = <DayCell> {} c1_2 = <DayCell> {}
-                        c1_3 = <DayCell> {} c1_4 = <DayCell> {} c1_5 = <DayCell> {} c1_6 = <DayCell> {}
-                    }
-                    row2 = <View> { width: Fill, height: Fit, flow: Right, spacing: 2.0
-                        c2_0 = <DayCell> {} c2_1 = <DayCell> {} c2_2 = <DayCell> {}
-                        c2_3 = <DayCell> {} c2_4 = <DayCell> {} c2_5 = <DayCell> {} c2_6 = <DayCell> {}
-                    }
-                    row3 = <View> { width: Fill, height: Fit, flow: Right, spacing: 2.0
-                        c3_0 = <DayCell> {} c3_1 = <DayCell> {} c3_2 = <DayCell> {}
-                        c3_3 = <DayCell> {} c3_4 = <DayCell> {} c3_5 = <DayCell> {} c3_6 = <DayCell> {}
-                    }
-                    row4 = <View> { width: Fill, height: Fit, flow: Right, spacing: 2.0
-                        c4_0 = <DayCell> {} c4_1 = <DayCell> {} c4_2 = <DayCell> {}
-                        c4_3 = <DayCell> {} c4_4 = <DayCell> {} c4_5 = <DayCell> {} c4_6 = <DayCell> {}
-                    }
-                    row5 = <View> { width: Fill, height: Fit, flow: Right, spacing: 2.0
-                        c5_0 = <DayCell> {} c5_1 = <DayCell> {} c5_2 = <DayCell> {}
-                        c5_3 = <DayCell> {} c5_4 = <DayCell> {} c5_5 = <DayCell> {} c5_6 = <DayCell> {}
-                    }
+                    row0 = <CalendarRow> { c0_0 = <DayCell> {} c0_1 = <DayCell> {} c0_2 = <DayCell> {} c0_3 = <DayCell> {} c0_4 = <DayCell> {} c0_5 = <DayCell> {} c0_6 = <DayCell> {} }
+                    row1 = <CalendarRow> { c1_0 = <DayCell> {} c1_1 = <DayCell> {} c1_2 = <DayCell> {} c1_3 = <DayCell> {} c1_4 = <DayCell> {} c1_5 = <DayCell> {} c1_6 = <DayCell> {} }
+                    row2 = <CalendarRow> { c2_0 = <DayCell> {} c2_1 = <DayCell> {} c2_2 = <DayCell> {} c2_3 = <DayCell> {} c2_4 = <DayCell> {} c2_5 = <DayCell> {} c2_6 = <DayCell> {} }
+                    row3 = <CalendarRow> { c3_0 = <DayCell> {} c3_1 = <DayCell> {} c3_2 = <DayCell> {} c3_3 = <DayCell> {} c3_4 = <DayCell> {} c3_5 = <DayCell> {} c3_6 = <DayCell> {} }
+                    row4 = <CalendarRow> { c4_0 = <DayCell> {} c4_1 = <DayCell> {} c4_2 = <DayCell> {} c4_3 = <DayCell> {} c4_4 = <DayCell> {} c4_5 = <DayCell> {} c4_6 = <DayCell> {} }
+                    row5 = <CalendarRow> { c5_0 = <DayCell> {} c5_1 = <DayCell> {} c5_2 = <DayCell> {} c5_3 = <DayCell> {} c5_4 = <DayCell> {} c5_5 = <DayCell> {} c5_6 = <DayCell> {} }
                 }
 
                 buttons_wrap = <View> {
