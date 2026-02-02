@@ -8,6 +8,7 @@ use crate::widgets::tabs::TabsAction;
 use crate::widgets::wheel::{Wheel, WheelAction};
 use crate::widgets::time_picker::{TimePicker, TimePickerAction};
 use crate::widgets::date_picker::{DatePicker, DatePickerAction};
+use crate::widgets::icon_button::IconButton;
 use crate::utils::calendar;
 use makepad_widgets::keyboard_view::KeyboardView;
 
@@ -38,6 +39,7 @@ live_design!{
     use crate::widgets::wheel::WheelV;
     use crate::widgets::time_picker::TimePicker;
     use crate::widgets::date_picker::DatePicker;
+    use crate::widgets::icon_button::IconButton;
     use crate::theme::*;
     use makepad_widgets::keyboard_view::KeyboardView;
     use makepad_widgets::drop_down::DropDown;
@@ -400,6 +402,66 @@ live_design!{
                                 text: "Select Date"
                             }
                         }
+
+                        // ========== Navigation Icons ==========
+                        <View> {
+                            width: Fill, height: Fit
+                            flow: Down
+                            spacing: 10.0
+                            margin: {top: 20.0}
+
+                            <Text> {
+                                text: "IconButton Demo"
+                                draw_text: {
+                                    color: #DDD
+                                    text_style: { font_size: 13.0 }
+                                }
+                            }
+
+                            nav_icons = <View> {
+                                width: Fill, height: Fit
+                                flow: Right
+                                spacing: 8.0
+                                padding: 10.0
+                                show_bg: true
+                                draw_bg: { color: #2a2a2a }
+
+                                icon_activity = <IconButton> {
+                                    icon_walk: { width: 28.0, height: 28.0 }
+                                    draw_icon: {
+                                        svg_file: dep("crate://self/resources/img/modules/activity.svg")
+                                    }
+                                }
+
+                                icon_collection = <IconButton> {
+                                    icon_walk: { width: 28.0, height: 28.0 }
+                                    draw_icon: {
+                                        svg_file: dep("crate://self/resources/img/modules/collection.svg")
+                                    }
+                                }
+
+                                icon_journal = <IconButton> {
+                                    icon_walk: { width: 28.0, height: 28.0 }
+                                    draw_icon: {
+                                        svg_file: dep("crate://self/resources/img/modules/journal.svg")
+                                    }
+                                }
+
+                                icon_stat = <IconButton> {
+                                    icon_walk: { width: 28.0, height: 28.0 }
+                                    draw_icon: {
+                                        svg_file: dep("crate://self/resources/img/modules/stat.svg")
+                                    }
+                                }
+
+                                icon_time = <IconButton> {
+                                    icon_walk: { width: 28.0, height: 28.0 }
+                                    draw_icon: {
+                                        svg_file: dep("crate://self/resources/img/modules/time.svg")
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -668,6 +730,27 @@ impl App {
         if self.btn_clicked(ids!(log_value_btn), actions) {
             if let Some(picker) = self.ui.widget(ids!(hour_picker)).borrow::<Wheel>() {
                 log!("Current WheelPicker Value: {}", picker.get_value());
+            }
+        }
+
+        // IconButton clicks
+        self.handle_icon_button_clicks(actions);
+    }
+
+    fn handle_icon_button_clicks(&self, actions: &Actions) {
+        let icon_ids = [
+            (ids!(icon_activity), "Activity"),
+            (ids!(icon_collection), "Collection"),
+            (ids!(icon_journal), "Journal"),
+            (ids!(icon_stat), "Stat"),
+            (ids!(icon_time), "Time"),
+        ];
+
+        for (id, name) in icon_ids {
+            if let Some(btn) = self.ui.widget(id).borrow::<IconButton>() {
+                if btn.clicked(actions) {
+                    log!("IconButton clicked: {}", name);
+                }
             }
         }
     }
