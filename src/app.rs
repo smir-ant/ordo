@@ -619,7 +619,7 @@ impl App {
 
         if total_scroll_delta.x != 0.0 || total_scroll_delta.y != 0.0 {
             if let Some(mut view) = self.ui.widget(ids!(main_content)).borrow_mut::<KeyboardView>() {
-                let current_scroll = view.get_scroll_pos(cx);
+                let current_scroll = view.get_scroll_pos();
                 let new_scroll = DVec2 {
                     x: current_scroll.x - total_scroll_delta.x,
                     y: current_scroll.y - total_scroll_delta.y,
