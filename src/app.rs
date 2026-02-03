@@ -9,6 +9,7 @@ use crate::widgets::wheel::{Wheel, WheelAction};
 use crate::widgets::time_picker::{TimePicker, TimePickerAction};
 use crate::widgets::date_picker::{DatePicker, DatePickerAction};
 use crate::widgets::icon_button::IconButton;
+use crate::widgets::toggle_icon_button::ToggleIconButtonAction;
 use crate::utils::calendar;
 use makepad_widgets::keyboard_view::KeyboardView;
 
@@ -40,6 +41,7 @@ live_design!{
     use crate::widgets::time_picker::TimePicker;
     use crate::widgets::date_picker::DatePicker;
     use crate::widgets::icon_button::IconButton;
+    use crate::widgets::toggle_icon_button::ToggleIconButton;
     use crate::theme::*;
     use makepad_widgets::keyboard_view::KeyboardView;
     use makepad_widgets::drop_down::DropDown;
@@ -458,6 +460,76 @@ live_design!{
                                     icon_walk: { width: 28.0, height: 28.0 }
                                     draw_icon: {
                                         svg_file: dep("crate://self/resources/img/modules/time.svg")
+                                    }
+                                }
+                            }
+                        }
+
+                        // ToggleIconButton Demo
+                        <Group> {
+                            <Text> {
+                                text: "ToggleIconButton Demo"
+                                draw_text: {
+                                    color: #DDD
+                                    text_style: { font_size: 13.0 }
+                                }
+                            }
+
+                            toggle_icons = <View> {
+                                width: Fill, height: Fit
+                                flow: Right
+                                spacing: 8.0
+                                padding: 10.0
+                                show_bg: true
+                                draw_bg: { color: #2a2a2a }
+
+                                toggle_activity = <ToggleIconButton> {
+                                    icon_walk: { width: 28.0, height: 28.0 }
+                                    draw_icon: {
+                                        svg_file: dep("crate://self/resources/img/modules/activity.svg")
+                                    }
+                                    draw_icon_active: {
+                                        svg_file: dep("crate://self/resources/img/modules/activity-fill.svg")
+                                    }
+                                }
+
+                                toggle_collection = <ToggleIconButton> {
+                                    icon_walk: { width: 28.0, height: 28.0 }
+                                    draw_icon: {
+                                        svg_file: dep("crate://self/resources/img/modules/collection.svg")
+                                    }
+                                    draw_icon_active: {
+                                        svg_file: dep("crate://self/resources/img/modules/collection-fill.svg")
+                                    }
+                                }
+
+                                toggle_journal = <ToggleIconButton> {
+                                    icon_walk: { width: 28.0, height: 28.0 }
+                                    draw_icon: {
+                                        svg_file: dep("crate://self/resources/img/modules/journal.svg")
+                                    }
+                                    draw_icon_active: {
+                                        svg_file: dep("crate://self/resources/img/modules/journal-fill.svg")
+                                    }
+                                }
+
+                                toggle_stat = <ToggleIconButton> {
+                                    icon_walk: { width: 28.0, height: 28.0 }
+                                    draw_icon: {
+                                        svg_file: dep("crate://self/resources/img/modules/stat.svg")
+                                    }
+                                    draw_icon_active: {
+                                        svg_file: dep("crate://self/resources/img/modules/stat-fill.svg")
+                                    }
+                                }
+
+                                toggle_time = <ToggleIconButton> {
+                                    icon_walk: { width: 28.0, height: 28.0 }
+                                    draw_icon: {
+                                        svg_file: dep("crate://self/resources/img/modules/time.svg")
+                                    }
+                                    draw_icon_active: {
+                                        svg_file: dep("crate://self/resources/img/modules/time-fill.svg")
                                     }
                                 }
                             }

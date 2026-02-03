@@ -5,6 +5,7 @@ pub mod button;
 pub mod text;
 pub mod view;
 pub mod icon_button;
+pub mod toggle_icon_button;
 
 pub mod modal;
 pub mod day_of_week;
@@ -22,6 +23,7 @@ pub fn live_design(cx: &mut Cx) {
     input::live_design(cx);
     view::live_design(cx);
     icon_button::live_design(cx);
+    toggle_icon_button::live_design(cx);
     modal::live_design(cx);
     group::live_design(cx);
     day_of_week::live_design(cx);
