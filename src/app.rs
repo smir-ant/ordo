@@ -11,6 +11,7 @@ use crate::widgets::date_picker::{DatePicker, DatePickerAction};
 use crate::widgets::icon_button::IconButton;
 use crate::widgets::toggle_icon_button::ToggleIconButtonAction;
 use crate::utils::calendar;
+use crate::utils::sound::{DecodedSound, SoundPlayer};
 use makepad_widgets::keyboard_view::KeyboardView;
 
 live_design!{
@@ -120,6 +121,7 @@ live_design!{
                                 text: "Demo Accent"
                                 accent: true
                             }
+                            play_sound_btn = <Btn> { text: "Play Sound" }
                         }
 
 
@@ -647,6 +649,8 @@ live_design!{
 pub struct App {
     #[live] ui: WidgetRef,
     #[rust] initialized: bool,
+    #[rust] sound_player: Option<SoundPlayer>,
+    #[rust] sound_yes: usize,
 }
 
 impl LiveRegister for App {
@@ -665,6 +669,17 @@ impl AppMain for App {
                 picker.set_labels(calendar::MONTH_NAMES_SHORT.iter().map(|s| s.to_string()).collect());
                 picker.set_value(cx, 0);
             }
+
+            // Sound player init
+            let player = SoundPlayer::new();
+            let decoded = DecodedSound::from_ogg(include_bytes!("../resources/sound/yes.ogg"));
+            self.sound_yes = player.load(decoded);
+            let inner = player.inner_arc();
+            cx.audio_output(0, move |info, buffer| {
+                SoundPlayer::audio_callback(&inner, info, buffer);
+            });
+            self.sound_player = Some(player);
+            log!("Sound player initialized");
 
             // DatePicker button: show today's date
             let today = calendar::today();
@@ -694,6 +709,12 @@ impl AppMain for App {
         } else {
             // Normal event handling (draw, actions, key events, etc.)
             self.ui.handle_event(cx, event, scope);
+        }
+
+        if let Event::AudioDevices(devices) = event {
+            let outputs = devices.default_output();
+            log!("AudioDevices event: {} outputs", outputs.len());
+            cx.use_audio_outputs(&outputs);
         }
 
         if let Event::Actions(actions) = event {
@@ -802,6 +823,14 @@ impl App {
         if self.btn_clicked(ids!(log_value_btn), actions) {
             if let Some(picker) = self.ui.widget(ids!(hour_picker)).borrow::<Wheel>() {
                 log!("Current WheelPicker Value: {}", picker.get_value());
+            }
+        }
+
+        // Play Sound
+        if self.btn_clicked(ids!(play_sound_btn), actions) {
+            log!("Play Sound clicked");
+            if let Some(ref player) = self.sound_player {
+                player.play(self.sound_yes);
             }
         }
 
