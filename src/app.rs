@@ -31,14 +31,21 @@ live_design! {
                     width: Fill, height: Fill
                     flow: Down
 
+                    // === Safe area (macOS traffic lights / Android status bar) ===
+                    <View> {
+                        width: Fill, height: 32.0
+                        show_bg: true
+                        draw_bg: { color: (THEME_COLOR_BG_PANEL) }
+                    }
+
                     // === Header ===
                     header = <View> {
-                        width: Fill, height: 48.0
+                        width: Fill, height: 40.0
                         flow: Right
                         align: {y: 0.5}
                         padding: {left: 16.0, right: 8.0}
                         show_bg: true
-                        draw_bg: { color: #181818 }
+                        draw_bg: { color: (THEME_COLOR_BG_PANEL) }
 
                         header_title = <Text> {
                             width: Fill, height: Fit
@@ -84,7 +91,7 @@ live_design! {
                         padding: 6.0
                         show_bg: true
                         draw_bg: {
-                            color: #181818
+                            color: (THEME_COLOR_BG_PANEL)
                             fn pixel(self) -> vec4 {
                                 let sdf = Sdf2d::viewport(self.pos * self.rect_size);
                                 sdf.box(0., 0., self.rect_size.x, self.rect_size.y, 12.);

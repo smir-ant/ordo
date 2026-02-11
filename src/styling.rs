@@ -42,6 +42,7 @@ live_design! {
     // --- Semantic Colors (Dark Theme) ---
     // Background hierarchy (dark to light)
     pub THEME_COLOR_BG_DARK = #1f1f1f       // App background
+    pub THEME_COLOR_BG_PANEL = #181818      // Header, nav bar
     pub THEME_COLOR_BG_PRIMARY = #2a2a2a    // Cards, modals
     pub THEME_COLOR_BG_SECONDARY = #333     // Inputs, buttons
     pub THEME_COLOR_BG_TERTIARY = #444      // Hover states, borders
