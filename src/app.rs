@@ -40,10 +40,10 @@ live_design! {
 
                     // === Header ===
                     header = <View> {
-                        width: Fill, height: 40.0
+                        width: Fill, height: 48.0
                         flow: Right
                         align: {y: 0.5}
-                        padding: {left: 16.0, right: 8.0}
+                        padding: {left: 16.0, right: 8.0, bottom: 6.0}
                         show_bg: true
                         draw_bg: { color: (THEME_COLOR_BG_PANEL) }
 
@@ -52,12 +52,12 @@ live_design! {
                             text: "Activity"
                             draw_text: {
                                 color: (THEME_COLOR_TEXT_PRIMARY)
-                                text_style: { font_size: 18.0 }
+                                text_style: { font_size: 20.0 }
                             }
                         }
 
                         btn_menu = <IconButton> {
-                            icon_walk: { width: 20.0, height: 20.0 }
+                            icon_walk: { width: 24.0, height: 24.0 }
                             draw_icon: {
                                 color: (THEME_COLOR_TEXT_SECONDARY)
                                 svg_file: dep("crate://self/resources/img/icon_more.svg")
@@ -101,7 +101,7 @@ live_design! {
                         }
 
                         nav_activity = <ToggleIconButton> {
-                            icon_walk: { width: 26.0, height: 26.0 }
+                            icon_walk: { width: 30.0, height: 30.0 }
                             draw_icon: {
                                 svg_file: dep("crate://self/resources/img/modules/activity.svg")
                             }
@@ -111,7 +111,7 @@ live_design! {
                         }
 
                         nav_journal = <ToggleIconButton> {
-                            icon_walk: { width: 26.0, height: 26.0 }
+                            icon_walk: { width: 30.0, height: 30.0 }
                             draw_icon: {
                                 svg_file: dep("crate://self/resources/img/modules/journal.svg")
                             }
@@ -121,7 +121,7 @@ live_design! {
                         }
 
                         nav_stat = <ToggleIconButton> {
-                            icon_walk: { width: 26.0, height: 26.0 }
+                            icon_walk: { width: 30.0, height: 30.0 }
                             draw_icon: {
                                 svg_file: dep("crate://self/resources/img/modules/stat.svg")
                             }
@@ -131,7 +131,7 @@ live_design! {
                         }
 
                         nav_time = <ToggleIconButton> {
-                            icon_walk: { width: 26.0, height: 26.0 }
+                            icon_walk: { width: 30.0, height: 30.0 }
                             draw_icon: {
                                 svg_file: dep("crate://self/resources/img/modules/time.svg")
                             }
@@ -141,7 +141,7 @@ live_design! {
                         }
 
                         nav_collection = <ToggleIconButton> {
-                            icon_walk: { width: 26.0, height: 26.0 }
+                            icon_walk: { width: 30.0, height: 30.0 }
                             draw_icon: {
                                 svg_file: dep("crate://self/resources/img/modules/collection.svg")
                             }
