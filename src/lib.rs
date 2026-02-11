@@ -1,6 +1,7 @@
 pub mod app;
 pub mod widgets;
 pub mod styling;
+pub mod modules;
 pub mod utils;
 
 use makepad_widgets::*;
@@ -15,5 +16,6 @@ fn live_design(cx: &mut Cx) {
     makepad_widgets::live_design(cx);
     crate::styling::live_design(cx);
     crate::widgets::live_design(cx);
+    crate::modules::live_design(cx);
     crate::app::live_design(cx);
 }

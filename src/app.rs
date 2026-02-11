@@ -6,8 +6,12 @@ live_design! {
     use makepad_widgets::theme_desktop_dark::*;
     use makepad_widgets::window::Window;
     use makepad_widgets::view_ui::View;
-    use crate::widgets::text::Text;
     use crate::widgets::toggle_icon_button::ToggleIconButton;
+    use crate::modules::activity::ActivityScreen;
+    use crate::modules::journal::JournalScreen;
+    use crate::modules::stat::StatScreen;
+    use crate::modules::time::TimeScreen;
+    use crate::modules::collection::CollectionScreen;
 
     App = {{App}} {
         ui: <Window> {
@@ -25,55 +29,11 @@ live_design! {
                         width: Fill, height: Fill
                         flow: Overlay
 
-                        screen_activity = <View> {
-                            width: Fill, height: Fill
-                            show_bg: true, draw_bg: { color: #1f1f1f }
-                            align: {x: 0.5, y: 0.5}
-                            <Text> {
-                                text: "Activity"
-                                draw_text: { color: #333, text_style: { font_size: 32.0 } }
-                            }
-                        }
-
-                        screen_journal = <View> {
-                            width: Fill, height: Fill, visible: false
-                            show_bg: true, draw_bg: { color: #1f1f1f }
-                            align: {x: 0.5, y: 0.5}
-                            <Text> {
-                                text: "Journal"
-                                draw_text: { color: #333, text_style: { font_size: 32.0 } }
-                            }
-                        }
-
-                        screen_stat = <View> {
-                            width: Fill, height: Fill, visible: false
-                            show_bg: true, draw_bg: { color: #1f1f1f }
-                            align: {x: 0.5, y: 0.5}
-                            <Text> {
-                                text: "Statistics"
-                                draw_text: { color: #333, text_style: { font_size: 32.0 } }
-                            }
-                        }
-
-                        screen_time = <View> {
-                            width: Fill, height: Fill, visible: false
-                            show_bg: true, draw_bg: { color: #1f1f1f }
-                            align: {x: 0.5, y: 0.5}
-                            <Text> {
-                                text: "Time"
-                                draw_text: { color: #333, text_style: { font_size: 32.0 } }
-                            }
-                        }
-
-                        screen_collection = <View> {
-                            width: Fill, height: Fill, visible: false
-                            show_bg: true, draw_bg: { color: #1f1f1f }
-                            align: {x: 0.5, y: 0.5}
-                            <Text> {
-                                text: "Collection"
-                                draw_text: { color: #333, text_style: { font_size: 32.0 } }
-                            }
-                        }
+                        screen_activity = <ActivityScreen> {}
+                        screen_journal = <JournalScreen> { visible: false }
+                        screen_stat = <StatScreen> { visible: false }
+                        screen_time = <TimeScreen> { visible: false }
+                        screen_collection = <CollectionScreen> { visible: false }
                     }
 
                     // === Separator ===
