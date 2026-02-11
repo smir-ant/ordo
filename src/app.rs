@@ -1,950 +1,262 @@
 use makepad_widgets::*;
-use crate::widgets::input::{Input, InputAction};
-use crate::widgets::button::{Button as Btn, ButtonAction};
-use crate::widgets::modal::{Modal, TooltipTriggerAction};
-use crate::widgets::text::Text;
-use crate::widgets::day_of_week::DayOfWeek;
-use crate::widgets::tabs::TabsAction;
-use crate::widgets::wheel::{Wheel, WheelAction};
-use crate::widgets::time_picker::{TimePicker, TimePickerAction};
-use crate::widgets::date_picker::{DatePicker, DatePickerAction};
-use crate::widgets::icon_button::IconButton;
-use crate::widgets::toggle_icon_button::ToggleIconButtonAction;
-use crate::utils::calendar;
-use crate::utils::sound::{DecodedSound, SoundPlayer};
-use makepad_widgets::keyboard_view::KeyboardView;
+use crate::widgets::toggle_icon_button::ToggleIconButton;
 
-live_design!{
+live_design! {
     use makepad_widgets::base::*;
-    use makepad_widgets::theme_desktop_dark::*; 
+    use makepad_widgets::theme_desktop_dark::*;
     use makepad_widgets::window::Window;
-    use makepad_widgets::scroll_bars::ScrollBars;
     use makepad_widgets::view_ui::View;
-    use makepad_widgets::button::Button;
-    use crate::widgets::input::Input;
-    use crate::widgets::button::Btn;
-    
-    use crate::widgets::modal::Modal;
-    use crate::widgets::modal::DialogStyle;
-    use crate::widgets::modal::TooltipStyle;
-    use crate::widgets::modal::SidePanelStyle;
-    use crate::widgets::modal::TooltipTrigger;
-    
     use crate::widgets::text::Text;
-    // use crate::widgets::hint::Hint; // Deleted
-    use crate::widgets::group::Group;
-    use crate::widgets::day_of_week::DayOfWeek;
-    use crate::widgets::tabs::Tabs;
-    use crate::widgets::check::Check;
-    use crate::widgets::details::Details;
-    use crate::widgets::wheel::WheelH;
-    use crate::widgets::wheel::WheelV;
-    use crate::widgets::time_picker::TimePicker;
-    use crate::widgets::date_picker::DatePicker;
-    use crate::widgets::icon_button::IconButton;
     use crate::widgets::toggle_icon_button::ToggleIconButton;
-    use crate::theme::*;
-    use makepad_widgets::keyboard_view::KeyboardView;
-    use makepad_widgets::drop_down::DropDown;
-    
+
     App = {{App}} {
         ui: <Window> {
-            window: {inner_size: vec2(900, 700), min_size: vec2(600, 400)}
+            window: {inner_size: vec2(800, 600), min_size: vec2(320, 480)}
             body = <View> {
                 width: Fill, height: Fill
-                flow: Overlay // Overlay allows stacking for modal
-                
-                content_wrapper = <View> {
+                flow: Overlay
+
+                app_content = <View> {
                     width: Fill, height: Fill
-                    main_content = <KeyboardView> {
-                        width: Fill, height: Fill,
-                        flow: Down,
-                        spacing: 20.0,
-                        padding: 20.0,
-                        
-                        show_bg: true,
-                        draw_bg: {
-                            color: #1f1f1f
-                        }
-                        
-                        scroll_bars: <ScrollBars> {
-                            show_scroll_x: false
-                            show_scroll_y: true
-                            scroll_bar_y: {
-                                drag_scrolling: true 
-                                smoothing: 0.15
-                            }
-                        }
+                    flow: Down
 
+                    // === Screens (stacked, one visible at a time) ===
+                    screens = <View> {
+                        width: Fill, height: Fill
+                        flow: Overlay
 
-                        // ========== Typography ==========
-                        <Text> {
-                             text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
-                             draw_text: {
-                                 color: #888
-                                 text_style: { font_size: 14.0 }
-                             }
-                        }
-
-                        <Text> {
-                             text: "Съешь ещё этих мягких французских булок, да выпей чаю."
-                             draw_text: {
-                                 color: #888
-                                 text_style: { font_size: 14.0 }
-                             }
-                        }
-
-                        <Text> {
-                            text: "Regular Text (Inter)"
-                            draw_text: {
-                                color: #ffaa00
-                                text_style: { font_size: 20.0 }
-                            }
-                        }
-
-
-                        // ========== BUTTONS ==========
-                        <View> {
-                            width: Fill, height: Fit
-                            flow: Right
-                            spacing: 20.0
-                            align: {y: 0.5}
-                            
-                            <Btn> {
-                                text: "Demo Enabled"
-                            }
-                            <Btn> {
-                                text: "Demo Disabled"
-                                enabled: false
-                            }
-                            <Btn> {
-                                text: "Demo Accent"
-                                accent: true
-                            }
-                            play_sound_btn = <Btn> { text: "Play Sound" }
-                        }
-
-
-                        // ========== Inputs ==========
-                        <Group> {
-                            width: Fill, height: Fit
-                            <Input> {
-                                width: Fill, height: Fit
-                                is_numeric_only: true
-                                empty_text: "Numeric Only"
-                            }
-    
-                            <Input> {
-                                width: Fill, height: Fit
-                                empty_text: "Standard Text Input"
-                            }
-                        }
-                        
-                        input_group = <Group> {
-                            width: Fill, height: Fit
-                            input1 = <Input> {
-                                width: Fill, height: Fit
-                                empty_text: "* Validate only num && !empty"
-                                is_numeric_only: true
-                                is_required: true
-                            }
-
-                            submit_btn = <Btn> {
-                                text: "Submit"
-                            }
-                        }
-
-                    
-                        // ========== Day Of Week ==========
-                        <Group> {
-                            width: Fill, height: Fit
-                            flow: Down
-                            spacing: 10.0
-
+                        screen_activity = <View> {
+                            width: Fill, height: Fill
+                            show_bg: true, draw_bg: { color: #1f1f1f }
+                            align: {x: 0.5, y: 0.5}
                             <Text> {
-                                text: "Day Of Week"
-                                draw_text: {
-                                    color: #DDD
-                                    text_style: { font_size: 13.0 }
-                                }
-                            }
-                            
-                            day_of_week = <DayOfWeek> {
-                                width: Fill, height: Fit
-                            }
-                            
-                            receive_dow_btn = <Btn> {
-                                width: Fit
-                                text: "Receive DOW"
+                                text: "Activity"
+                                draw_text: { color: #333, text_style: { font_size: 32.0 } }
                             }
                         }
-                        
-                        
-                        // ========== TABS ==========
-                        <Group> {
-                            width: Fill, height: Fit
-                            flow: Down
-                            spacing: 15.0
-                            
+
+                        screen_journal = <View> {
+                            width: Fill, height: Fill, visible: false
+                            show_bg: true, draw_bg: { color: #1f1f1f }
+                            align: {x: 0.5, y: 0.5}
                             <Text> {
-                                text: "Tabs Widget Demo"
-                                draw_text: {
-                                    color: #DDD
-                                    text_style: { font_size: 13.0 }
-                                }
-                            }
-                            
-                            tabs_single = <Tabs> {
-                                labels: ["Only Option"]
-                            }
-                            
-                            tabs_two = <Tabs> {
-                                labels: ["Require All", "Require Any"]
-                            }
-                            
-                            tabs_six = <Tabs> {
-                                labels: ["Day", "Week", "Month", "Year", "All Time", "Custom"]
+                                text: "Journal"
+                                draw_text: { color: #333, text_style: { font_size: 32.0 } }
                             }
                         }
-                        
 
-                        // ========== CHECKBOX ==========
-                        <Group> {
-                            width: Fill, height: Fit
-                            flow: Down
-                            spacing: 10.0
-                            
+                        screen_stat = <View> {
+                            width: Fill, height: Fill, visible: false
+                            show_bg: true, draw_bg: { color: #1f1f1f }
+                            align: {x: 0.5, y: 0.5}
                             <Text> {
-                                text: "Check Widget Demo"
-                                draw_text: {
-                                    color: #DDD
-                                    text_style: { font_size: 13.0 }
-                                }
-                            }
-                            
-                            check_demo = <Check> { label: "Enable feature" }
-                            check_demo_2 = <Check> { checked: true, label: "Pre-checked option" }
-                        }
-
-                        // ========== Details ==========
-                        <Group> {
-                            details_demo = <Details> {
-                                summary: "Details section"
-                                
-                                content = {
-                                    <Check> { label: "Allow skipping" }
-                                    <Check> { label: "Carry over missed reps" }
-                                    <Text> {
-                                        text: "Nested content works!"
-                                        draw_text: { color: #888, text_style: { font_size: 11.0 } }
-                                    }
-                                }
-                            }
-                        }
-                        
-                        details_open = <Details> {
-                            summary: "Pre-opened Section without frame"
-                            open: true
-                            
-                            content = {
-                                <Text> {
-                                    text: "This section starts open"
-                                    draw_text: { color: #AAA, text_style: { font_size: 12.0 } }
-                                }
+                                text: "Statistics"
+                                draw_text: { color: #333, text_style: { font_size: 32.0 } }
                             }
                         }
 
-                        <Group> {
-                            width: Fill, height: Fit
-                            flow: Down
-                            spacing: 10.0
-
+                        screen_time = <View> {
+                            width: Fill, height: Fill, visible: false
+                            show_bg: true, draw_bg: { color: #1f1f1f }
+                            align: {x: 0.5, y: 0.5}
                             <Text> {
-                                text: "WheelV (vertical)"
-                                draw_text: {
-                                    color: #DDD
-                                    text_style: { font_size: 13.0 }
-                                }
-                            }
-
-                            hour_picker = <WheelV> {
-                                width: 100.0, height: 160.0
-                                range_min: 0
-                                range_max: 23
-                                initial_value: 12
-                            }
-
-                            log_value_btn = <Btn> {
-                                width: Fit
-                                text: "Get Value"
+                                text: "Time"
+                                draw_text: { color: #333, text_style: { font_size: 32.0 } }
                             }
                         }
 
-                        <Group> {
-                            width: Fill, height: Fit
-                            flow: Down
-                            spacing: 10.0
-
+                        screen_collection = <View> {
+                            width: Fill, height: Fill, visible: false
+                            show_bg: true, draw_bg: { color: #1f1f1f }
+                            align: {x: 0.5, y: 0.5}
                             <Text> {
-                                text: "WheelH (horizontal) - Year"
-                                draw_text: {
-                                    color: #DDD
-                                    text_style: { font_size: 13.0 }
-                                }
-                            }
-
-                            year_picker = <WheelH> {
-                                width: Fill, height: 40.0
-                                step_size: 80.0
-                                range_min: 2001
-                                range_max: 2051
-                                initial_value: 2026
-                                is_infinite: false
-                            }
-
-                            <Text> {
-                                text: "WheelH - Month (with labels)"
-                                draw_text: {
-                                    color: #DDD
-                                    text_style: { font_size: 13.0 }
-                                }
-                            }
-
-                            month_picker = <WheelH> {
-                                width: Fill, height: 40.0
-                                is_infinite: true
-                            }
-                        }
-
-                        <View> {
-                            width: Fill, height: Fit
-                            flow: Right
-                            spacing: 10.0
-                            align: {y: 0.5}
-
-                            <Text> {
-                                width: Fit
-                                text: "Modal:"
-                                draw_text: {
-                                    color: #DDD
-                                    text_style: { font_size: 13.0 }
-                                }
-                            }
-
-                            open_modal_btn = <Btn> {
-                                text: "Open Modal"
-                            }
-                            
-                            side_panel_btn = <Btn> {
-                                text: "Side Panel"
-                            }
-
-                            
-                            scroll_wrapper = <TooltipTrigger> {
-                                width: Fit, height: Fit
-                                
-                                <Text> {
-                                    text: "RMB or long press for tooltip!"
-                                    draw_text: {
-                                        color: #ffffff
-                                        text_style: { font_size: 12.0 }
-                                    }
-                                }
-                            }
-                
-                            help_btn = <Btn> {
-                                width: Fit, height: Fit
-                                text: "?"
-                            }
-                        }
-
-                        // TimePicker demos
-                        <View> {
-                            width: Fill, height: Fit
-                            flow: Right
-                            spacing: 10.0
-                            align: {y: 0.5}
-
-                            <Text> {
-                                width: Fit
-                                text: "TimePicker:"
-                                draw_text: {
-                                    color: #DDD
-                                    text_style: { font_size: 13.0 }
-                                }
-                            }
-
-                            open_time_picker_btn = <Btn> {
-                                width: Fit
-                                text: "HH:MM:SS"
-                            }
-
-                            open_time_picker_hm_btn = <Btn> {
-                                width: Fit
-                                text: "HH:MM"
-                            }
-                        }
-
-                        // DatePicker demo
-                        <View> {
-                            width: Fill, height: Fit
-                            flow: Right
-                            spacing: 10.0
-                            align: {y: 0.5}
-
-                            <Text> {
-                                width: Fit
-                                text: "DatePicker:"
-                                draw_text: {
-                                    color: #DDD
-                                    text_style: { font_size: 13.0 }
-                                }
-                            }
-
-                            open_date_picker_btn = <Btn> {
-                                width: Fit
-                                text: "Select Date"
-                            }
-                        }
-
-                        // ========== Navigation Icons ==========
-                        <View> {
-                            width: Fill, height: Fit
-                            flow: Down
-                            spacing: 10.0
-                            margin: {top: 20.0}
-
-                            <Text> {
-                                text: "IconButton Demo"
-                                draw_text: {
-                                    color: #DDD
-                                    text_style: { font_size: 13.0 }
-                                }
-                            }
-
-                            nav_icons = <View> {
-                                width: Fill, height: Fit
-                                flow: Right
-                                spacing: 8.0
-                                padding: 10.0
-                                show_bg: true
-                                draw_bg: { color: #2a2a2a }
-
-                                icon_activity = <IconButton> {
-                                    icon_walk: { width: 28.0, height: 28.0 }
-                                    draw_icon: {
-                                        svg_file: dep("crate://self/resources/img/modules/activity.svg")
-                                    }
-                                }
-
-                                icon_collection = <IconButton> {
-                                    icon_walk: { width: 28.0, height: 28.0 }
-                                    draw_icon: {
-                                        svg_file: dep("crate://self/resources/img/modules/collection.svg")
-                                    }
-                                }
-
-                                icon_journal = <IconButton> {
-                                    icon_walk: { width: 28.0, height: 28.0 }
-                                    draw_icon: {
-                                        svg_file: dep("crate://self/resources/img/modules/journal.svg")
-                                    }
-                                }
-
-                                icon_stat = <IconButton> {
-                                    icon_walk: { width: 28.0, height: 28.0 }
-                                    draw_icon: {
-                                        svg_file: dep("crate://self/resources/img/modules/stat.svg")
-                                    }
-                                }
-
-                                icon_time = <IconButton> {
-                                    icon_walk: { width: 28.0, height: 28.0 }
-                                    draw_icon: {
-                                        svg_file: dep("crate://self/resources/img/modules/time.svg")
-                                    }
-                                }
-                            }
-                        }
-
-                        // ToggleIconButton Demo
-                        <Group> {
-                            <Text> {
-                                text: "ToggleIconButton Demo"
-                                draw_text: {
-                                    color: #DDD
-                                    text_style: { font_size: 13.0 }
-                                }
-                            }
-
-                            toggle_icons = <View> {
-                                width: Fill, height: Fit
-                                flow: Right
-                                spacing: 8.0
-                                padding: 10.0
-                                show_bg: true
-                                draw_bg: { color: #2a2a2a }
-
-                                toggle_activity = <ToggleIconButton> {
-                                    icon_walk: { width: 28.0, height: 28.0 }
-                                    draw_icon: {
-                                        svg_file: dep("crate://self/resources/img/modules/activity.svg")
-                                    }
-                                    draw_icon_active: {
-                                        svg_file: dep("crate://self/resources/img/modules/activity-fill.svg")
-                                    }
-                                }
-
-                                toggle_collection = <ToggleIconButton> {
-                                    icon_walk: { width: 28.0, height: 28.0 }
-                                    draw_icon: {
-                                        svg_file: dep("crate://self/resources/img/modules/collection.svg")
-                                    }
-                                    draw_icon_active: {
-                                        svg_file: dep("crate://self/resources/img/modules/collection-fill.svg")
-                                    }
-                                }
-
-                                toggle_journal = <ToggleIconButton> {
-                                    icon_walk: { width: 28.0, height: 28.0 }
-                                    draw_icon: {
-                                        svg_file: dep("crate://self/resources/img/modules/journal.svg")
-                                    }
-                                    draw_icon_active: {
-                                        svg_file: dep("crate://self/resources/img/modules/journal-fill.svg")
-                                    }
-                                }
-
-                                toggle_stat = <ToggleIconButton> {
-                                    icon_walk: { width: 28.0, height: 28.0 }
-                                    draw_icon: {
-                                        svg_file: dep("crate://self/resources/img/modules/stat.svg")
-                                    }
-                                    draw_icon_active: {
-                                        svg_file: dep("crate://self/resources/img/modules/stat-fill.svg")
-                                    }
-                                }
-
-                                toggle_time = <ToggleIconButton> {
-                                    icon_walk: { width: 28.0, height: 28.0 }
-                                    draw_icon: {
-                                        svg_file: dep("crate://self/resources/img/modules/time.svg")
-                                    }
-                                    draw_icon_active: {
-                                        svg_file: dep("crate://self/resources/img/modules/time-fill.svg")
-                                    }
-                                }
+                                text: "Collection"
+                                draw_text: { color: #333, text_style: { font_size: 32.0 } }
                             }
                         }
                     }
-                }
 
-                // --- MODAL INSTANCES (Overlay Layer) ---
-
-                demo_modal = <Modal> {
-                    content = <DialogStyle> {
-                        <Text> {
-                            text: "Confirm Action"
-                            draw_text: { color: #fff, text_style: { font_size: 16.0 } }
-                        }
-                        <Text> {
-                            width: Fill, height: Fit
-                            text: "Are you sure you want to proceed? bla bla bla bla"
-                            draw_text: { color: #bbb, wrap: Word, text_style: { font_size: 14.0 } }
-                        }
-                        buttons_wrap = <View> {
-                            width: Fill, height: Fit
-                            flow: Right
-                            align: {x: 1.0}
-                            spacing: 15.0
-
-                            cancel_button = <Btn> { width: 100.0, text: "Cancel", draw_bg: { color: #444 } }
-                            ok_button = <Btn> { width: 100.0, text: "OK", accent: true }
-                        }
+                    // === Separator ===
+                    <View> {
+                        width: Fill, height: 1.0
+                        show_bg: true
+                        draw_bg: { color: #2a2a2a }
                     }
-                }
 
-                trigger_tooltip = <Modal> {
-                    content = <TooltipStyle> {
-                        <Text> {
-                            text: "Trigger Action"
-                            draw_text: { color: #fff, text_style: { font_size: 14.0 } }
-                        }
-                        <Text> {
-                            width: Fill, height: Fit
-                            text: "Tooltip opened via Right-Click or Long-Press!"
-                            draw_text: { color: #ccc, wrap: Word, text_style: { font_size: 12.0 } }
-                        }
-                        ok_button = <Btn> { width: Fill, text: "Got it" }
-                    }
-                }
+                    // === Bottom Navigation Bar ===
+                    nav_bar = <View> {
+                        width: Fill, height: 56.0
+                        flow: Right
+                        show_bg: true
+                        draw_bg: { color: #181818 }
 
-                button_tooltip = <Modal> {
-                    content = <TooltipStyle> {
-                        height: 300.0  // Max height for scroll test
-                        <Text> {
-                            text: "Button Action"
-                            draw_text: { color: #fff, text_style: { font_size: 14.0 } }
-                        }
-                        <Text> {
-                            width: Fill, height: Fit
-                            text: "Line 1: Tooltip opened via button!\nLine 2: This is additional content.\nLine 3: More text here.\nLine 4: And even more.\nLine 5: Testing scrolling.\nLine 6: Is it working?\nLine 7: Let's see.\nLine 8: Another line.\nLine 9: Keep going.\nLine 10: Almost there.\nLine 11: One more.\nLine 12: And another.\nLine 13: Final stretch.\nLine 14: Last few lines.\nLine 15: The end!"
-                            draw_text: { color: #ccc, wrap: Word, text_style: { font_size: 12.0 } }
-                        }
-                        ok_button = <Btn> {
-                            width: Fill
-                            margin: {bottom: 16.0}
-                            text: "Got it"
-                        }
-                    }
-                }
-
-                side_panel_view = <Modal> {
-                    align: {x: 0.0, y: 0.0}
-                    content = <SidePanelStyle> {
-                        <View> {
-                            width: Fill, height: Fit
-                            padding: 20.0
-                            <Text> {
-                                text: "Side Panel"
-                                draw_text: { color: #fff, text_style: { font_size: 18.0 } }
-                            }
-                        }
                         <View> {
                             width: Fill, height: Fill
-                            flow: Down
-                            padding: 20.0
-                            spacing: 15.0
-
-                            <Text> {
-                                text: "This is a custom side panel.\nYou can put anything here."
-                                draw_text: { color: #bbb, text_style: { font_size: 14.0 } }
+                            align: {x: 0.5, y: 0.5}
+                            nav_activity = <ToggleIconButton> {
+                                icon_walk: { width: 26.0, height: 26.0 }
+                                draw_icon: {
+                                    svg_file: dep("crate://self/resources/img/modules/activity.svg")
+                                }
+                                draw_icon_active: {
+                                    svg_file: dep("crate://self/resources/img/modules/activity-fill.svg")
+                                }
                             }
-                            <Input> {
-                                width: Fill, height: Fit
-                                empty_text: "Edit me..."
+                        }
+
+                        <View> {
+                            width: Fill, height: Fill
+                            align: {x: 0.5, y: 0.5}
+                            nav_journal = <ToggleIconButton> {
+                                icon_walk: { width: 26.0, height: 26.0 }
+                                draw_icon: {
+                                    svg_file: dep("crate://self/resources/img/modules/journal.svg")
+                                }
+                                draw_icon_active: {
+                                    svg_file: dep("crate://self/resources/img/modules/journal-fill.svg")
+                                }
+                            }
+                        }
+
+                        <View> {
+                            width: Fill, height: Fill
+                            align: {x: 0.5, y: 0.5}
+                            nav_stat = <ToggleIconButton> {
+                                icon_walk: { width: 26.0, height: 26.0 }
+                                draw_icon: {
+                                    svg_file: dep("crate://self/resources/img/modules/stat.svg")
+                                }
+                                draw_icon_active: {
+                                    svg_file: dep("crate://self/resources/img/modules/stat-fill.svg")
+                                }
+                            }
+                        }
+
+                        <View> {
+                            width: Fill, height: Fill
+                            align: {x: 0.5, y: 0.5}
+                            nav_time = <ToggleIconButton> {
+                                icon_walk: { width: 26.0, height: 26.0 }
+                                draw_icon: {
+                                    svg_file: dep("crate://self/resources/img/modules/time.svg")
+                                }
+                                draw_icon_active: {
+                                    svg_file: dep("crate://self/resources/img/modules/time-fill.svg")
+                                }
+                            }
+                        }
+
+                        <View> {
+                            width: Fill, height: Fill
+                            align: {x: 0.5, y: 0.5}
+                            nav_collection = <ToggleIconButton> {
+                                icon_walk: { width: 26.0, height: 26.0 }
+                                draw_icon: {
+                                    svg_file: dep("crate://self/resources/img/modules/collection.svg")
+                                }
+                                draw_icon_active: {
+                                    svg_file: dep("crate://self/resources/img/modules/collection-fill.svg")
+                                }
                             }
                         }
                     }
                 }
-
-                // TimePicker with seconds
-                time_picker = <TimePicker> {
-                    with_seconds: true
-                }
-
-                // TimePicker without seconds (HH:MM only)
-                time_picker_hm = <TimePicker> {
-                    with_seconds: false
-                }
-
-                // DatePicker
-                date_picker = <DatePicker> {}
             }
         }
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Default)]
+enum Screen {
+    #[default]
+    Activity,
+    Journal,
+    Stat,
+    Time,
+    Collection,
 }
 
 #[derive(Live, LiveHook)]
 pub struct App {
     #[live] ui: WidgetRef,
+    #[rust] active_screen: Screen,
     #[rust] initialized: bool,
-    #[rust] sound_player: Option<SoundPlayer>,
-    #[rust] sound_yes: usize,
 }
 
 impl LiveRegister for App {
-    fn live_register(_cx: &mut Cx) {
-    }
+    fn live_register(_cx: &mut Cx) {}
 }
 
 impl AppMain for App {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event) {
-        // Initialize on first event
         if !self.initialized {
             self.initialized = true;
-
-            // Month picker labels (demo WheelH on main page)
-            if let Some(mut picker) = self.ui.widget(ids!(month_picker)).borrow_mut::<Wheel>() {
-                picker.set_labels(calendar::MONTH_NAMES_SHORT.iter().map(|s| s.to_string()).collect());
-                picker.set_value(cx, 0);
-            }
-
-            // Sound player init
-            let player = SoundPlayer::new();
-            let decoded = DecodedSound::from_ogg(include_bytes!("../resources/sound/yes.ogg"));
-            self.sound_yes = player.load(decoded);
-            let inner = player.inner_arc();
-            cx.audio_output(0, move |info, buffer| {
-                SoundPlayer::audio_callback(&inner, info, buffer);
-            });
-            self.sound_player = Some(player);
-            log!("Sound player initialized");
-
-            // DatePicker button: show today's date
-            let today = calendar::today();
-            let date_text = format!("{:02}.{:02}.{:04}", today.day, today.month, today.year);
-            if let Some(mut btn) = self.ui.widget(ids!(open_date_picker_btn)).borrow_mut::<Btn>() {
-                btn.set_text(cx, &date_text);
-            }
+            self.activate_screen(cx, Screen::Activity);
         }
 
         let scope = &mut Scope::empty();
-
-        // Check if any modal is open
-        let modal_is_open = self.any_modal_open();
-
-        // Always pass draw events to entire UI for rendering
-        // Only block input events (finger, mouse, scroll) when modal is open
-        let is_input_event = matches!(event,
-            Event::MouseDown(_) | Event::MouseUp(_) | Event::MouseMove(_) |
-            Event::Scroll(_) | Event::TouchUpdate(_) | Event::LongPress(_)
-        );
-
-        if modal_is_open && is_input_event {
-            // Route input events only to modals
-            for id in Self::modal_widget_ids() {
-                self.ui.widget(id).handle_event(cx, event, scope);
-            }
-        } else {
-            // Normal event handling (draw, actions, key events, etc.)
-            self.ui.handle_event(cx, event, scope);
-        }
-
-        if let Event::AudioDevices(devices) = event {
-            let outputs = devices.default_output();
-            log!("AudioDevices event: {} outputs", outputs.len());
-            cx.use_audio_outputs(&outputs);
-        }
+        self.ui.handle_event(cx, event, scope);
 
         if let Event::Actions(actions) = event {
-            // Only handle main content actions when no modal is open
-            if !modal_is_open {
-                self.handle_main_content_actions(cx, actions);
-            }
-
-            // Always handle modal-related actions (open triggers, etc.)
-            self.handle_modal_actions(cx, actions);
+            self.handle_nav(cx, actions);
         }
     }
 }
 
 impl App {
-    /// Check if button was clicked
-    fn btn_clicked(&self, id: &[LiveId], actions: &Actions) -> bool {
-        self.ui.widget(id).borrow::<Btn>().map(|b| b.clicked(actions)).unwrap_or(false)
-    }
-
-    /// All modal-like widgets (Modal and TimePicker)
-    /// Add new modals here - single place to update
-    fn modal_widget_ids() -> &'static [&'static [LiveId]] {
-        &[
-            ids!(demo_modal),
-            ids!(trigger_tooltip),
-            ids!(button_tooltip),
-            ids!(side_panel_view),
-            ids!(time_picker),
-            ids!(time_picker_hm),
-            ids!(date_picker),
-        ]
-    }
-
-    /// Check if widget is open (Modal, TimePicker, or DatePicker)
-    fn widget_is_open(widget: &WidgetRef) -> bool {
-        if let Some(m) = widget.borrow::<Modal>() { return m.is_open(); }
-        if let Some(tp) = widget.borrow::<TimePicker>() { return tp.is_open(); }
-        if let Some(dp) = widget.borrow::<DatePicker>() { return dp.is_open(); }
-        false
-    }
-
-    fn any_modal_open(&self) -> bool {
-        Self::modal_widget_ids().iter().any(|id| Self::widget_is_open(&self.ui.widget(id)))
-    }
-
-    fn handle_main_content_actions(&mut self, cx: &mut Cx, actions: &Actions) {
-        // Generic Scroll Handler
-        let mut total_scroll_delta = DVec2::default();
-        for action in actions {
-            if let InputAction::Scroll(delta) = action.cast() {
-                total_scroll_delta += delta;
-            } else if let ButtonAction::Scroll(delta) = action.cast() {
-                total_scroll_delta += delta;
-            }
-        }
-
-        if total_scroll_delta.x != 0.0 || total_scroll_delta.y != 0.0 {
-            if let Some(mut view) = self.ui.widget(ids!(main_content)).borrow_mut::<KeyboardView>() {
-                let current_scroll = view.get_scroll_pos();
-                let new_scroll = DVec2 {
-                    x: current_scroll.x - total_scroll_delta.x,
-                    y: current_scroll.y - total_scroll_delta.y,
-                };
-                view.set_scroll_pos(cx, new_scroll);
-                view.redraw(cx);
-            }
-        }
-
-        // Input Validation
-        let submit_clicked = self.btn_clicked(ids!(submit_btn), actions);
-
-        let input_returned = self.ui.widget(ids!(input1))
-            .borrow::<Input>()
-            .map(|input| input.returned(actions).is_some())
-            .unwrap_or(false);
-
-        if submit_clicked || input_returned {
-            if let Some(mut input) = self.ui.widget(ids!(input1)).borrow_mut::<Input>() {
-                if input.validate(cx) {
-                    log!("Submitted: {}", input.text());
-                } else {
-                    log!("Input is invalid/empty!");
-                }
-            }
-        }
-
-        // Handle Receive DOW
-        if self.btn_clicked(ids!(receive_dow_btn), actions) {
-            if let Some(dow) = self.ui.widget(ids!(day_of_week)).borrow::<DayOfWeek>() {
-                log!("Selected Days Indices: {:?}", dow.get_selected_days());
-            }
-        }
-
-        // Tabs and WheelPicker events
-        for action in actions {
-            if let TabsAction::Changed(idx) = action.cast() {
-                log!("Tab changed to index: {}", idx);
-            }
-            if let WheelAction::Changed(val) = action.cast() {
-                log!("Hour picked: {}", val);
-            }
-        }
-
-        // Get Value button
-        if self.btn_clicked(ids!(log_value_btn), actions) {
-            if let Some(picker) = self.ui.widget(ids!(hour_picker)).borrow::<Wheel>() {
-                log!("Current WheelPicker Value: {}", picker.get_value());
-            }
-        }
-
-        // Play Sound
-        if self.btn_clicked(ids!(play_sound_btn), actions) {
-            log!("Play Sound clicked");
-            if let Some(ref player) = self.sound_player {
-                player.play(self.sound_yes);
-            }
-        }
-
-        // IconButton clicks
-        self.handle_icon_button_clicks(actions);
-    }
-
-    fn handle_icon_button_clicks(&self, actions: &Actions) {
-        let icon_ids = [
-            (ids!(icon_activity), "Activity"),
-            (ids!(icon_collection), "Collection"),
-            (ids!(icon_journal), "Journal"),
-            (ids!(icon_stat), "Stat"),
-            (ids!(icon_time), "Time"),
+    fn handle_nav(&mut self, cx: &mut Cx, actions: &Actions) {
+        let nav = [
+            (ids!(nav_activity), Screen::Activity),
+            (ids!(nav_journal), Screen::Journal),
+            (ids!(nav_stat), Screen::Stat),
+            (ids!(nav_time), Screen::Time),
+            (ids!(nav_collection), Screen::Collection),
         ];
 
-        for (id, name) in icon_ids {
-            if let Some(btn) = self.ui.widget(id).borrow::<IconButton>() {
-                if btn.clicked(actions) {
-                    log!("IconButton clicked: {}", name);
+        // Detect which button was clicked, then drop the borrow before activate_screen
+        let mut target = None;
+        for (id, screen) in nav {
+            if let Some(btn) = self.ui.widget(id).borrow::<ToggleIconButton>() {
+                if btn.toggled(actions).is_some() {
+                    target = Some(screen);
+                    break;
                 }
             }
+        }
+
+        if let Some(screen) = target {
+            self.activate_screen(cx, screen);
         }
     }
 
-    fn handle_modal_actions(&mut self, cx: &mut Cx, actions: &Actions) {
-        // Open Modal Button
-        if self.btn_clicked(ids!(open_modal_btn), actions) {
-            // Set dynamic title
-            let modal_ref = self.ui.widget(ids!(demo_modal));
-            if let Some(mut title) = modal_ref.widget(ids!(content)).widget(ids!(title)).borrow_mut::<Text>() {
-                title.set_text(cx, "Dynamic Dialog Title");
-            }
-                if let Some(mut modal) = self.ui.widget(ids!(demo_modal)).borrow_mut::<Modal>() {
-                modal.open(cx);
+    fn activate_screen(&mut self, cx: &mut Cx, screen: Screen) {
+        self.active_screen = screen;
+
+        // Radio behavior: sync nav button states
+        let nav = [
+            (ids!(nav_activity), Screen::Activity),
+            (ids!(nav_journal), Screen::Journal),
+            (ids!(nav_stat), Screen::Stat),
+            (ids!(nav_time), Screen::Time),
+            (ids!(nav_collection), Screen::Collection),
+        ];
+        for (id, s) in nav {
+            if let Some(mut btn) = self.ui.widget(id).borrow_mut::<ToggleIconButton>() {
+                btn.set_activated(cx, s == self.active_screen);
             }
         }
 
-        // Tooltip Trigger Action (RMB / Long Press)
-        for action in actions {
-            if let TooltipTriggerAction::ShowTooltip = action.as_widget_action().cast() {
-                if let Some(mut modal) = self.ui.widget(ids!(trigger_tooltip)).borrow_mut::<Modal>() {
-                    modal.open(cx);
-                }
-            }
-        }
-
-        // Helper Button Tooltip
-        if self.btn_clicked(ids!(help_btn), actions) {
-            if let Some(mut modal) = self.ui.widget(ids!(button_tooltip)).borrow_mut::<Modal>() {
-                modal.open(cx);
-            }
-        }
-
-        // Open SidePanel Button
-        if self.btn_clicked(ids!(side_panel_btn), actions) {
-            if let Some(mut modal) = self.ui.widget(ids!(side_panel_view)).borrow_mut::<Modal>() {
-                modal.open(cx);
-            }
-        }
-
-        // Open TimePicker (HH:MM:SS)
-        if self.btn_clicked(ids!(open_time_picker_btn), actions) {
-            if let Some(mut tp) = self.ui.widget(ids!(time_picker)).borrow_mut::<TimePicker>() {
-                tp.open(cx);
-            }
-        }
-
-        // Open TimePicker (HH:MM only)
-        if self.btn_clicked(ids!(open_time_picker_hm_btn), actions) {
-            if let Some(mut tp) = self.ui.widget(ids!(time_picker_hm)).borrow_mut::<TimePicker>() {
-                tp.open(cx);
-            }
-        }
-
-        // Handle TimePicker actions
-        for action in actions {
-            match action.as_widget_action().cast() {
-                TimePickerAction::Accepted { hours, minutes, seconds } => {
-                    if let Some(secs) = seconds {
-                        log!("Time selected: {:02}:{:02}:{:02}", hours, minutes, secs);
-                    } else {
-                        log!("Time selected: {:02}:{:02}", hours, minutes);
-                    }
-                }
-                TimePickerAction::Dismissed => {
-                    log!("Time picker dismissed");
-                }
-                _ => {}
-            }
-        }
-
-        // Open DatePicker
-        if self.btn_clicked(ids!(open_date_picker_btn), actions) {
-            if let Some(mut dp) = self.ui.widget(ids!(date_picker)).borrow_mut::<DatePicker>() {
-                dp.open(cx);
-            }
-        }
-
-        // Handle DatePicker actions
-        for action in actions {
-            match action.as_widget_action().cast() {
-                DatePickerAction::Accepted { year, month, day } => {
-                    log!("Date selected: {:02}.{:02}.{:04}", day, month, year);
-                    let date_text = format!("{:02}.{:02}.{:04}", day, month, year);
-                    if let Some(mut btn) = self.ui.widget(ids!(open_date_picker_btn)).borrow_mut::<Btn>() {
-                        btn.set_text(cx, &date_text);
-                    }
-                }
-                DatePickerAction::Dismissed => {
-                    log!("Date picker dismissed");
-                }
-                _ => {}
-            }
+        // Show active screen, hide others
+        let screens = [
+            (ids!(screen_activity), Screen::Activity),
+            (ids!(screen_journal), Screen::Journal),
+            (ids!(screen_stat), Screen::Stat),
+            (ids!(screen_time), Screen::Time),
+            (ids!(screen_collection), Screen::Collection),
+        ];
+        for (id, s) in screens {
+            let visible = s == self.active_screen;
+            self.ui.widget(id).apply_over(cx, live!{ visible: (visible) });
         }
     }
 }
