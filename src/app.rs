@@ -24,7 +24,7 @@ live_design! {
                 width: Fill, height: Fill
                 flow: Overlay
                 show_bg: true
-                draw_bg: { color: #1f1f1f }
+                draw_bg: { color: (THEME_COLOR_BG_DARK) }
 
                 // === Main content (header + screens) ===
                 <View> {
@@ -78,13 +78,13 @@ live_design! {
                     }
                 }
 
-                // === Bottom Navigation Bar (floating overlay) ===
+                // === Nav (floating overlay) ===
                 <View> {
                     width: Fill, height: Fill
                     align: {x: 0.5, y: 1.0}
                     padding: {bottom: 12.0}
 
-                    nav_bar = <View> {
+                    nav = <View> {
                         width: Fit, height: Fit
                         flow: Right
                         spacing: 8.0

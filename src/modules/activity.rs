@@ -35,7 +35,7 @@ live_design! {
             <View> {
                 width: Fill, height: Fill
                 align: {x: 1.0, y: 1.0}
-                padding: {right: 16.0, bottom: 16.0}
+                padding: {right: 16.0, bottom: 80.0}
                 fab_create = <Btn> {
                     text: "+"
                     width: 56.0, height: 56.0
