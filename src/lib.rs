@@ -3,6 +3,7 @@ pub mod widgets;
 pub mod styling;
 pub mod modules;
 pub mod utils;
+pub mod header;
 
 use makepad_widgets::*;
 

@@ -1,5 +1,6 @@
 use makepad_widgets::*;
 use crate::widgets::button::Button;
+use crate::header::HeaderAction;
 
 live_design! {
     use makepad_widgets::base::*;
@@ -151,6 +152,10 @@ impl Widget for ActivityScreen {
             if let Some(creating) = show_create {
                 self.view.widget(ids!(list_view)).apply_over(cx, live!{ visible: (!creating) });
                 self.view.widget(ids!(create_view)).apply_over(cx, live!{ visible: (creating) });
+
+                let uid = self.widget_uid();
+                let title = if creating { "Create Activity" } else { "Activity" };
+                cx.widget_action(uid, &scope.path, HeaderAction::SetTitle(title.into()));
             }
         }
     }

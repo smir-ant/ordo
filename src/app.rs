@@ -1,5 +1,6 @@
 use makepad_widgets::*;
 use crate::widgets::toggle_icon_button::ToggleIconButton;
+use crate::header::HeaderAction;
 
 live_design! {
     use makepad_widgets::base::*;
@@ -201,6 +202,7 @@ impl AppMain for App {
 
         if let Event::Actions(actions) = event {
             self.handle_nav(cx, actions);
+            self.handle_header_actions(cx, actions);
         }
     }
 }
@@ -252,6 +254,7 @@ impl App {
         }
 
         // Show active screen, hide others
+
         let screens = [
             (ids!(screen_activity), Screen::Activity),
             (ids!(screen_journal), Screen::Journal),
@@ -262,6 +265,23 @@ impl App {
         for (id, s) in screens {
             let visible = s == self.active_screen;
             self.ui.widget(id).apply_over(cx, live!{ visible: (visible) });
+        }
+    }
+
+    fn handle_header_actions(&mut self, cx: &mut Cx, actions: &Actions) {
+        let screen_ids = [
+            ids!(screen_activity),
+            ids!(screen_journal),
+            ids!(screen_stat),
+            ids!(screen_time),
+            ids!(screen_collection),
+        ];
+        for id in screen_ids {
+            let uid = self.ui.widget(id).widget_uid();
+            if let HeaderAction::SetTitle(title) = actions.find_widget_action(uid).cast() {
+                self.ui.widget(ids!(header_title)).set_text(cx, &title);
+                return;
+            }
         }
     }
 }
