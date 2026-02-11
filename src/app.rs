@@ -7,6 +7,7 @@ live_design! {
     use makepad_widgets::window::Window;
     use makepad_widgets::view_ui::View;
     use crate::widgets::toggle_icon_button::ToggleIconButton;
+    use makepad_draw::shader::std::*;
     use crate::modules::activity::ActivityScreen;
     use crate::modules::journal::JournalScreen;
     use crate::modules::stat::StatScreen;
@@ -19,104 +20,90 @@ live_design! {
             body = <View> {
                 width: Fill, height: Fill
                 flow: Overlay
+                show_bg: true
+                draw_bg: { color: #1f1f1f }
 
-                app_content = <View> {
+                // === Screens (full height, one visible at a time) ===
+                screens = <View> {
                     width: Fill, height: Fill
-                    flow: Down
+                    flow: Overlay
 
-                    // === Screens (stacked, one visible at a time) ===
-                    screens = <View> {
-                        width: Fill, height: Fill
-                        flow: Overlay
+                    screen_activity = <ActivityScreen> {}
+                    screen_journal = <JournalScreen> { visible: false }
+                    screen_stat = <StatScreen> { visible: false }
+                    screen_time = <TimeScreen> { visible: false }
+                    screen_collection = <CollectionScreen> { visible: false }
+                }
 
-                        screen_activity = <ActivityScreen> {}
-                        screen_journal = <JournalScreen> { visible: false }
-                        screen_stat = <StatScreen> { visible: false }
-                        screen_time = <TimeScreen> { visible: false }
-                        screen_collection = <CollectionScreen> { visible: false }
-                    }
+                // === Bottom Navigation Bar (floating overlay) ===
+                <View> {
+                    width: Fill, height: Fill
+                    align: {x: 0.5, y: 1.0}
+                    padding: {bottom: 12.0}
 
-                    // === Separator ===
-                    <View> {
-                        width: Fill, height: 1.0
-                        show_bg: true
-                        draw_bg: { color: #2a2a2a }
-                    }
-
-                    // === Bottom Navigation Bar ===
                     nav_bar = <View> {
-                        width: Fill, height: 56.0
+                        width: Fit, height: Fit
                         flow: Right
+                        spacing: 8.0
+                        padding: 6.0
                         show_bg: true
-                        draw_bg: { color: #181818 }
-
-                        <View> {
-                            width: Fill, height: Fill
-                            align: {x: 0.5, y: 0.5}
-                            nav_activity = <ToggleIconButton> {
-                                icon_walk: { width: 26.0, height: 26.0 }
-                                draw_icon: {
-                                    svg_file: dep("crate://self/resources/img/modules/activity.svg")
-                                }
-                                draw_icon_active: {
-                                    svg_file: dep("crate://self/resources/img/modules/activity-fill.svg")
-                                }
+                        draw_bg: {
+                            color: #181818
+                            fn pixel(self) -> vec4 {
+                                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                                sdf.box(0., 0., self.rect_size.x, self.rect_size.y, 12.);
+                                sdf.fill(self.color);
+                                return sdf.result;
                             }
                         }
 
-                        <View> {
-                            width: Fill, height: Fill
-                            align: {x: 0.5, y: 0.5}
-                            nav_journal = <ToggleIconButton> {
-                                icon_walk: { width: 26.0, height: 26.0 }
-                                draw_icon: {
-                                    svg_file: dep("crate://self/resources/img/modules/journal.svg")
-                                }
-                                draw_icon_active: {
-                                    svg_file: dep("crate://self/resources/img/modules/journal-fill.svg")
-                                }
+                        nav_activity = <ToggleIconButton> {
+                            icon_walk: { width: 26.0, height: 26.0 }
+                            draw_icon: {
+                                svg_file: dep("crate://self/resources/img/modules/activity.svg")
+                            }
+                            draw_icon_active: {
+                                svg_file: dep("crate://self/resources/img/modules/activity-fill.svg")
                             }
                         }
 
-                        <View> {
-                            width: Fill, height: Fill
-                            align: {x: 0.5, y: 0.5}
-                            nav_stat = <ToggleIconButton> {
-                                icon_walk: { width: 26.0, height: 26.0 }
-                                draw_icon: {
-                                    svg_file: dep("crate://self/resources/img/modules/stat.svg")
-                                }
-                                draw_icon_active: {
-                                    svg_file: dep("crate://self/resources/img/modules/stat-fill.svg")
-                                }
+                        nav_journal = <ToggleIconButton> {
+                            icon_walk: { width: 26.0, height: 26.0 }
+                            draw_icon: {
+                                svg_file: dep("crate://self/resources/img/modules/journal.svg")
+                            }
+                            draw_icon_active: {
+                                svg_file: dep("crate://self/resources/img/modules/journal-fill.svg")
                             }
                         }
 
-                        <View> {
-                            width: Fill, height: Fill
-                            align: {x: 0.5, y: 0.5}
-                            nav_time = <ToggleIconButton> {
-                                icon_walk: { width: 26.0, height: 26.0 }
-                                draw_icon: {
-                                    svg_file: dep("crate://self/resources/img/modules/time.svg")
-                                }
-                                draw_icon_active: {
-                                    svg_file: dep("crate://self/resources/img/modules/time-fill.svg")
-                                }
+                        nav_stat = <ToggleIconButton> {
+                            icon_walk: { width: 26.0, height: 26.0 }
+                            draw_icon: {
+                                svg_file: dep("crate://self/resources/img/modules/stat.svg")
+                            }
+                            draw_icon_active: {
+                                svg_file: dep("crate://self/resources/img/modules/stat-fill.svg")
                             }
                         }
 
-                        <View> {
-                            width: Fill, height: Fill
-                            align: {x: 0.5, y: 0.5}
-                            nav_collection = <ToggleIconButton> {
-                                icon_walk: { width: 26.0, height: 26.0 }
-                                draw_icon: {
-                                    svg_file: dep("crate://self/resources/img/modules/collection.svg")
-                                }
-                                draw_icon_active: {
-                                    svg_file: dep("crate://self/resources/img/modules/collection-fill.svg")
-                                }
+                        nav_time = <ToggleIconButton> {
+                            icon_walk: { width: 26.0, height: 26.0 }
+                            draw_icon: {
+                                svg_file: dep("crate://self/resources/img/modules/time.svg")
+                            }
+                            draw_icon_active: {
+                                svg_file: dep("crate://self/resources/img/modules/time-fill.svg")
+                            }
+                        }
+
+                        nav_collection = <ToggleIconButton> {
+                            icon_walk: { width: 26.0, height: 26.0 }
+                            draw_icon: {
+                                svg_file: dep("crate://self/resources/img/modules/collection.svg")
+                            }
+                            draw_icon_active: {
+                                svg_file: dep("crate://self/resources/img/modules/collection-fill.svg")
                             }
                         }
                     }
