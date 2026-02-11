@@ -8,6 +8,9 @@ live_design! {
     use makepad_widgets::view_ui::View;
     use crate::widgets::toggle_icon_button::ToggleIconButton;
     use makepad_draw::shader::std::*;
+    use crate::widgets::text::Text;
+    use crate::widgets::icon_button::IconButton;
+    use link::styling::*;
     use crate::modules::activity::ActivityScreen;
     use crate::modules::journal::JournalScreen;
     use crate::modules::stat::StatScreen;
@@ -23,16 +26,49 @@ live_design! {
                 show_bg: true
                 draw_bg: { color: #1f1f1f }
 
-                // === Screens (full height, one visible at a time) ===
-                screens = <View> {
+                // === Main content (header + screens) ===
+                <View> {
                     width: Fill, height: Fill
-                    flow: Overlay
+                    flow: Down
 
-                    screen_activity = <ActivityScreen> {}
-                    screen_journal = <JournalScreen> { visible: false }
-                    screen_stat = <StatScreen> { visible: false }
-                    screen_time = <TimeScreen> { visible: false }
-                    screen_collection = <CollectionScreen> { visible: false }
+                    // === Header ===
+                    header = <View> {
+                        width: Fill, height: 48.0
+                        flow: Right
+                        align: {y: 0.5}
+                        padding: {left: 16.0, right: 8.0}
+                        show_bg: true
+                        draw_bg: { color: #181818 }
+
+                        header_title = <Text> {
+                            width: Fill, height: Fit
+                            text: "Activity"
+                            draw_text: {
+                                color: (THEME_COLOR_TEXT_PRIMARY)
+                                text_style: { font_size: 18.0 }
+                            }
+                        }
+
+                        btn_menu = <IconButton> {
+                            icon_walk: { width: 20.0, height: 20.0 }
+                            draw_icon: {
+                                color: (THEME_COLOR_TEXT_SECONDARY)
+                                svg_file: dep("crate://self/resources/img/icon_more.svg")
+                            }
+                        }
+                    }
+
+                    // === Screens (one visible at a time) ===
+                    screens = <View> {
+                        width: Fill, height: Fill
+                        flow: Overlay
+
+                        screen_activity = <ActivityScreen> {}
+                        screen_journal = <JournalScreen> { visible: false }
+                        screen_stat = <StatScreen> { visible: false }
+                        screen_time = <TimeScreen> { visible: false }
+                        screen_collection = <CollectionScreen> { visible: false }
+                    }
                 }
 
                 // === Bottom Navigation Bar (floating overlay) ===
@@ -123,6 +159,18 @@ enum Screen {
     Collection,
 }
 
+impl Screen {
+    fn title(self) -> &'static str {
+        match self {
+            Screen::Activity => "Activity",
+            Screen::Journal => "Journal",
+            Screen::Stat => "Statistics",
+            Screen::Time => "Time",
+            Screen::Collection => "Collection",
+        }
+    }
+}
+
 #[derive(Live, LiveHook)]
 pub struct App {
     #[live] ui: WidgetRef,
@@ -178,6 +226,9 @@ impl App {
 
     fn activate_screen(&mut self, cx: &mut Cx, screen: Screen) {
         self.active_screen = screen;
+
+        // Update header title
+        self.ui.widget(ids!(header_title)).set_text(cx, screen.title());
 
         // Radio behavior: sync nav button states
         let nav = [
