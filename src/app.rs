@@ -271,6 +271,12 @@ enum Screen {
 }
 
 impl Screen {
+    const ALL: [Screen; 5] = [
+        Screen::Activity, Screen::Journal, Screen::Stat, Screen::Time, Screen::Collection,
+    ];
+
+    fn index(self) -> usize { self as usize }
+
     fn title(self) -> &'static str {
         match self {
             Screen::Activity => "Activity",
@@ -294,6 +300,8 @@ pub struct App {
     #[rust] initialized: bool,
     #[rust] menu_items: Vec<MenuItem>,
     #[rust] menu_open: bool,
+    #[rust] screen_titles: Vec<String>,
+    #[rust] screen_menus: Vec<Vec<MenuItem>>,
 }
 
 impl LiveRegister for App {
@@ -304,6 +312,10 @@ impl AppMain for App {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event) {
         if !self.initialized {
             self.initialized = true;
+            for s in Screen::ALL {
+                self.screen_titles.push(s.title().to_string());
+                self.screen_menus.push(s.menu_items());
+            }
             self.activate_screen(cx, Screen::Activity);
         }
 
@@ -347,11 +359,10 @@ impl App {
     fn activate_screen(&mut self, cx: &mut Cx, screen: Screen) {
         self.active_screen = screen;
 
-        // Update header title
-        self.ui.widget(ids!(header_title)).set_text(cx, screen.title());
-
-        // Update menu config for the new screen
-        self.update_menu_config(cx, screen.menu_items());
+        // Restore stored header state for this screen
+        let i = screen.index();
+        self.ui.widget(ids!(header_title)).set_text(cx, &self.screen_titles[i]);
+        self.update_menu_config(cx, self.screen_menus[i].clone());
 
         // Radio behavior: sync nav button states
         let nav = [
@@ -393,11 +404,14 @@ impl App {
         for id in screen_ids {
             let uid = self.ui.widget(id).widget_uid();
             for action in actions.filter_widget_actions_cast::<HeaderAction>(uid) {
+                let i = self.active_screen.index();
                 match action {
                     HeaderAction::SetTitle(title) => {
+                        self.screen_titles[i] = title.clone();
                         self.ui.widget(ids!(header_title)).set_text(cx, &title);
                     }
                     HeaderAction::SetMenu(items) => {
+                        self.screen_menus[i] = items.clone();
                         self.update_menu_config(cx, items);
                     }
                     _ => {}
