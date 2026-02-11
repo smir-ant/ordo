@@ -1,6 +1,6 @@
 use makepad_widgets::*;
 use crate::widgets::button::Button;
-use crate::header::HeaderAction;
+use crate::header::{HeaderAction, MenuItem};
 
 live_design! {
     use makepad_widgets::base::*;
@@ -156,6 +156,11 @@ impl Widget for ActivityScreen {
                 let uid = self.widget_uid();
                 let title = if creating { "Create Activity" } else { "Activity" };
                 cx.widget_action(uid, &scope.path, HeaderAction::SetTitle(title.into()));
+
+                let menu_label = if creating { "Log Create" } else { "Log Activity" };
+                cx.widget_action(uid, &scope.path, HeaderAction::SetMenu(
+                    vec![MenuItem { id: live_id!(log), label: menu_label.into() }]
+                ));
             }
         }
     }

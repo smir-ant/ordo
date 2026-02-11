@@ -1,6 +1,7 @@
 use makepad_widgets::*;
 use crate::widgets::toggle_icon_button::ToggleIconButton;
-use crate::header::HeaderAction;
+use crate::widgets::icon_button::IconButton;
+use crate::header::{HeaderAction, MenuItem};
 
 live_design! {
     use makepad_widgets::base::*;
@@ -11,6 +12,7 @@ live_design! {
     use makepad_draw::shader::std::*;
     use crate::widgets::text::Text;
     use crate::widgets::icon_button::IconButton;
+    use crate::widgets::button::Btn;
     use link::styling::*;
     use crate::modules::activity::ActivityScreen;
     use crate::modules::journal::JournalScreen;
@@ -152,6 +154,107 @@ live_design! {
                         }
                     }
                 }
+
+                // === Menu overlay ===
+                menu_overlay = <View> {
+                    width: Fill, height: Fill
+                    visible: false
+                    align: {x: 1.0, y: 0.0}
+                    padding: {top: 80.0, right: 8.0}
+
+                    menu_panel = <View> {
+                        width: 200.0, height: Fit
+                        flow: Down
+                        padding: {top: 4.0, bottom: 4.0}
+                        show_bg: true
+                        draw_bg: {
+                            color: #2a2a2a
+                            fn pixel(self) -> vec4 {
+                                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
+                                sdf.box(0., 0., self.rect_size.x, self.rect_size.y, 6.);
+                                sdf.fill(self.color);
+                                return sdf.result;
+                            }
+                        }
+
+                        menu_item_0 = <Btn> {
+                            text: ""
+                            visible: false
+                            width: Fill, height: Fit
+                            align: {x: 0.0, y: 0.5}
+                            padding: {top: 10.0, bottom: 10.0, left: 16.0, right: 16.0}
+                            margin: 0.0
+                            draw_bg: {
+                                color: #0000
+                                color_hover: #ffffff10
+                                color_down: #ffffff20
+                                border_size: 0.0
+                                border_radius: 0.0
+                            }
+                            draw_text: {
+                                color: #fff
+                                text_style: { font_size: 14.0 }
+                            }
+                        }
+                        menu_item_1 = <Btn> {
+                            text: ""
+                            visible: false
+                            width: Fill, height: Fit
+                            align: {x: 0.0, y: 0.5}
+                            padding: {top: 10.0, bottom: 10.0, left: 16.0, right: 16.0}
+                            margin: 0.0
+                            draw_bg: {
+                                color: #0000
+                                color_hover: #ffffff10
+                                color_down: #ffffff20
+                                border_size: 0.0
+                                border_radius: 0.0
+                            }
+                            draw_text: {
+                                color: #fff
+                                text_style: { font_size: 14.0 }
+                            }
+                        }
+                        menu_item_2 = <Btn> {
+                            text: ""
+                            visible: false
+                            width: Fill, height: Fit
+                            align: {x: 0.0, y: 0.5}
+                            padding: {top: 10.0, bottom: 10.0, left: 16.0, right: 16.0}
+                            margin: 0.0
+                            draw_bg: {
+                                color: #0000
+                                color_hover: #ffffff10
+                                color_down: #ffffff20
+                                border_size: 0.0
+                                border_radius: 0.0
+                            }
+                            draw_text: {
+                                color: #fff
+                                text_style: { font_size: 14.0 }
+                            }
+                        }
+                        menu_item_3 = <Btn> {
+                            text: ""
+                            visible: false
+                            width: Fill, height: Fit
+                            align: {x: 0.0, y: 0.5}
+                            padding: {top: 10.0, bottom: 10.0, left: 16.0, right: 16.0}
+                            margin: 0.0
+                            draw_bg: {
+                                color: #0000
+                                color_hover: #ffffff10
+                                color_down: #ffffff20
+                                border_size: 0.0
+                                border_radius: 0.0
+                            }
+                            draw_text: {
+                                color: #fff
+                                text_style: { font_size: 14.0 }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -177,6 +280,11 @@ impl Screen {
             Screen::Collection => "Collection",
         }
     }
+
+    fn menu_items(self) -> Vec<MenuItem> {
+        let label = format!("Log {}", self.title());
+        vec![MenuItem { id: live_id!(log), label }]
+    }
 }
 
 #[derive(Live, LiveHook)]
@@ -184,6 +292,8 @@ pub struct App {
     #[live] ui: WidgetRef,
     #[rust] active_screen: Screen,
     #[rust] initialized: bool,
+    #[rust] menu_items: Vec<MenuItem>,
+    #[rust] menu_open: bool,
 }
 
 impl LiveRegister for App {
@@ -203,6 +313,7 @@ impl AppMain for App {
         if let Event::Actions(actions) = event {
             self.handle_nav(cx, actions);
             self.handle_header_actions(cx, actions);
+            self.handle_menu(cx, actions);
         }
     }
 }
@@ -238,6 +349,9 @@ impl App {
 
         // Update header title
         self.ui.widget(ids!(header_title)).set_text(cx, screen.title());
+
+        // Update menu config for the new screen
+        self.update_menu_config(cx, screen.menu_items());
 
         // Radio behavior: sync nav button states
         let nav = [
@@ -278,8 +392,82 @@ impl App {
         ];
         for id in screen_ids {
             let uid = self.ui.widget(id).widget_uid();
-            if let HeaderAction::SetTitle(title) = actions.find_widget_action(uid).cast() {
-                self.ui.widget(ids!(header_title)).set_text(cx, &title);
+            for action in actions.filter_widget_actions_cast::<HeaderAction>(uid) {
+                match action {
+                    HeaderAction::SetTitle(title) => {
+                        self.ui.widget(ids!(header_title)).set_text(cx, &title);
+                    }
+                    HeaderAction::SetMenu(items) => {
+                        self.update_menu_config(cx, items);
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+
+    fn update_menu_config(&mut self, cx: &mut Cx, items: Vec<MenuItem>) {
+        self.menu_items = items;
+        if self.menu_open {
+            self.menu_open = false;
+            self.ui.widget(ids!(menu_overlay)).apply_over(cx, live!{ visible: false });
+            self.ui.redraw(cx);
+        }
+
+        let slot_ids: [&[LiveId]; 4] = [
+            ids!(menu_item_0),
+            ids!(menu_item_1),
+            ids!(menu_item_2),
+            ids!(menu_item_3),
+        ];
+        for (i, slot) in slot_ids.iter().enumerate() {
+            if i < self.menu_items.len() {
+                let w = self.ui.widget(slot);
+                w.set_text(cx, &self.menu_items[i].label);
+                w.apply_over(cx, live!{ visible: true });
+            } else {
+                self.ui.widget(slot).apply_over(cx, live!{ visible: false });
+            }
+        }
+    }
+
+    fn handle_menu(&mut self, cx: &mut Cx, actions: &Actions) {
+        // Toggle menu on three-dot click
+        let menu_toggled = {
+            if let Some(btn) = self.ui.widget(ids!(btn_menu)).borrow::<IconButton>() {
+                btn.clicked(actions)
+            } else {
+                false
+            }
+        };
+        if menu_toggled {
+            self.menu_open = !self.menu_open;
+            self.ui.widget(ids!(menu_overlay)).apply_over(cx, live!{ visible: (self.menu_open) });
+            self.ui.redraw(cx);
+            return;
+        }
+
+        // Handle menu item clicks
+        let slot_ids: [&[LiveId]; 4] = [
+            ids!(menu_item_0),
+            ids!(menu_item_1),
+            ids!(menu_item_2),
+            ids!(menu_item_3),
+        ];
+        for (i, slot) in slot_ids.iter().enumerate() {
+            if i >= self.menu_items.len() { break; }
+            let clicked = {
+                if let Some(btn) = self.ui.widget(slot).borrow::<crate::widgets::button::Button>() {
+                    btn.clicked(actions)
+                } else {
+                    false
+                }
+            };
+            if clicked {
+                log!("Menu clicked: {} (id: {:?})", self.menu_items[i].label, self.menu_items[i].id);
+                self.menu_open = false;
+                self.ui.widget(ids!(menu_overlay)).apply_over(cx, live!{ visible: false });
+                self.ui.redraw(cx);
                 return;
             }
         }
