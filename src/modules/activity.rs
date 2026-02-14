@@ -6,6 +6,7 @@ live_design! {
     use makepad_widgets::base::*;
     use makepad_widgets::theme_desktop_dark::*;
     use makepad_widgets::view_ui::View;
+    use makepad_widgets::scroll_bars::ScrollBars;
     use crate::widgets::text::Text;
     use crate::widgets::button::Btn;
     use makepad_draw::shader::std::*;
@@ -25,7 +26,11 @@ live_design! {
             // Content area (placeholder)
             <View> {
                 width: Fill, height: Fill
-                align: {x: 0.5, y: 0.5}
+                flow: Down
+                scroll_bars: <ScrollBars> {
+                    show_scroll_x: false, show_scroll_y: true
+                    scroll_bar_y: { drag_scrolling: true, smoothing: 0.15 }
+                }
                 <Text> {
                     text: "Activity"
                     draw_text: { color: (THEME_COLOR_TEXT_TERTIARY), text_style: { font_size: 32.0 } }
@@ -93,6 +98,10 @@ live_design! {
             show_bg: true
             draw_bg: { color: (THEME_COLOR_BG_DARK) }
             flow: Down
+            scroll_bars: <ScrollBars> {
+                show_scroll_x: false, show_scroll_y: true
+                scroll_bar_y: { drag_scrolling: true, smoothing: 0.15 }
+            }
 
             // Top bar with back button
             <View> {

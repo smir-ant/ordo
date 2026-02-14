@@ -1,4 +1,5 @@
 use makepad_widgets::*;
+use makepad_widgets::event::TouchState;
 use crate::widgets::toggle_icon_button::ToggleIconButton;
 use crate::widgets::icon_button::IconButton;
 use crate::header::{HeaderAction, MenuItem};
@@ -155,10 +156,12 @@ live_design! {
                     }
                 }
 
-                // === Menu overlay ===
+                // === Menu overlay (scrim + panel) ===
                 menu_overlay = <View> {
                     width: Fill, height: Fill
                     visible: false
+                    show_bg: true
+                    draw_bg: { color: #00000040 }
                     align: {x: 1.0, y: 0.0}
                     padding: {top: 80.0, right: 8.0}
 
@@ -300,6 +303,7 @@ pub struct App {
     #[rust] initialized: bool,
     #[rust] menu_items: Vec<MenuItem>,
     #[rust] menu_open: bool,
+    #[rust] menu_close_pending: bool,
     #[rust] screen_titles: Vec<String>,
     #[rust] screen_menus: Vec<Vec<MenuItem>>,
 }
@@ -326,6 +330,28 @@ impl AppMain for App {
             self.handle_nav(cx, actions);
             self.handle_header_actions(cx, actions);
             self.handle_menu(cx, actions);
+        }
+
+        // Execute pending menu close (after actions are processed)
+        if self.menu_close_pending {
+            if matches!(event, Event::Actions(_) | Event::MouseDown(_) | Event::TouchUpdate(_)) {
+                self.menu_close_pending = false;
+                self.close_menu(cx);
+            }
+        }
+
+        // Any pointer release or Escape dismisses the menu
+        if self.menu_open {
+            match event {
+                Event::MouseUp(_) => { self.menu_close_pending = true; }
+                Event::TouchUpdate(te) => {
+                    if te.touches.iter().any(|t| matches!(t.state, TouchState::Stop)) {
+                        self.menu_close_pending = true;
+                    }
+                }
+                Event::KeyDown(ke) if ke.key_code == KeyCode::Escape => { self.close_menu(cx); }
+                _ => {}
+            }
         }
     }
 }
@@ -420,19 +446,19 @@ impl App {
         }
     }
 
+    fn close_menu(&mut self, cx: &mut Cx) {
+        if !self.menu_open { return; }
+        self.menu_open = false;
+        self.ui.widget(ids!(menu_overlay)).apply_over(cx, live!{ visible: false });
+        self.ui.redraw(cx);
+    }
+
     fn update_menu_config(&mut self, cx: &mut Cx, items: Vec<MenuItem>) {
         self.menu_items = items;
-        if self.menu_open {
-            self.menu_open = false;
-            self.ui.widget(ids!(menu_overlay)).apply_over(cx, live!{ visible: false });
-            self.ui.redraw(cx);
-        }
+        self.close_menu(cx);
 
         let slot_ids: [&[LiveId]; 4] = [
-            ids!(menu_item_0),
-            ids!(menu_item_1),
-            ids!(menu_item_2),
-            ids!(menu_item_3),
+            ids!(menu_item_0), ids!(menu_item_1), ids!(menu_item_2), ids!(menu_item_3),
         ];
         for (i, slot) in slot_ids.iter().enumerate() {
             if i < self.menu_items.len() {
@@ -446,43 +472,34 @@ impl App {
     }
 
     fn handle_menu(&mut self, cx: &mut Cx, actions: &Actions) {
-        // Toggle menu on three-dot click
-        let menu_toggled = {
-            if let Some(btn) = self.ui.widget(ids!(btn_menu)).borrow::<IconButton>() {
-                btn.clicked(actions)
-            } else {
-                false
+        // Three-dot opens menu (only when closed)
+        if !self.menu_open {
+            let clicked = {
+                if let Some(btn) = self.ui.widget(ids!(btn_menu)).borrow::<IconButton>() {
+                    btn.clicked(actions)
+                } else { false }
+            };
+            if clicked {
+                self.menu_open = true;
+                self.ui.widget(ids!(menu_overlay)).apply_over(cx, live!{ visible: true });
+                self.ui.redraw(cx);
             }
-        };
-        if menu_toggled {
-            self.menu_open = !self.menu_open;
-            self.ui.widget(ids!(menu_overlay)).apply_over(cx, live!{ visible: (self.menu_open) });
-            self.ui.redraw(cx);
             return;
         }
 
-        // Handle menu item clicks
+        // Menu is open — check item clicks (close handled by handle_event)
         let slot_ids: [&[LiveId]; 4] = [
-            ids!(menu_item_0),
-            ids!(menu_item_1),
-            ids!(menu_item_2),
-            ids!(menu_item_3),
+            ids!(menu_item_0), ids!(menu_item_1), ids!(menu_item_2), ids!(menu_item_3),
         ];
         for (i, slot) in slot_ids.iter().enumerate() {
             if i >= self.menu_items.len() { break; }
             let clicked = {
                 if let Some(btn) = self.ui.widget(slot).borrow::<crate::widgets::button::Button>() {
                     btn.clicked(actions)
-                } else {
-                    false
-                }
+                } else { false }
             };
             if clicked {
                 log!("Menu clicked: {} (id: {:?})", self.menu_items[i].label, self.menu_items[i].id);
-                self.menu_open = false;
-                self.ui.widget(ids!(menu_overlay)).apply_over(cx, live!{ visible: false });
-                self.ui.redraw(cx);
-                return;
             }
         }
     }

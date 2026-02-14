@@ -4,14 +4,19 @@ live_design! {
     use makepad_widgets::base::*;
     use makepad_widgets::theme_desktop_dark::*;
     use makepad_widgets::view_ui::View;
+    use makepad_widgets::scroll_bars::ScrollBars;
     use crate::widgets::text::Text;
     use link::styling::*;
 
     pub StatScreen = {{StatScreen}} {
         width: Fill, height: Fill
+        flow: Down
         show_bg: true
         draw_bg: { color: (THEME_COLOR_BG_DARK) }
-        align: {x: 0.5, y: 0.5}
+        scroll_bars: <ScrollBars> {
+            show_scroll_x: false, show_scroll_y: true
+            scroll_bar_y: { drag_scrolling: true, smoothing: 0.15 }
+        }
 
         <Text> {
             text: "Statistics"
