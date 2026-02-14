@@ -13,6 +13,7 @@ live_design! {
         flow: Down
         show_bg: true
         draw_bg: { color: (THEME_COLOR_BG_DARK) }
+        padding: {left: 16.0, right: 16.0, top: 10.0, bottom: 10.0}
         scroll_bars: <ScrollBars> {
             show_scroll_x: false, show_scroll_y: true
             scroll_bar_y: { drag_scrolling: true, smoothing: 0.15 }
