@@ -282,6 +282,73 @@ live_design! {
                         }
                     }
                 }
+
+                // Evaluation
+                <Group> {
+                    width: Fill, height: Fit
+                    <Text> {
+                        text: "Evaluation"
+                        draw_text: { color: (THEME_COLOR_TEXT_PRIMARY), text_style: { font_size: 13.0 } }
+                    }
+
+                    evaluation_dropdown = <DropDown> {
+                        width: Fill
+                        labels: ["Numeric", "Yes/No", "Time"]
+                        selected_item: 0
+                    }
+
+                    // Numeric view (default visible)
+                    evaluation_numeric = <View> {
+                        width: Fill, height: Fit
+                        flow: Down, spacing: 10.0
+
+                        <View> {
+                            width: Fill, height: Fit
+                            flow: Right, spacing: 10.0
+                            align: {y: 0.5}
+
+                            eval_numeric_target = <Input> {
+                                width: 80.0, height: Fit
+                                is_numeric_only: true
+                                text: "1"
+                            }
+
+                            eval_numeric_unit = <Input> {
+                                width: Fill, height: Fit
+                                empty_text: "e.g. times, km, pages"
+                            }
+                        }
+                    }
+
+                    // Yes/No view (hidden by default)
+                    evaluation_yesno = <View> {
+                        width: Fill, height: Fit, visible: false
+                        flow: Down, spacing: 10.0
+
+                        <TooltipTrigger> {
+                            eval_yesno_reverse_check = <Check> {
+                                label: "Reverse behavior"
+                            }
+                        }
+                    }
+
+                    // Time view (hidden by default)
+                    evaluation_time = <View> {
+                        width: Fill, height: Fit, visible: false
+                        flow: Down, spacing: 10.0
+
+                        eval_time_btn = <Btn> {
+                            width: Fill, height: Fit
+                            text: "Select time"
+                        }
+
+                        <TooltipTrigger> {
+                            eval_time_limit_check = <Check> {
+                                label: "Limit execution to this time"
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -473,13 +540,57 @@ impl ActivityScreen {
             }
         }
 
-        // Tooltip trigger for "Carry over" checkbox
+        // Evaluation dropdown changed
+        let eval_dd = self.view.widget(ids!(evaluation_dropdown));
+        if let Some(item) = actions.find_widget_action(eval_dd.widget_uid()) {
+            if let DropDownAction::Select(index, _) = item.cast() {
+                // Hide all evaluation views
+                self.view.widget(ids!(evaluation_numeric)).apply_over(cx, live!{ visible: false });
+                self.view.widget(ids!(evaluation_yesno)).apply_over(cx, live!{ visible: false });
+                self.view.widget(ids!(evaluation_time)).apply_over(cx, live!{ visible: false });
+
+                // Show selected view
+                match index {
+                    0 => self.view.widget(ids!(evaluation_numeric)).apply_over(cx, live!{ visible: true }),
+                    1 => self.view.widget(ids!(evaluation_yesno)).apply_over(cx, live!{ visible: true }),
+                    2 => self.view.widget(ids!(evaluation_time)).apply_over(cx, live!{ visible: true }),
+                    _ => {}
+                }
+            }
+        }
+
+        // Time evaluation button clicked → send action to app
+        if let Some(btn) = self.view.widget(ids!(eval_time_btn)).borrow::<Button>() {
+            if btn.clicked(actions) {
+                // TODO: Add AppAction::OpenTimePicker
+                log!("Time picker button clicked - not implemented yet");
+            }
+        }
+
+        // Tooltip triggers - determine which one by checking visible views
         for action in actions {
             if let TooltipTriggerAction::ShowTooltip = action.as_widget_action().cast() {
-                cx.widget_action(uid, &HeapLiveIdPath::default(), AppAction::OpenTooltip {
-                    title: "Activity Carryover".to_string(),
-                    description: "If month has 30 days and you selected 31st, activity moves to 30th when checked. Otherwise skipped.".to_string(),
-                });
+                // Check which view is visible to determine tooltip content
+                let dom_visible = self.view.widget(ids!(regularity_dom)).area() != Area::Empty;
+                let yesno_visible = self.view.widget(ids!(evaluation_yesno)).area() != Area::Empty;
+                let time_visible = self.view.widget(ids!(evaluation_time)).area() != Area::Empty;
+
+                if dom_visible {
+                    cx.widget_action(uid, &HeapLiveIdPath::default(), AppAction::OpenTooltip {
+                        title: "Activity Carryover".to_string(),
+                        description: "If month has 30 days and you selected 31st, activity moves to 30th when checked. Otherwise skipped.".to_string(),
+                    });
+                } else if yesno_visible {
+                    cx.widget_action(uid, &HeapLiveIdPath::default(), AppAction::OpenTooltip {
+                        title: "Reverse Behavior".to_string(),
+                        description: "When checked, not marking = success. Useful for tracking failures on bad habits.".to_string(),
+                    });
+                } else if time_visible {
+                    cx.widget_action(uid, &HeapLiveIdPath::default(), AppAction::OpenTooltip {
+                        title: "Time Limit".to_string(),
+                        description: "When checked, timer stops at limit with alert. Otherwise runs like stopwatch. Useful for max effort timed activities.".to_string(),
+                    });
+                }
             }
         }
     }

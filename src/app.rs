@@ -427,13 +427,8 @@ impl AppMain for App {
 impl App {
     /// Check if any global modal is open
     fn any_modal_open(&self) -> bool {
-        // Check global DatePicker
-        if let Some(dp) = self.ui.widget(ids!(global_date_picker)).borrow::<DatePicker>() {
-            if dp.is_open() {
-                return true;
-            }
-        }
-        false
+        self.ui.widget(ids!(global_date_picker)).borrow::<DatePicker>().map_or(false, |dp| dp.is_open())
+            || self.ui.widget(ids!(global_tooltip)).borrow::<Modal>().map_or(false, |m| m.is_open())
     }
 
     fn handle_app_actions(&mut self, cx: &mut Cx, actions: &Actions) {
