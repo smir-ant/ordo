@@ -145,6 +145,7 @@ impl Widget for TooltipTrigger {
                     cx.set_cursor(MouseCursor::Arrow);
                     self.view.redraw(cx);
                     cx.widget_action(uid, &scope.path, TooltipTriggerAction::ShowTooltip);
+                    return; // Don't pass event to child
                 }
             }
             Event::MouseUp(mu) => {
@@ -154,6 +155,7 @@ impl Widget for TooltipTrigger {
                     cx.set_cursor(MouseCursor::Arrow);
                     self.view.redraw(cx);
                     cx.widget_action(uid, &scope.path, TooltipTriggerAction::ShowTooltip);
+                    return; // Don't pass event to child
                 }
             }
             Event::MouseMove(mm) => {

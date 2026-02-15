@@ -19,6 +19,8 @@ live_design! {
     use crate::widgets::icon_button::IconButton;
     use crate::widgets::button::Btn;
     use crate::widgets::date_picker::DatePicker;
+    use crate::widgets::modal::Modal;
+    use crate::widgets::modal::TooltipStyle;
     use link::styling::*;
     use crate::modules::activity::ActivityScreen;
     use crate::modules::journal::JournalScreen;
@@ -290,6 +292,22 @@ live_design! {
 
                 // === Global DatePicker (overlay above everything) ===
                 global_date_picker = <DatePicker> {}
+
+                // === Global Tooltip Modal ===
+                global_tooltip = <Modal> {
+                    content = <TooltipStyle> {
+                        tooltip_title = <Text> {
+                            text: "Tooltip"
+                            draw_text: { color: #fff, text_style: { font_size: 14.0 } }
+                        }
+                        tooltip_description = <Text> {
+                            width: Fill, height: Fit
+                            text: "Description"
+                            draw_text: { color: #ccc, wrap: Word, text_style: { font_size: 12.0 } }
+                        }
+                        ok_button = <Btn> { width: Fill, text: "Got it" }
+                    }
+                }
             }
         }
     }
@@ -435,6 +453,15 @@ impl App {
                     AppAction::OpenDatePicker => {
                         if let Some(mut dp) = self.ui.widget(ids!(global_date_picker)).borrow_mut::<DatePicker>() {
                             dp.open(cx);
+                        }
+                    }
+                    AppAction::OpenTooltip { title, description } => {
+                        // Set tooltip content
+                        self.ui.widget(ids!(tooltip_title)).set_text(cx, &title);
+                        self.ui.widget(ids!(tooltip_description)).set_text(cx, &description);
+                        // Open modal
+                        if let Some(mut modal) = self.ui.widget(ids!(global_tooltip)).borrow_mut::<Modal>() {
+                            modal.open(cx);
                         }
                     }
                     _ => {}

@@ -8,7 +8,7 @@ live_design! {
 
     pub DaysOfMonth = {{DaysOfMonth}} {
         width: Fill, height: Fit
-        spacing: 5.0
+        flow: Down
 
         draw_bg: {
             fn pixel(self) -> vec4 { return vec4(0.0, 0.0, 0.0, 0.0); }
@@ -145,10 +145,14 @@ impl Widget for DaysOfMonth {
         self.area_days.clear();
 
         let cell_size = dvec2(36.0, 30.0);
-        let space_x = 4.0;
-        let space_y = 4.0;
+        let space_x = 5.0;
+        let space_y = 5.0;
+        let available_width = cx.turtle().rect().size.x;
 
-        // Pre-apply values for element 0
+        // Calculate how many cells fit per row
+        let cols = ((available_width + space_x) / (cell_size.x + space_x)).floor().max(1.0) as usize;
+
+        // Pre-apply values for element 0 (will be used by draw 0)
         {
             let hover = self.hover_state[0];
             let selected_f = if (self.selected_mask >> 0) & 1 == 1 { 1.0 } else { 0.0 };
@@ -156,50 +160,44 @@ impl Widget for DaysOfMonth {
             self.draw_text.apply_over(cx, live!{ hover: (hover), selected: (selected_f) });
         }
 
-        for row in 0..5 {
-            if row > 0 {
-                cx.walk_turtle(Walk::fixed(0.0, space_y));
-            }
+        let start_pos = cx.turtle().pos();
 
-            let row_start_x = cx.turtle().pos().x;
+        // Draw all 31 days with manual wrap
+        for day in 1..=31 {
+            let i = day - 1;
+            let row = i / cols;
+            let col = i % cols;
 
-            for col in 0..7 {
-                let day = row * 7 + col + 1;
-                if day > 31 {
-                    break;
-                }
-                let i = day - 1;
+            // Calculate absolute position
+            let x = start_pos.x + col as f64 * (cell_size.x + space_x);
+            let y = start_pos.y + row as f64 * (cell_size.y + space_y);
 
-                if col > 0 {
-                    cx.walk_turtle(Walk::fixed(space_x, 0.0));
-                }
+            let cell_rect = Rect {
+                pos: dvec2(x, y),
+                size: cell_size,
+            };
+            self.area_days.push(cell_rect);
 
-                cx.begin_turtle(Walk::fixed(cell_size.x, cell_size.y), Layout {
-                    align: Align {x: 0.5, y: 0.5},
-                    ..Layout::default()
-                });
+            // Draw with current instance values (set by previous apply_over)
+            self.draw_day.draw_abs(cx, cell_rect);
 
-                let rect = cx.turtle().rect();
-                self.area_days.push(rect);
+            let label = format!("{}", day);
+            let text_offset_x = cell_size.x * 0.35;
+            let text_offset_y = cell_size.y * 0.35;
+            let text_pos = dvec2(x + text_offset_x, y + text_offset_y);
+            self.draw_text.draw_abs(cx, text_pos, &label);
 
-                self.draw_day.draw_abs(cx, rect);
-                let label = format!("{}", day);
-                self.draw_text.draw_walk(cx, Walk::fit(), Align::default(), &label);
-
-                // Apply values for next element
-                let hover = self.hover_state[i];
-                let selected_f = if (self.selected_mask >> i) & 1 == 1 { 1.0 } else { 0.0 };
-                self.draw_day.apply_over(cx, live!{ hover: (hover), selected: (selected_f) });
-                self.draw_text.apply_over(cx, live!{ hover: (hover), selected: (selected_f) });
-
-                cx.end_turtle();
-            }
-
-            // Move to next row
-            let row_height = cell_size.y;
-            let current_x = cx.turtle().pos().x;
-            cx.walk_turtle(Walk::fixed(row_start_x - current_x, row_height));
+            // Apply values for current element i (will be used by draw i+1, wrapping fixes offset)
+            let hover = self.hover_state[i];
+            let selected_f = if (self.selected_mask >> i) & 1 == 1 { 1.0 } else { 0.0 };
+            self.draw_day.apply_over(cx, live!{ hover: (hover), selected: (selected_f) });
+            self.draw_text.apply_over(cx, live!{ hover: (hover), selected: (selected_f) });
         }
+
+        // Calculate total height and walk turtle down
+        let rows = (31 + cols - 1) / cols;
+        let total_height = rows as f64 * cell_size.y + (rows - 1) as f64 * space_y;
+        cx.walk_turtle(Walk::fixed(0.0, total_height));
 
         self.draw_bg.end(cx);
         DrawStep::done()

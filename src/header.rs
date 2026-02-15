@@ -19,4 +19,5 @@ pub enum HeaderAction {
 pub enum AppAction {
     None,
     OpenDatePicker,
+    OpenTooltip { title: String, description: String },
 }
