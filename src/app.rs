@@ -327,7 +327,6 @@ pub struct App {
     #[rust] initialized: bool,
     #[rust] menu_items: Vec<MenuItem>,
     #[rust] menu_open: bool,
-    #[rust] menu_close_next: bool,
     #[rust] screen_titles: Vec<String>,
     #[rust] screen_menus: Vec<Vec<MenuItem>>,
     #[rust] screen_back_visible: Vec<bool>,
@@ -358,19 +357,11 @@ impl AppMain for App {
             self.handle_menu(cx, actions);
         }
 
-        // Close menu after actions processed
-        if self.menu_close_next {
-            self.menu_close_next = false;
-            self.close_menu(cx);
-        }
-
         // System back button (Android/iOS gesture)
         if let Event::BackPressed { .. } = event {
-            // If menu is open, close it
             if self.menu_open {
                 self.close_menu(cx);
             } else {
-                // Otherwise, dispatch BackClicked to active screen
                 let screen_ids = [
                     ids!(screen_activity),
                     ids!(screen_journal),
@@ -384,13 +375,13 @@ impl AppMain for App {
             }
         }
 
-        // Mark menu for close on pointer-up or Escape
+        // Close menu on any click (after actions processed)
         if self.menu_open {
             match event {
-                Event::MouseUp(_) => self.menu_close_next = true,
+                Event::MouseUp(_) => self.close_menu(cx),
                 Event::TouchUpdate(te) => {
                     if te.touches.iter().any(|t| matches!(t.state, TouchState::Stop)) {
-                        self.menu_close_next = true;
+                        self.close_menu(cx);
                     }
                 }
                 Event::KeyDown(ke) if ke.key_code == KeyCode::Escape => self.close_menu(cx),
