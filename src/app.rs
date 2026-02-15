@@ -327,6 +327,7 @@ pub struct App {
     #[rust] initialized: bool,
     #[rust] menu_items: Vec<MenuItem>,
     #[rust] menu_open: bool,
+    #[rust] menu_close_next: bool,
     #[rust] screen_titles: Vec<String>,
     #[rust] screen_menus: Vec<Vec<MenuItem>>,
     #[rust] screen_back_visible: Vec<bool>,
@@ -357,13 +358,19 @@ impl AppMain for App {
             self.handle_menu(cx, actions);
         }
 
-        // Dismiss menu on any pointer-up or Escape
+        // Close menu after actions processed
+        if self.menu_close_next {
+            self.menu_close_next = false;
+            self.close_menu(cx);
+        }
+
+        // Mark menu for close on pointer-up or Escape
         if self.menu_open {
             match event {
-                Event::MouseUp(_) => self.close_menu(cx),
+                Event::MouseUp(_) => self.menu_close_next = true,
                 Event::TouchUpdate(te) => {
                     if te.touches.iter().any(|t| matches!(t.state, TouchState::Stop)) {
-                        self.close_menu(cx);
+                        self.menu_close_next = true;
                     }
                 }
                 Event::KeyDown(ke) if ke.key_code == KeyCode::Escape => self.close_menu(cx),
