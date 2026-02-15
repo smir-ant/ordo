@@ -364,6 +364,26 @@ impl AppMain for App {
             self.close_menu(cx);
         }
 
+        // System back button (Android/iOS gesture)
+        if let Event::BackPressed { .. } = event {
+            // If menu is open, close it
+            if self.menu_open {
+                self.close_menu(cx);
+            } else {
+                // Otherwise, dispatch BackClicked to active screen
+                let screen_ids = [
+                    ids!(screen_activity),
+                    ids!(screen_journal),
+                    ids!(screen_stat),
+                    ids!(screen_time),
+                    ids!(screen_collection),
+                ];
+                let active_id = screen_ids[self.active_screen.index()];
+                let uid = self.ui.widget(active_id).widget_uid();
+                cx.widget_action(uid, &HeapLiveIdPath::default(), HeaderAction::BackClicked);
+            }
+        }
+
         // Mark menu for close on pointer-up or Escape
         if self.menu_open {
             match event {
