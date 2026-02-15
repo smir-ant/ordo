@@ -389,6 +389,26 @@ impl AppMain for App {
         // Check if modal is open BEFORE handling event (so modal state is pre-close)
         let modal_was_open = self.any_modal_open();
 
+        // Block ALL pointer/touch/scroll events from reaching background when modal is open
+        if modal_was_open {
+            let is_blocking_event = matches!(event,
+                Event::Scroll(_) |
+                Event::TouchUpdate(_) |
+                Event::MouseMove(_) |
+                Event::MouseDown(_) |
+                Event::MouseUp(_)
+            );
+
+            if is_blocking_event {
+                // Only let modals handle these events, not background screens
+                let scope = &mut Scope::empty();
+                self.ui.widget(ids!(global_date_picker)).handle_event(cx, event, scope);
+                self.ui.widget(ids!(global_time_picker)).handle_event(cx, event, scope);
+                self.ui.widget(ids!(global_tooltip)).handle_event(cx, event, scope);
+                return;
+            }
+        }
+
         let scope = &mut Scope::empty();
         self.ui.handle_event(cx, event, scope);
 
