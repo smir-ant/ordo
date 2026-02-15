@@ -11,4 +11,6 @@ pub enum HeaderAction {
     None,
     SetTitle(String),
     SetMenu(Vec<MenuItem>),
+    ShowBack(bool),
+    BackClicked,
 }

@@ -45,26 +45,52 @@ live_design! {
                     // === Header ===
                     header = <View> {
                         width: Fill, height: 48.0
-                        flow: Right
-                        align: {y: 0.5}
-                        padding: {left: 16.0, right: 8.0, bottom: 6.0}
+                        flow: Overlay
                         show_bg: true
                         draw_bg: { color: (THEME_COLOR_BG_PANEL) }
 
-                        header_title = <Text> {
-                            width: Fill, height: Fit
-                            text: "Activity"
-                            draw_text: {
-                                color: (THEME_COLOR_TEXT_PRIMARY)
-                                text_style: { font_size: 20.0 }
+                        // Layer 1: centered title
+                        <View> {
+                            width: Fill, height: Fill
+                            align: {x: 0.5, y: 0.5}
+                            padding: {bottom: 6.0}
+                            header_title = <Text> {
+                                width: Fit, height: Fit
+                                text: "Activity"
+                                draw_text: {
+                                    color: (THEME_COLOR_TEXT_PRIMARY)
+                                    text_style: { font_size: 20.0 }
+                                }
                             }
                         }
 
-                        btn_menu = <IconButton> {
-                            icon_walk: { width: 24.0, height: 24.0 }
-                            draw_icon: {
-                                color: (THEME_COLOR_TEXT_SECONDARY)
-                                svg_file: dep("crate://self/resources/img/icon_more.svg")
+                        // Layer 2: buttons at edges
+                        <View> {
+                            width: Fill, height: Fill
+                            flow: Right
+                            align: {y: 0.5}
+                            padding: {left: 8.0, right: 8.0, bottom: 6.0}
+
+                            back_wrap = <View> {
+                                width: Fit, height: Fit
+                                visible: false
+                                btn_back = <IconButton> {
+                                    icon_walk: { width: 24.0, height: 24.0 }
+                                    draw_icon: {
+                                        color: (THEME_COLOR_TEXT_SECONDARY)
+                                        svg_file: dep("crate://self/resources/img/icon_back.svg")
+                                    }
+                                }
+                            }
+
+                            <View> { width: Fill, height: Fit }
+
+                            btn_menu = <IconButton> {
+                                icon_walk: { width: 24.0, height: 24.0 }
+                                draw_icon: {
+                                    color: (THEME_COLOR_TEXT_SECONDARY)
+                                    svg_file: dep("crate://self/resources/img/icon_more.svg")
+                                }
                             }
                         }
                     }
@@ -156,12 +182,10 @@ live_design! {
                     }
                 }
 
-                // === Menu overlay (scrim + panel) ===
+                // === Menu popup ===
                 menu_overlay = <View> {
                     width: Fill, height: Fill
                     visible: false
-                    show_bg: true
-                    draw_bg: { color: #00000040 }
                     align: {x: 1.0, y: 0.0}
                     padding: {top: 80.0, right: 8.0}
 
@@ -303,9 +327,9 @@ pub struct App {
     #[rust] initialized: bool,
     #[rust] menu_items: Vec<MenuItem>,
     #[rust] menu_open: bool,
-    #[rust] menu_close_pending: bool,
     #[rust] screen_titles: Vec<String>,
     #[rust] screen_menus: Vec<Vec<MenuItem>>,
+    #[rust] screen_back_visible: Vec<bool>,
 }
 
 impl LiveRegister for App {
@@ -319,6 +343,7 @@ impl AppMain for App {
             for s in Screen::ALL {
                 self.screen_titles.push(s.title().to_string());
                 self.screen_menus.push(s.menu_items());
+                self.screen_back_visible.push(false);
             }
             self.activate_screen(cx, Screen::Activity);
         }
@@ -332,24 +357,16 @@ impl AppMain for App {
             self.handle_menu(cx, actions);
         }
 
-        // Execute pending menu close (after actions are processed)
-        if self.menu_close_pending {
-            if matches!(event, Event::Actions(_) | Event::MouseDown(_) | Event::TouchUpdate(_)) {
-                self.menu_close_pending = false;
-                self.close_menu(cx);
-            }
-        }
-
-        // Any pointer release or Escape dismisses the menu
+        // Dismiss menu on any pointer-up or Escape
         if self.menu_open {
             match event {
-                Event::MouseUp(_) => { self.menu_close_pending = true; }
+                Event::MouseUp(_) => self.close_menu(cx),
                 Event::TouchUpdate(te) => {
                     if te.touches.iter().any(|t| matches!(t.state, TouchState::Stop)) {
-                        self.menu_close_pending = true;
+                        self.close_menu(cx);
                     }
                 }
-                Event::KeyDown(ke) if ke.key_code == KeyCode::Escape => { self.close_menu(cx); }
+                Event::KeyDown(ke) if ke.key_code == KeyCode::Escape => self.close_menu(cx),
                 _ => {}
             }
         }
@@ -389,6 +406,8 @@ impl App {
         let i = screen.index();
         self.ui.widget(ids!(header_title)).set_text(cx, &self.screen_titles[i]);
         self.update_menu_config(cx, self.screen_menus[i].clone());
+        let back = self.screen_back_visible[i];
+        self.ui.widget(ids!(back_wrap)).apply_over(cx, live!{ visible: (back) });
 
         // Radio behavior: sync nav button states
         let nav = [
@@ -420,6 +439,25 @@ impl App {
     }
 
     fn handle_header_actions(&mut self, cx: &mut Cx, actions: &Actions) {
+        // Back button click → dispatch BackClicked to active screen
+        let back_clicked = {
+            if let Some(btn) = self.ui.widget(ids!(btn_back)).borrow::<IconButton>() {
+                btn.clicked(actions)
+            } else { false }
+        };
+        if back_clicked {
+            let screen_ids = [
+                ids!(screen_activity),
+                ids!(screen_journal),
+                ids!(screen_stat),
+                ids!(screen_time),
+                ids!(screen_collection),
+            ];
+            let active_id = screen_ids[self.active_screen.index()];
+            let uid = self.ui.widget(active_id).widget_uid();
+            cx.widget_action(uid, &HeapLiveIdPath::default(), HeaderAction::BackClicked);
+        }
+
         let screen_ids = [
             ids!(screen_activity),
             ids!(screen_journal),
@@ -439,6 +477,10 @@ impl App {
                     HeaderAction::SetMenu(items) => {
                         self.screen_menus[i] = items.clone();
                         self.update_menu_config(cx, items);
+                    }
+                    HeaderAction::ShowBack(show) => {
+                        self.screen_back_visible[i] = show;
+                        self.ui.widget(ids!(back_wrap)).apply_over(cx, live!{ visible: (show) });
                     }
                     _ => {}
                 }

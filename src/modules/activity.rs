@@ -105,24 +105,6 @@ live_design! {
                 scroll_bar_y: { drag_scrolling: true, smoothing: 0.15 }
             }
 
-            // Top bar with back button
-            <View> {
-                width: Fill, height: Fit
-                flow: Right
-                align: {x: 0.0, y: 0.5}
-                padding: {left: 8.0, top: 8.0}
-
-                btn_back = <Btn> {
-                    text: "← Back"
-                    draw_bg: {
-                        color: #0000
-                        color_hover: #ffffff10
-                        color_down: #ffffff20
-                        border_size: 0.0
-                    }
-                }
-            }
-
             // Content placeholder
             <View> {
                 width: Fill, height: Fill
@@ -153,8 +135,11 @@ impl Widget for ActivityScreen {
                     show_create = Some(true);
                 }
             }
-            if let Some(btn) = self.view.widget(ids!(btn_back)).borrow::<Button>() {
-                if btn.clicked(actions) {
+
+            // Header back button was clicked — go back to list
+            let uid = self.widget_uid();
+            for action in actions.filter_widget_actions_cast::<HeaderAction>(uid) {
+                if matches!(action, HeaderAction::BackClicked) {
                     show_create = Some(false);
                 }
             }
@@ -163,9 +148,10 @@ impl Widget for ActivityScreen {
                 self.view.widget(ids!(list_view)).apply_over(cx, live!{ visible: (!creating) });
                 self.view.widget(ids!(create_view)).apply_over(cx, live!{ visible: (creating) });
 
-                let uid = self.widget_uid();
                 let title = if creating { "Create Activity" } else { "Activity" };
                 cx.widget_action(uid, &scope.path, HeaderAction::SetTitle(title.into()));
+
+                cx.widget_action(uid, &scope.path, HeaderAction::ShowBack(creating));
 
                 let menu_label = if creating { "Log Create" } else { "Log Activity" };
                 cx.widget_action(uid, &scope.path, HeaderAction::SetMenu(
