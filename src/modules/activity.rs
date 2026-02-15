@@ -49,6 +49,9 @@ live_design! {
                     text: "Activity"
                     draw_text: { color: (THEME_COLOR_TEXT_TERTIARY), text_style: { font_size: 32.0 } }
                 }
+
+                // Spacer to prevent content from being hidden under Nav
+                <View> { width: Fill, height: 60.0 }
             }
 
             // FAB — bottom right
@@ -349,6 +352,9 @@ live_design! {
                         }
                     }
                 }
+
+                // Spacer to prevent content from being hidden under Nav
+                <View> { width: Fill, height: 60.0 }
             }
         }
 
