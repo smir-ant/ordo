@@ -2,7 +2,11 @@ use makepad_widgets::*;
 use makepad_widgets::event::TouchState;
 use crate::widgets::toggle_icon_button::ToggleIconButton;
 use crate::widgets::icon_button::IconButton;
-use crate::header::{HeaderAction, MenuItem};
+use crate::header::{HeaderAction, MenuItem, AppAction};
+use crate::widgets::date_picker::{DatePicker, DatePickerAction};
+use crate::widgets::time_picker::TimePicker;
+use crate::widgets::modal::Modal;
+use crate::modules::activity::ActivityScreen;
 
 live_design! {
     use makepad_widgets::base::*;
@@ -14,6 +18,7 @@ live_design! {
     use crate::widgets::text::Text;
     use crate::widgets::icon_button::IconButton;
     use crate::widgets::button::Btn;
+    use crate::widgets::date_picker::DatePicker;
     use link::styling::*;
     use crate::modules::activity::ActivityScreen;
     use crate::modules::journal::JournalScreen;
@@ -282,6 +287,9 @@ live_design! {
                         }
                     }
                 }
+
+                // === Global DatePicker (overlay above everything) ===
+                global_date_picker = <DatePicker> {}
             }
         }
     }
@@ -348,6 +356,9 @@ impl AppMain for App {
             self.activate_screen(cx, Screen::Activity);
         }
 
+        // Check if modal is open BEFORE handling event (so modal state is pre-close)
+        let modal_was_open = self.any_modal_open();
+
         let scope = &mut Scope::empty();
         self.ui.handle_event(cx, event, scope);
 
@@ -355,10 +366,15 @@ impl AppMain for App {
             self.handle_nav(cx, actions);
             self.handle_header_actions(cx, actions);
             self.handle_menu(cx, actions);
+            self.handle_app_actions(cx, actions);
         }
 
-        // System back button (Android/iOS gesture)
-        if let Event::BackPressed { .. } = event {
+        // System back button (Android/iOS gesture + Desktop Escape)
+        // Only handle if no modal was open (modal already handled it internally)
+        let is_escape = matches!(event, Event::KeyDown(ke) if ke.key_code == KeyCode::Escape);
+        let is_back = event.back_pressed() || is_escape;
+
+        if is_back && !modal_was_open {
             if self.menu_open {
                 self.close_menu(cx);
             } else {
@@ -384,7 +400,6 @@ impl AppMain for App {
                         self.close_menu(cx);
                     }
                 }
-                Event::KeyDown(ke) if ke.key_code == KeyCode::Escape => self.close_menu(cx),
                 _ => {}
             }
         }
@@ -392,6 +407,58 @@ impl AppMain for App {
 }
 
 impl App {
+    /// Check if any global modal is open
+    fn any_modal_open(&self) -> bool {
+        // Check global DatePicker
+        if let Some(dp) = self.ui.widget(ids!(global_date_picker)).borrow::<DatePicker>() {
+            if dp.is_open() {
+                return true;
+            }
+        }
+        false
+    }
+
+    fn handle_app_actions(&mut self, cx: &mut Cx, actions: &Actions) {
+        let screen_ids = [
+            ids!(screen_activity),
+            ids!(screen_journal),
+            ids!(screen_stat),
+            ids!(screen_time),
+            ids!(screen_collection),
+        ];
+
+        // Listen for AppActions from screens
+        for screen_id in screen_ids {
+            let uid = self.ui.widget(screen_id).widget_uid();
+            for action in actions.filter_widget_actions_cast::<AppAction>(uid) {
+                match action {
+                    AppAction::OpenDatePicker => {
+                        if let Some(mut dp) = self.ui.widget(ids!(global_date_picker)).borrow_mut::<DatePicker>() {
+                            dp.open(cx);
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        // DatePicker actions → send to active screen
+        for action in actions {
+            match action.as_widget_action().cast() {
+                DatePickerAction::Accepted { year, month, day } => {
+                    let active_screen_id = screen_ids[self.active_screen.index()];
+                    // Only ActivityScreen for now
+                    if self.active_screen == Screen::Activity {
+                        if let Some(mut screen) = self.ui.widget(active_screen_id).borrow_mut::<ActivityScreen>() {
+                            screen.handle_date_selected(cx, year as i32, month, day);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
     fn handle_nav(&mut self, cx: &mut Cx, actions: &Actions) {
         let nav = [
             (ids!(nav_activity), Screen::Activity),

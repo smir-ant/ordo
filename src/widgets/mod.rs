@@ -9,6 +9,7 @@ pub mod toggle_icon_button;
 
 pub mod modal;
 pub mod day_of_week;
+pub mod days_of_month;
 pub mod group;
 pub mod tabs;
 pub mod check;
@@ -27,6 +28,7 @@ pub fn live_design(cx: &mut Cx) {
     modal::live_design(cx);
     group::live_design(cx);
     day_of_week::live_design(cx);
+    days_of_month::live_design(cx);
     tabs::live_design(cx);
     check::live_design(cx);
     details::live_design(cx);

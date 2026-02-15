@@ -284,13 +284,23 @@ impl Widget for Modal {
             }
         }
 
-        // Escape key
+        // Escape or BackPressed — consume event to prevent parent handlers
+        let mut should_close = false;
+
         if let Event::KeyDown(ke) = event {
             if ke.key_code == KeyCode::Escape {
-                self.close(cx);
-                cx.widget_action(uid, &scope.path, ModalAction::Dismissed);
-                return;
+                should_close = true;
             }
+        }
+
+        if event.back_pressed() {
+            should_close = true;
+        }
+
+        if should_close {
+            self.close(cx);
+            cx.widget_action(uid, &scope.path, ModalAction::Dismissed);
+            return;
         }
 
         // Click outside content
