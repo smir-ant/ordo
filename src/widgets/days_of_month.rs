@@ -114,7 +114,6 @@ impl Widget for DaysOfMonth {
                 }
             }
             Hit::FingerHoverIn(fe) | Hit::FingerHoverOver(fe) => {
-                cx.set_cursor(MouseCursor::Hand);
                 let mut new_hovered = None;
                 for (i, rect) in self.area_days.iter().enumerate() {
                     if rect.contains(fe.abs) {
@@ -122,6 +121,14 @@ impl Widget for DaysOfMonth {
                         break;
                     }
                 }
+
+                // Only show Hand cursor when actually over a day button
+                if new_hovered.is_some() {
+                    cx.set_cursor(MouseCursor::Hand);
+                } else {
+                    cx.set_cursor(MouseCursor::Arrow);
+                }
+
                 if new_hovered != self.hovered_index {
                     self.hovered_index = new_hovered;
                     self.next_frame = cx.new_next_frame();

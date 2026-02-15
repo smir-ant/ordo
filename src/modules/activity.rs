@@ -1,9 +1,10 @@
 use makepad_widgets::*;
 use makepad_widgets::drop_down::DropDownAction;
 use crate::widgets::button::Button;
-use crate::widgets::check::{Check, CheckAction};
+use crate::widgets::check::CheckAction;
 use crate::widgets::modal::TooltipTriggerAction;
-use crate::header::{HeaderAction, MenuItem, AppAction};
+use crate::header::{HeaderAction, MenuItem};
+use crate::actions::ScreenAction;
 use crate::widgets::input::Input;
 use crate::utils::calendar;
 
@@ -21,6 +22,7 @@ live_design! {
     use crate::widgets::day_of_week::DayOfWeek;
     use crate::widgets::days_of_month::DaysOfMonth;
     use crate::widgets::modal::TooltipTrigger;
+    use crate::widgets::details::Details;
     use makepad_widgets::drop_down::DropDown;
     use makepad_draw::shader::std::*;
     use link::styling::*;
@@ -353,6 +355,21 @@ live_design! {
                     }
                 }
 
+                // Advanced
+                <Details> {
+                    width: Fill, height: Fit
+                    summary: "Advanced"
+                    content = <View> {
+                        width: Fill, height: Fit
+                        flow: Down
+                        padding: 10.0
+                        <Text> {
+                            text: "(Empty for now)"
+                            draw_text: { color: (THEME_COLOR_TEXT_TERTIARY), text_style: { font_size: 12.0 } }
+                        }
+                    }
+                }
+
                 // Spacer to prevent content from being hidden under Nav
                 <View> { width: Fill, height: 60.0 }
             }
@@ -484,7 +501,7 @@ impl ActivityScreen {
         if let Some(btn) = self.view.widget(ids!(start_date_btn)).borrow::<Button>() {
             if btn.clicked(actions) {
                 self.date_picker_target = DatePickerTarget::StartDate;
-                cx.widget_action(uid, &HeapLiveIdPath::default(), AppAction::OpenDatePicker);
+                cx.widget_action(uid, &HeapLiveIdPath::default(), ScreenAction::OpenDatePicker);
             }
         }
 
@@ -492,7 +509,7 @@ impl ActivityScreen {
         if let Some(btn) = self.view.widget(ids!(goal_date_btn)).borrow::<Button>() {
             if btn.clicked(actions) {
                 self.date_picker_target = DatePickerTarget::GoalDate;
-                cx.widget_action(uid, &HeapLiveIdPath::default(), AppAction::OpenDatePicker);
+                cx.widget_action(uid, &HeapLiveIdPath::default(), ScreenAction::OpenDatePicker);
             }
         }
 
@@ -568,8 +585,7 @@ impl ActivityScreen {
         // Time evaluation button clicked → send action to app
         if let Some(btn) = self.view.widget(ids!(eval_time_btn)).borrow::<Button>() {
             if btn.clicked(actions) {
-                // TODO: Add AppAction::OpenTimePicker
-                log!("Time picker button clicked - not implemented yet");
+                cx.widget_action(uid, &HeapLiveIdPath::default(), ScreenAction::OpenTimePicker);
             }
         }
 
@@ -582,17 +598,17 @@ impl ActivityScreen {
                 let time_visible = self.view.widget(ids!(evaluation_time)).area() != Area::Empty;
 
                 if dom_visible {
-                    cx.widget_action(uid, &HeapLiveIdPath::default(), AppAction::OpenTooltip {
+                    cx.widget_action(uid, &HeapLiveIdPath::default(), ScreenAction::OpenTooltip {
                         title: "Activity Carryover".to_string(),
                         description: "If month has 30 days and you selected 31st, activity moves to 30th when checked. Otherwise skipped.".to_string(),
                     });
                 } else if yesno_visible {
-                    cx.widget_action(uid, &HeapLiveIdPath::default(), AppAction::OpenTooltip {
+                    cx.widget_action(uid, &HeapLiveIdPath::default(), ScreenAction::OpenTooltip {
                         title: "Reverse Behavior".to_string(),
                         description: "When checked, not marking = success. Useful for tracking failures on bad habits.".to_string(),
                     });
                 } else if time_visible {
-                    cx.widget_action(uid, &HeapLiveIdPath::default(), AppAction::OpenTooltip {
+                    cx.widget_action(uid, &HeapLiveIdPath::default(), ScreenAction::OpenTooltip {
                         title: "Time Limit".to_string(),
                         description: "When checked, timer stops at limit with alert. Otherwise runs like stopwatch. Useful for max effort timed activities.".to_string(),
                     });
@@ -617,6 +633,18 @@ impl ActivityScreen {
                     btn.set_text(cx, &date_text);
                 }
             }
+        }
+    }
+
+    pub fn handle_time_selected(&mut self, cx: &mut Cx, hours: i32, minutes: i32, seconds: Option<i32>) {
+        let time_text = if let Some(s) = seconds {
+            format!("{:02}:{:02}:{:02}", hours, minutes, s)
+        } else {
+            format!("{:02}:{:02}", hours, minutes)
+        };
+        // TODO: save time to form state when we expand CreateActivityState
+        if let Some(mut btn) = self.view.widget(ids!(eval_time_btn)).borrow_mut::<Button>() {
+            btn.set_text(cx, &time_text);
         }
     }
 }

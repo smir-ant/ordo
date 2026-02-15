@@ -2,9 +2,10 @@ use makepad_widgets::*;
 use makepad_widgets::event::TouchState;
 use crate::widgets::toggle_icon_button::ToggleIconButton;
 use crate::widgets::icon_button::IconButton;
-use crate::header::{HeaderAction, MenuItem, AppAction};
+use crate::header::{HeaderAction, MenuItem};
+use crate::actions::ScreenAction;
 use crate::widgets::date_picker::{DatePicker, DatePickerAction};
-use crate::widgets::time_picker::TimePicker;
+use crate::widgets::time_picker::{TimePicker, TimePickerAction};
 use crate::widgets::modal::Modal;
 use crate::modules::activity::ActivityScreen;
 
@@ -19,6 +20,7 @@ live_design! {
     use crate::widgets::icon_button::IconButton;
     use crate::widgets::button::Btn;
     use crate::widgets::date_picker::DatePicker;
+    use crate::widgets::time_picker::TimePicker;
     use crate::widgets::modal::Modal;
     use crate::widgets::modal::TooltipStyle;
     use link::styling::*;
@@ -293,6 +295,9 @@ live_design! {
                 // === Global DatePicker (overlay above everything) ===
                 global_date_picker = <DatePicker> {}
 
+                // === Global TimePicker ===
+                global_time_picker = <TimePicker> {}
+
                 // === Global Tooltip Modal ===
                 global_tooltip = <Modal> {
                     content = <TooltipStyle> {
@@ -321,6 +326,13 @@ enum Screen {
     Stat,
     Time,
     Collection,
+}
+
+#[derive(Clone, Debug)]
+struct ScreenState {
+    title: String,
+    menu: Vec<MenuItem>,
+    back_visible: bool,
 }
 
 impl Screen {
@@ -353,9 +365,7 @@ pub struct App {
     #[rust] initialized: bool,
     #[rust] menu_items: Vec<MenuItem>,
     #[rust] menu_open: bool,
-    #[rust] screen_titles: Vec<String>,
-    #[rust] screen_menus: Vec<Vec<MenuItem>>,
-    #[rust] screen_back_visible: Vec<bool>,
+    #[rust] screen_states: Vec<ScreenState>,
 }
 
 impl LiveRegister for App {
@@ -367,9 +377,11 @@ impl AppMain for App {
         if !self.initialized {
             self.initialized = true;
             for s in Screen::ALL {
-                self.screen_titles.push(s.title().to_string());
-                self.screen_menus.push(s.menu_items());
-                self.screen_back_visible.push(false);
+                self.screen_states.push(ScreenState {
+                    title: s.title().to_string(),
+                    menu: s.menu_items(),
+                    back_visible: false,
+                });
             }
             self.activate_screen(cx, Screen::Activity);
         }
@@ -428,55 +440,51 @@ impl App {
     /// Check if any global modal is open
     fn any_modal_open(&self) -> bool {
         self.ui.widget(ids!(global_date_picker)).borrow::<DatePicker>().map_or(false, |dp| dp.is_open())
+            || self.ui.widget(ids!(global_time_picker)).borrow::<TimePicker>().map_or(false, |tp| tp.is_open())
             || self.ui.widget(ids!(global_tooltip)).borrow::<Modal>().map_or(false, |m| m.is_open())
     }
 
     fn handle_app_actions(&mut self, cx: &mut Cx, actions: &Actions) {
-        let screen_ids = [
-            ids!(screen_activity),
-            ids!(screen_journal),
-            ids!(screen_stat),
-            ids!(screen_time),
-            ids!(screen_collection),
-        ];
-
-        // Listen for AppActions from screens
-        for screen_id in screen_ids {
-            let uid = self.ui.widget(screen_id).widget_uid();
-            for action in actions.filter_widget_actions_cast::<AppAction>(uid) {
-                match action {
-                    AppAction::OpenDatePicker => {
-                        if let Some(mut dp) = self.ui.widget(ids!(global_date_picker)).borrow_mut::<DatePicker>() {
-                            dp.open(cx);
-                        }
-                    }
-                    AppAction::OpenTooltip { title, description } => {
-                        // Set tooltip content
-                        self.ui.widget(ids!(tooltip_title)).set_text(cx, &title);
-                        self.ui.widget(ids!(tooltip_description)).set_text(cx, &description);
-                        // Open modal
-                        if let Some(mut modal) = self.ui.widget(ids!(global_tooltip)).borrow_mut::<Modal>() {
-                            modal.open(cx);
-                        }
-                    }
-                    _ => {}
-                }
-            }
-        }
-
-        // DatePicker actions → send to active screen
+        // Listen for actions from screens and modals (single loop instead of three)
         for action in actions {
-            match action.as_widget_action().cast() {
-                DatePickerAction::Accepted { year, month, day } => {
-                    let active_screen_id = screen_ids[self.active_screen.index()];
-                    // Only ActivityScreen for now
-                    if self.active_screen == Screen::Activity {
-                        if let Some(mut screen) = self.ui.widget(active_screen_id).borrow_mut::<ActivityScreen>() {
-                            screen.handle_date_selected(cx, year as i32, month, day);
-                        }
+            // Screen wants to open a modal
+            match action.as_widget_action().cast::<ScreenAction>() {
+                ScreenAction::OpenDatePicker => {
+                    if let Some(mut dp) = self.ui.widget(ids!(global_date_picker)).borrow_mut::<DatePicker>() {
+                        dp.open(cx);
+                    }
+                }
+                ScreenAction::OpenTimePicker => {
+                    if let Some(mut tp) = self.ui.widget(ids!(global_time_picker)).borrow_mut::<TimePicker>() {
+                        tp.open(cx);
+                    }
+                }
+                ScreenAction::OpenTooltip { title, description } => {
+                    self.ui.widget(ids!(tooltip_title)).set_text(cx, &title);
+                    self.ui.widget(ids!(tooltip_description)).set_text(cx, &description);
+                    if let Some(mut modal) = self.ui.widget(ids!(global_tooltip)).borrow_mut::<Modal>() {
+                        modal.open(cx);
                     }
                 }
                 _ => {}
+            }
+
+            // DatePicker confirmed → send to active screen (only Activity for now)
+            if let DatePickerAction::Accepted { year, month, day } = action.as_widget_action().cast::<DatePickerAction>() {
+                if self.active_screen == Screen::Activity {
+                    if let Some(mut screen) = self.ui.widget(ids!(screen_activity)).borrow_mut::<ActivityScreen>() {
+                        screen.handle_date_selected(cx, year as i32, month, day);
+                    }
+                }
+            }
+
+            // TimePicker confirmed → send to active screen (only Activity for now)
+            if let TimePickerAction::Accepted { hours, minutes, seconds } = action.as_widget_action().cast::<TimePickerAction>() {
+                if self.active_screen == Screen::Activity {
+                    if let Some(mut screen) = self.ui.widget(ids!(screen_activity)).borrow_mut::<ActivityScreen>() {
+                        screen.handle_time_selected(cx, hours, minutes, seconds);
+                    }
+                }
             }
         }
     }
@@ -506,15 +514,28 @@ impl App {
         }
     }
 
+    fn get_active_screen_id(&self) -> &'static [LiveId] {
+        match self.active_screen {
+            Screen::Activity => ids!(screen_activity),
+            Screen::Journal => ids!(screen_journal),
+            Screen::Stat => ids!(screen_stat),
+            Screen::Time => ids!(screen_time),
+            Screen::Collection => ids!(screen_collection),
+        }
+    }
+
     fn activate_screen(&mut self, cx: &mut Cx, screen: Screen) {
         self.active_screen = screen;
 
         // Restore stored header state for this screen
         let i = screen.index();
-        self.ui.widget(ids!(header_title)).set_text(cx, &self.screen_titles[i]);
-        self.update_menu_config(cx, self.screen_menus[i].clone());
-        let back = self.screen_back_visible[i];
-        self.ui.widget(ids!(back_wrap)).apply_over(cx, live!{ visible: (back) });
+        let title = self.screen_states[i].title.clone();
+        let menu = self.screen_states[i].menu.clone();
+        let back_visible = self.screen_states[i].back_visible;
+
+        self.ui.widget(ids!(header_title)).set_text(cx, &title);
+        self.update_menu_config(cx, menu);
+        self.ui.widget(ids!(back_wrap)).apply_over(cx, live!{ visible: (back_visible) });
 
         // Radio behavior: sync nav button states
         let nav = [
@@ -553,44 +574,28 @@ impl App {
             } else { false }
         };
         if back_clicked {
-            let screen_ids = [
-                ids!(screen_activity),
-                ids!(screen_journal),
-                ids!(screen_stat),
-                ids!(screen_time),
-                ids!(screen_collection),
-            ];
-            let active_id = screen_ids[self.active_screen.index()];
+            let active_id = self.get_active_screen_id();
             let uid = self.ui.widget(active_id).widget_uid();
             cx.widget_action(uid, &HeapLiveIdPath::default(), HeaderAction::BackClicked);
         }
 
-        let screen_ids = [
-            ids!(screen_activity),
-            ids!(screen_journal),
-            ids!(screen_stat),
-            ids!(screen_time),
-            ids!(screen_collection),
-        ];
-        for id in screen_ids {
-            let uid = self.ui.widget(id).widget_uid();
-            for action in actions.filter_widget_actions_cast::<HeaderAction>(uid) {
-                let i = self.active_screen.index();
-                match action {
-                    HeaderAction::SetTitle(title) => {
-                        self.screen_titles[i] = title.clone();
-                        self.ui.widget(ids!(header_title)).set_text(cx, &title);
-                    }
-                    HeaderAction::SetMenu(items) => {
-                        self.screen_menus[i] = items.clone();
-                        self.update_menu_config(cx, items);
-                    }
-                    HeaderAction::ShowBack(show) => {
-                        self.screen_back_visible[i] = show;
-                        self.ui.widget(ids!(back_wrap)).apply_over(cx, live!{ visible: (show) });
-                    }
-                    _ => {}
+        // Listen for HeaderActions from any screen (no need to loop through all screens)
+        for action in actions {
+            let i = self.active_screen.index();
+            match action.as_widget_action().cast::<HeaderAction>() {
+                HeaderAction::SetTitle(title) => {
+                    self.screen_states[i].title = title.clone();
+                    self.ui.widget(ids!(header_title)).set_text(cx, &title);
                 }
+                HeaderAction::SetMenu(items) => {
+                    self.screen_states[i].menu = items.clone();
+                    self.update_menu_config(cx, items);
+                }
+                HeaderAction::ShowBack(show) => {
+                    self.screen_states[i].back_visible = show;
+                    self.ui.widget(ids!(back_wrap)).apply_over(cx, live!{ visible: (show) });
+                }
+                _ => {}
             }
         }
     }

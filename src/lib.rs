@@ -4,6 +4,7 @@ pub mod styling;
 pub mod modules;
 pub mod utils;
 pub mod header;
+pub mod actions;
 
 use makepad_widgets::*;
 

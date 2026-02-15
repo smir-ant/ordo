@@ -14,10 +14,3 @@ pub enum HeaderAction {
     ShowBack(bool),
     BackClicked,
 }
-
-#[derive(Clone, Debug, DefaultNone)]
-pub enum AppAction {
-    None,
-    OpenDatePicker,
-    OpenTooltip { title: String, description: String },
-}
