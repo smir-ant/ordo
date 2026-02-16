@@ -35,6 +35,13 @@ live_design! {
     use makepad_draw::shader::std::*;
     use link::styling::*;
 
+    // Custom DropDown with larger text
+    pub Dropdown = <DropDown> {
+        draw_text: {
+            text_style: { font_size: 15.0 }
+        }
+    }
+
     pub ActivityScreen = {{ActivityScreen}} {
         width: Fill, height: Fill
         flow: Overlay  // Multiple layers: list, create
@@ -170,7 +177,7 @@ live_design! {
                         text: "Regularity"
                         draw_text: { color: (THEME_COLOR_TEXT_PRIMARY), text_style: { font_size: 13.0 } }
                     }
-                    regularity_dropdown = <DropDown> {
+                    regularity_dropdown = <Dropdown> {
                         width: Fill
                         labels: ["Interval", "Days of Week", "Days of Month", "Target Goal", "One-time"]
                         selected_item: 0
@@ -204,7 +211,7 @@ live_design! {
                                 }
                             }
 
-                            interval_unit_dropdown = <DropDown> {
+                            interval_unit_dropdown = <Dropdown> {
                                 width: Fill
                                 labels: ["day", "week", "month", "year"]
                                 selected_item: 0
@@ -247,7 +254,7 @@ live_design! {
                         width: Fill, height: Fit, visible: false
                         flow: Down, spacing: 10.0
 
-                        goal_type_dropdown = <DropDown> {
+                        goal_type_dropdown = <Dropdown> {
                             width: Fill
                             labels: ["For a period", "By a specific date"]
                             selected_item: 0
@@ -270,7 +277,7 @@ live_design! {
                                 placeholder: "7"
                             }
 
-                            goal_period_unit = <DropDown> {
+                            goal_period_unit = <Dropdown> {
                                 width: Fill
                                 labels: ["days", "weeks", "months", "years"]
                                 selected_item: 0
@@ -304,7 +311,7 @@ live_design! {
                         draw_text: { color: (THEME_COLOR_TEXT_PRIMARY), text_style: { font_size: 13.0 } }
                     }
 
-                    evaluation_dropdown = <DropDown> {
+                    evaluation_dropdown = <Dropdown> {
                         width: Fill
                         labels: ["Numeric", "Yes/No", "Time"]
                         selected_item: 0
