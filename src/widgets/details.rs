@@ -99,7 +99,6 @@ impl Widget for Details {
         match event.hits(cx, self.header_area) {
             Hit::FingerUp(fe) if fe.was_tap() => {
                 self.open = !self.open;
-                log!("Details: toggled to {}", if self.open { "open" } else { "closed" });
                 cx.widget_action(uid, &scope.path, DetailsAction::Toggled(self.open));
                 self.redraw(cx);
             }

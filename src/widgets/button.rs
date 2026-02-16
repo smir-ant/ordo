@@ -460,8 +460,8 @@ impl Widget for Button {
             }
             _=>()
         }
-        
-        
+
+
         // The button only handles hits when it's visible and enabled.
         // If it's not enabled, we still show the button, but we set
         // the NotAllowed mouse cursor upon hover instead of the Hand cursor.
@@ -505,6 +505,13 @@ impl Widget for Button {
                     cx.widget_action_with_data(&self.action_data, uid, &scope.path, ButtonAction::Clicked(fe.modifiers));
                 } else {
                     cx.widget_action_with_data(&self.action_data, uid, &scope.path, ButtonAction::Released(fe.modifiers));
+                }
+
+                // Reset button visual state after finger up
+                if fe.is_over {
+                    self.animator_cut(cx, ids!(hover.on));
+                } else {
+                    self.animator_cut(cx, ids!(hover.off));
                 }
             }
             _ => (),
