@@ -364,30 +364,29 @@ live_design! {
                 }
 
                 // Advanced
-                <Details> {
-                    width: Fill, height: Fit
-                    summary: "Advanced"
-                    content = <View> {
+                <Group> {
+                    <Details> {
                         width: Fill, height: Fit
-                        flow: Down
-                        padding: 10.0
-                        <Text> {
-                            text: "(Empty for now)"
-                            draw_text: { color: (THEME_COLOR_TEXT_TERTIARY), text_style: { font_size: 12.0 } }
+                        summary: "Advanced"
+                        content = <View> {
+                            width: Fill, height: Fit
+                            flow: Down
+                            padding: 10.0
+                            <Text> {
+                                text: "(Empty for now)"
+                                draw_text: { color: (THEME_COLOR_TEXT_TERTIARY), text_style: { font_size: 12.0 } }
+                            }
                         }
                     }
                 }
 
                 // Create button
-                <View> { width: Fill, height: 16.0 }
                 create_btn = <Btn> {
                     width: Fill, height: Fit
                     padding: {top: 10.0, bottom: 10.0}
                     text: "Create"
+                    accent: true
                     draw_bg: {
-                        color: (THEME_COLOR_ACCENT)
-                        color_hover: #ff6e47
-                        color_down: #e5533a
                         border_radius: 8.0
                     }
                     draw_text: {

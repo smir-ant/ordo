@@ -506,7 +506,6 @@ impl Widget for Button {
                 } else {
                     cx.widget_action_with_data(&self.action_data, uid, &scope.path, ButtonAction::Released(fe.modifiers));
                 }
-                self.animator_cut(cx, ids!(hover.off));
             }
             _ => (),
         }
