@@ -44,7 +44,7 @@ live_design! {
         is_numeric_only: false
         is_warning: false
         is_required: false
-        empty_text: "Your text here",
+        placeholder: "Your text here",
         
         draw_bg: {
             instance warning: 0.0
@@ -458,7 +458,7 @@ pub struct Input {
     #[live] is_warning: bool,
     #[live] is_required: bool,
     #[live] scroll_y: f64,
-    #[live] empty_text: String,
+    #[live] placeholder: String,
     #[rust] text: String,
     #[live(0.5)] blink_speed: f64,
 
@@ -531,6 +531,8 @@ impl Widget for Input {
         let uid = self.widget_uid();
 
         // Self-detect focus loss from taps outside our area
+        // TEMPORARY DISABLED: Testing if this causes the multi-click bug
+        /*
         if cx.has_key_focus(self.draw_bg.area()) {
             let rect = self.draw_bg.area().rect(cx);
             let should_lose_focus = match event {
@@ -556,6 +558,7 @@ impl Widget for Input {
                 self.validate(cx);
             }
         }
+        */
 
         match event.hits(cx, self.draw_bg.area()) {
             Hit::FingerHoverIn(_) => {
@@ -1214,11 +1217,11 @@ impl Input {
     }
 
     pub fn empty_text(&self) -> &str {
-        &self.empty_text
+        &self.placeholder
     }
 
-    pub fn set_empty_text(&mut self, cx: &mut Cx, empty_text: String) {
-        self.empty_text = empty_text;
+    pub fn set_placeholder(&mut self, cx: &mut Cx, empty_text: String) {
+        self.placeholder = empty_text;
         if self.text.is_empty() {
             self.draw_bg.redraw(cx);
         }
@@ -1387,7 +1390,7 @@ impl Input {
                 cx,
                 inner_walk,
                 self.label_align,
-                &self.empty_text
+                &self.placeholder
             )
         } else {
             let laidout_text = self.laidout_text.as_ref().unwrap();
@@ -1883,9 +1886,9 @@ impl InputRef {
         }
     }
 
-    pub fn set_empty_text(&self, cx: &mut Cx, empty_text: String) {
+    pub fn set_placeholder(&self, cx: &mut Cx, empty_text: String) {
         if let Some(mut inner) = self.borrow_mut(){
-            inner.set_empty_text(cx, empty_text);
+            inner.set_placeholder(cx, empty_text);
         }
     }
 

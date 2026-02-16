@@ -1,12 +1,20 @@
 use makepad_widgets::*;
 use makepad_widgets::drop_down::DropDownAction;
 use crate::widgets::button::Button;
-use crate::widgets::check::CheckAction;
+use crate::widgets::check::{Check, CheckAction};
 use crate::widgets::modal::TooltipTriggerAction;
 use crate::header::{HeaderAction, MenuItem};
 use crate::actions::ScreenAction;
 use crate::widgets::input::Input;
+use crate::widgets::day_of_week::DayOfWeek;
+use crate::widgets::days_of_month::DaysOfMonth;
 use crate::utils::calendar;
+
+// Constants for dropdown options and labels
+const TIME_UNITS: &[&str] = &["day", "week", "month", "year"];
+const REGULARITY_TYPES: &[&str] = &["Interval", "Days of Week", "Days of Month", "Target Goal", "One-time"];
+const EVALUATION_TYPES: &[&str] = &["Numeric", "Yes/No", "Time"];
+const DAY_NAMES: &[&str] = &["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 live_design! {
     use makepad_widgets::base::*;
@@ -137,7 +145,7 @@ live_design! {
                     }
                     activity_name = <Input> {
                         width: Fill, height: Fit
-                        empty_text: "Morning routine"
+                        placeholder: "Morning routine"
                         is_required: true
                     }
                 }
@@ -192,7 +200,7 @@ live_design! {
                                 interval_step_input = <Input> {
                                     width: 60.0, height: Fit
                                     is_numeric_only: true
-                                    text: "1"
+                                    placeholder: "1"
                                 }
                             }
 
@@ -259,7 +267,7 @@ live_design! {
                             goal_period_amount = <Input> {
                                 width: 80.0, height: Fit
                                 is_numeric_only: true
-                                text: "7"
+                                placeholder: "7"
                             }
 
                             goal_period_unit = <DropDown> {
@@ -315,12 +323,12 @@ live_design! {
                             eval_numeric_target = <Input> {
                                 width: 80.0, height: Fit
                                 is_numeric_only: true
-                                text: "1"
+                                placeholder: "1"
                             }
 
                             eval_numeric_unit = <Input> {
                                 width: Fill, height: Fit
-                                empty_text: "e.g. times, km, pages"
+                                placeholder: "e.g. times, km, pages"
                             }
                         }
                     }
@@ -370,6 +378,24 @@ live_design! {
                     }
                 }
 
+                // Create button
+                <View> { width: Fill, height: 16.0 }
+                create_btn = <Btn> {
+                    width: Fill, height: Fit
+                    padding: {top: 10.0, bottom: 10.0}
+                    text: "Create"
+                    draw_bg: {
+                        color: (THEME_COLOR_ACCENT)
+                        color_hover: #ff6e47
+                        color_down: #e5533a
+                        border_radius: 8.0
+                    }
+                    draw_text: {
+                        color: #fff
+                        text_style: { font_size: 15.0 }
+                    }
+                }
+
                 // Spacer to prevent content from being hidden under Nav
                 <View> { width: Fill, height: 60.0 }
             }
@@ -383,6 +409,26 @@ live_design! {
 struct CreateActivityState {
     activity_name: String,
     start_date: (i32, u32, u32), // (year, month, day)
+    goal_date: (i32, u32, u32),   // (year, month, day)
+
+    // Regularity
+    regularity_type: usize, // dropdown index: 0=Interval, 1=DaysOfWeek, 2=DaysOfMonth, 3=TargetGoal, 4=OneTime
+    interval_step: String,
+    interval_unit: usize, // 0=day, 1=week, 2=month, 3=year
+    days_of_week_selected: Vec<usize>, // 0=Mon, 1=Tue, etc.
+    days_of_month_selected: Vec<u32>,  // 1-31
+    dom_carry_over: bool,
+    goal_type: usize, // 0=period, 1=specific date
+    goal_period_value: String,
+    goal_period_unit: usize, // 0=day, 1=week, 2=month, 3=year
+
+    // Evaluation
+    evaluation_type: usize, // dropdown index: 0=Numeric, 1=YesNo, 2=Time
+    eval_numeric_target: String,
+    eval_numeric_unit: String,
+    eval_yesno_reverse: bool,
+    eval_time_value: String,
+    eval_time_limit: bool,
 }
 
 impl Default for CreateActivityState {
@@ -391,19 +437,23 @@ impl Default for CreateActivityState {
         Self {
             activity_name: String::new(),
             start_date: (today.year, today.month, today.day),
+            goal_date: (today.year, today.month, today.day),
+            regularity_type: 0,
+            interval_step: "1".to_string(),
+            interval_unit: 0,
+            days_of_week_selected: Vec::new(),
+            days_of_month_selected: Vec::new(),
+            dom_carry_over: false,
+            goal_type: 0,
+            goal_period_value: "1".to_string(),
+            goal_period_unit: 0,
+            evaluation_type: 0,
+            eval_numeric_target: String::new(),
+            eval_numeric_unit: String::new(),
+            eval_yesno_reverse: false,
+            eval_time_value: "00:00".to_string(),
+            eval_time_limit: false,
         }
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-enum DatePickerTarget {
-    StartDate,
-    GoalDate,
-}
-
-impl Default for DatePickerTarget {
-    fn default() -> Self {
-        Self::StartDate
     }
 }
 
@@ -414,7 +464,7 @@ pub struct ActivityScreen {
     #[rust]
     form_state: CreateActivityState,
     #[rust]
-    date_picker_target: DatePickerTarget,
+    is_start_date: bool,
 }
 
 impl Widget for ActivityScreen {
@@ -492,6 +542,11 @@ impl ActivityScreen {
         if let Some(mut input) = self.view.widget(ids!(activity_name)).borrow_mut::<Input>() {
             input.set_text(cx, "");
         }
+
+        // Clear eval numeric unit input
+        if let Some(mut input) = self.view.widget(ids!(eval_numeric_unit)).borrow_mut::<Input>() {
+            input.set_text(cx, "");
+        }
     }
 
     fn handle_form_actions(&mut self, cx: &mut Cx, actions: &Actions) {
@@ -500,7 +555,7 @@ impl ActivityScreen {
         // Start Date button clicked → send action to app
         if let Some(btn) = self.view.widget(ids!(start_date_btn)).borrow::<Button>() {
             if btn.clicked(actions) {
-                self.date_picker_target = DatePickerTarget::StartDate;
+                self.is_start_date = true;
                 cx.widget_action(uid, &HeapLiveIdPath::default(), ScreenAction::OpenDatePicker);
             }
         }
@@ -508,7 +563,7 @@ impl ActivityScreen {
         // Goal date button clicked → send action to app
         if let Some(btn) = self.view.widget(ids!(goal_date_btn)).borrow::<Button>() {
             if btn.clicked(actions) {
-                self.date_picker_target = DatePickerTarget::GoalDate;
+                self.is_start_date = false;
                 cx.widget_action(uid, &HeapLiveIdPath::default(), ScreenAction::OpenDatePicker);
             }
         }
@@ -517,6 +572,9 @@ impl ActivityScreen {
         let regularity_dd = self.view.widget(ids!(regularity_dropdown));
         if let Some(item) = actions.find_widget_action(regularity_dd.widget_uid()) {
             if let DropDownAction::Select(index, _) = item.cast() {
+                // Save to form state
+                self.form_state.regularity_type = index;
+
                 // Hide all regularity views
                 self.view.widget(ids!(regularity_interval)).apply_over(cx, live!{ visible: false });
                 self.view.widget(ids!(regularity_dow)).apply_over(cx, live!{ visible: false });
@@ -539,6 +597,9 @@ impl ActivityScreen {
         let goal_type_dd = self.view.widget(ids!(goal_type_dropdown));
         if let Some(item) = actions.find_widget_action(goal_type_dd.widget_uid()) {
             if let DropDownAction::Select(index, _) = item.cast() {
+                // Save to form state
+                self.form_state.goal_type = index;
+
                 match index {
                     0 => {
                         // "For a period"
@@ -563,10 +624,37 @@ impl ActivityScreen {
             }
         }
 
+        // Yes/No "Reverse behavior" checkbox
+        let reverse_check = self.view.widget(ids!(eval_yesno_reverse_check));
+        if let Some(item) = actions.find_widget_action(reverse_check.widget_uid()) {
+            if let CheckAction::Changed(checked) = item.cast() {
+                self.form_state.eval_yesno_reverse = checked;
+            }
+        }
+
+        // Time "Limit execution" checkbox
+        let limit_check = self.view.widget(ids!(eval_time_limit_check));
+        if let Some(item) = actions.find_widget_action(limit_check.widget_uid()) {
+            if let CheckAction::Changed(checked) = item.cast() {
+                self.form_state.eval_time_limit = checked;
+            }
+        }
+
+        // Days of Month "Carry over" checkbox
+        let carry_check = self.view.widget(ids!(dom_carry_over_check));
+        if let Some(item) = actions.find_widget_action(carry_check.widget_uid()) {
+            if let CheckAction::Changed(checked) = item.cast() {
+                self.form_state.dom_carry_over = checked;
+            }
+        }
+
         // Evaluation dropdown changed
         let eval_dd = self.view.widget(ids!(evaluation_dropdown));
         if let Some(item) = actions.find_widget_action(eval_dd.widget_uid()) {
             if let DropDownAction::Select(index, _) = item.cast() {
+                // Save to form state
+                self.form_state.evaluation_type = index;
+
                 // Hide all evaluation views
                 self.view.widget(ids!(evaluation_numeric)).apply_over(cx, live!{ visible: false });
                 self.view.widget(ids!(evaluation_yesno)).apply_over(cx, live!{ visible: false });
@@ -586,6 +674,13 @@ impl ActivityScreen {
         if let Some(btn) = self.view.widget(ids!(eval_time_btn)).borrow::<Button>() {
             if btn.clicked(actions) {
                 cx.widget_action(uid, &HeapLiveIdPath::default(), ScreenAction::OpenTimePicker);
+            }
+        }
+
+        // Create button clicked → collect all form data and log as JSON
+        if let Some(btn) = self.view.widget(ids!(create_btn)).borrow::<Button>() {
+            if btn.clicked(actions) {
+                self.collect_and_log_form_data();
             }
         }
 
@@ -620,18 +715,15 @@ impl ActivityScreen {
     pub fn handle_date_selected(&mut self, cx: &mut Cx, year: i32, month: u32, day: u32) {
         let date_text = format!("{:02}.{:02}.{:04}", day, month, year);
 
-        match self.date_picker_target {
-            DatePickerTarget::StartDate => {
-                self.form_state.start_date = (year, month, day);
-                if let Some(mut btn) = self.view.widget(ids!(start_date_btn)).borrow_mut::<Button>() {
-                    btn.set_text(cx, &date_text);
-                }
+        if self.is_start_date {
+            self.form_state.start_date = (year, month, day);
+            if let Some(mut btn) = self.view.widget(ids!(start_date_btn)).borrow_mut::<Button>() {
+                btn.set_text(cx, &date_text);
             }
-            DatePickerTarget::GoalDate => {
-                // TODO: save goal date to form state when we expand CreateActivityState
-                if let Some(mut btn) = self.view.widget(ids!(goal_date_btn)).borrow_mut::<Button>() {
-                    btn.set_text(cx, &date_text);
-                }
+        } else {
+            self.form_state.goal_date = (year, month, day);
+            if let Some(mut btn) = self.view.widget(ids!(goal_date_btn)).borrow_mut::<Button>() {
+                btn.set_text(cx, &date_text);
             }
         }
     }
@@ -642,9 +734,127 @@ impl ActivityScreen {
         } else {
             format!("{:02}:{:02}", hours, minutes)
         };
-        // TODO: save time to form state when we expand CreateActivityState
+
+        // Save to form state
+        self.form_state.eval_time_value = time_text.clone();
+
         if let Some(mut btn) = self.view.widget(ids!(eval_time_btn)).borrow_mut::<Button>() {
             btn.set_text(cx, &time_text);
         }
+    }
+
+    fn collect_and_log_form_data(&mut self) {
+        // Collect current widget states before logging
+        self.collect_widget_states();
+
+        let (year, month, day) = self.form_state.start_date;
+        let (gy, gm, gd) = self.form_state.goal_date;
+
+        let regularity = REGULARITY_TYPES.get(self.form_state.regularity_type).unwrap_or(&"Unknown");
+
+        let interval_unit = TIME_UNITS.get(self.form_state.interval_unit).unwrap_or(&"day");
+
+        let evaluation = EVALUATION_TYPES.get(self.form_state.evaluation_type).unwrap_or(&"Unknown");
+
+        // Build regularity data string based on type
+        let regularity_data = match self.form_state.regularity_type {
+            0 => format!("each {} {}", self.form_state.interval_step, interval_unit),
+            1 => {
+                let days: Vec<&str> = self.form_state.days_of_week_selected.iter()
+                    .filter_map(|&i| DAY_NAMES.get(i))
+                    .copied()
+                    .collect();
+                format!("days_of_week: {:?}", days)
+            },
+            2 => format!("days_of_month: {:?}, carry_over: {}", self.form_state.days_of_month_selected, self.form_state.dom_carry_over),
+            3 => {
+                if self.form_state.goal_type == 0 {
+                    // For a period
+                    let period_unit = TIME_UNITS.get(self.form_state.goal_period_unit).unwrap_or(&"week");
+                    format!("period: {} {}", self.form_state.goal_period_value, period_unit)
+                } else {
+                    // By a specific date
+                    format!("goal_date: {:04}-{:02}-{:02}", gy, gm, gd)
+                }
+            },
+            4 => "one-time".to_string(),
+            _ => "unknown".to_string(),
+        };
+
+        // Build evaluation data string based on type
+        let evaluation_data = match self.form_state.evaluation_type {
+            0 => format!("target: {}, unit: {}", self.form_state.eval_numeric_target, self.form_state.eval_numeric_unit),
+            1 => format!("reverse: {}", self.form_state.eval_yesno_reverse),
+            2 => format!("time: {}, limit: {}", self.form_state.eval_time_value, self.form_state.eval_time_limit),
+            _ => "unknown".to_string(),
+        };
+
+        log!(
+            r#"Create Activity - Form Data:
+{{
+  "activity_name": "{}",
+  "start_date": "{:04}-{:02}-{:02}",
+  "regularity": {{
+    "type": "{}",
+    "data": "{}"
+  }},
+  "evaluation": {{
+    "type": "{}",
+    "data": "{}"
+  }}
+}}"#,
+            self.form_state.activity_name,
+            year, month, day,
+            regularity,
+            regularity_data,
+            evaluation,
+            evaluation_data
+        );
+    }
+
+    fn collect_widget_states(&mut self) {
+        // Collect activity name
+        if let Some(input) = self.view.widget(ids!(activity_name)).borrow::<Input>() {
+            self.form_state.activity_name = input.text();
+        }
+
+        // Collect interval step
+        if let Some(input) = self.view.widget(ids!(interval_step_input)).borrow::<Input>() {
+            self.form_state.interval_step = input.text();
+        }
+
+        // Collect interval unit
+        self.form_state.interval_unit = self.view.drop_down(ids!(interval_unit_dropdown)).selected_item();
+
+        // Collect DaysOfWeek selected days
+        if let Some(dow) = self.view.widget(ids!(dow_selector)).borrow::<DayOfWeek>() {
+            self.form_state.days_of_week_selected = dow.get_selected_days();
+        }
+
+        // Collect DaysOfMonth selected days
+        if let Some(dom) = self.view.widget(ids!(dom_selector)).borrow::<DaysOfMonth>() {
+            let selected = dom.get_selected_days();
+            self.form_state.days_of_month_selected = selected.iter().map(|&i| (i + 1) as u32).collect();
+        }
+
+        // Note: dom_carry_over is saved via event handler
+
+        // Collect goal period amount
+        if let Some(input) = self.view.widget(ids!(goal_period_amount)).borrow::<Input>() {
+            self.form_state.goal_period_value = input.text();
+        }
+
+        // Collect goal period unit
+        self.form_state.goal_period_unit = self.view.drop_down(ids!(goal_period_unit)).selected_item();
+
+        // Collect numeric evaluation fields
+        if let Some(input) = self.view.widget(ids!(eval_numeric_target)).borrow::<Input>() {
+            self.form_state.eval_numeric_target = input.text();
+        }
+        if let Some(input) = self.view.widget(ids!(eval_numeric_unit)).borrow::<Input>() {
+            self.form_state.eval_numeric_unit = input.text();
+        }
+
+        // Note: Checkboxes (reverse, time_limit, carry_over) are saved via event handlers
     }
 }

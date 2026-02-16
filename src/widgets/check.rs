@@ -78,7 +78,6 @@ impl Widget for Check {
         match event.hits(cx, self.area) {
             Hit::FingerUp(fe) if fe.was_tap() => {
                 self.checked = !self.checked;
-                log!("Check: toggled to {}", self.checked);
                 cx.widget_action(uid, &scope.path, CheckAction::Changed(self.checked));
                 self.redraw(cx);
             }
