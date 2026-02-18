@@ -413,7 +413,7 @@ impl AppMain for App {
         self.ui.handle_event(cx, event, scope);
 
         if let Event::Actions(actions) = event {
-            self.handle_nav(cx, actions);
+            self.handle_nav(cx, actions, scope);
             self.handle_header_actions(cx, actions);
             self.handle_menu(cx, actions);
             self.handle_app_actions(cx, actions);
@@ -509,7 +509,26 @@ impl App {
         }
     }
 
-    fn handle_nav(&mut self, cx: &mut Cx, actions: &Actions) {
+    fn handle_nav(&mut self, cx: &mut Cx, actions: &Actions, scope: &mut Scope) {
+        // Check for long press on nav_activity first
+        if let Some(btn) = self.ui.widget(ids!(nav_activity)).borrow::<ToggleIconButton>() {
+            if btn.long_pressed(actions) {
+                // Drop the borrow before calling open_quick_create
+                drop(btn);
+
+                // Switch to Activity screen first if not already there
+                if self.active_screen != Screen::Activity {
+                    self.activate_screen(cx, Screen::Activity);
+                }
+
+                // Open quick create with preset values
+                if let Some(mut activity) = self.ui.widget(ids!(screen_activity)).borrow_mut::<ActivityScreen>() {
+                    activity.open_quick_create(cx, scope);
+                }
+                return;
+            }
+        }
+
         let nav = [
             (ids!(nav_activity), Screen::Activity),
             (ids!(nav_journal), Screen::Journal),

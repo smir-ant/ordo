@@ -108,6 +108,7 @@ pub enum ToggleIconButtonAction {
     Clicked,
     Activated,
     Deactivated,
+    LongPressed,
 }
 
 #[derive(Live, LiveHook, Widget)]
@@ -141,6 +142,24 @@ impl Widget for ToggleIconButton {
             self.draw_bg.redraw(cx);
         }
 
+        // Handle long press and right click before hits()
+        match event {
+            Event::LongPress(lp) => {
+                if self.draw_bg.area().rect(cx).contains(lp.abs) {
+                    cx.widget_action(uid, &scope.path, ToggleIconButtonAction::LongPressed);
+                    return;
+                }
+            }
+            Event::MouseUp(mu) => {
+                if mu.button.is_secondary() && self.draw_bg.area().rect(cx).contains(mu.abs) {
+                    cx.widget_action(uid, &scope.path, ToggleIconButtonAction::LongPressed);
+                    self.animator_play(cx, ids!(hover.off));
+                    return;
+                }
+            }
+            _ => ()
+        }
+
         match event.hits(cx, self.draw_bg.area()) {
             Hit::FingerDown(_fe) => {
                 self.animator_play(cx, ids!(hover.down));
@@ -169,7 +188,13 @@ impl Widget for ToggleIconButton {
                     }
                     self.draw_bg.redraw(cx);
                 }
-                self.animator_play(cx, ids!(hover.off));
+
+                // Reset button visual state after finger up
+                if fe.is_over {
+                    self.animator_cut(cx, ids!(hover.on));
+                } else {
+                    self.animator_cut(cx, ids!(hover.off));
+                }
             }
             _ => ()
         }
@@ -237,6 +262,13 @@ impl ToggleIconButton {
             _ => None,
         }
     }
+
+    pub fn long_pressed(&self, actions: &Actions) -> bool {
+        matches!(
+            actions.find_widget_action(self.widget_uid()).cast(),
+            ToggleIconButtonAction::LongPressed
+        )
+    }
 }
 
 impl ToggleIconButtonRef {
@@ -274,5 +306,9 @@ impl ToggleIconButtonRef {
         if let Some(mut inner) = self.borrow_mut() {
             inner.set_activated(cx, active);
         }
+    }
+
+    pub fn long_pressed(&self, actions: &Actions) -> bool {
+        self.borrow().is_some_and(|inner| inner.long_pressed(actions))
     }
 }

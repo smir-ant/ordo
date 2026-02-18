@@ -555,6 +555,65 @@ impl ActivityScreen {
         }
     }
 
+    /// Open create view with quick preset: regularity=one-time, evaluation=yes/no
+    pub fn open_quick_create(&mut self, cx: &mut Cx, scope: &mut Scope) {
+        // Switch to create view
+        self.view.widget(ids!(list_view)).apply_over(cx, live!{ visible: false });
+        self.view.widget(ids!(create_view)).apply_over(cx, live!{ visible: true });
+
+        // Initialize form with quick preset
+        self.form_state = CreateActivityState::default();
+        self.form_state.regularity_type = 4; // One-time
+        self.form_state.evaluation_type = 1; // Yes/No
+        self.form_state.eval_yesno_reverse = false; // No reverse
+
+        // Update UI elements
+        // Set start date button
+        let date_text = format!("{:02}.{:02}.{:04}",
+            self.form_state.start_date.2,
+            self.form_state.start_date.1,
+            self.form_state.start_date.0
+        );
+        if let Some(mut btn) = self.view.widget(ids!(start_date_btn)).borrow_mut::<Button>() {
+            btn.set_text(cx, &date_text);
+        }
+
+        // Clear activity name
+        if let Some(mut input) = self.view.widget(ids!(activity_name)).borrow_mut::<Input>() {
+            input.set_text(cx, "");
+        }
+
+        // Set regularity dropdown to "One-time" (index 4)
+        self.view.drop_down(ids!(regularity_dropdown)).set_selected_item(cx, 4);
+
+        // Hide all regularity views (one-time has no additional settings)
+        self.view.widget(ids!(regularity_interval)).apply_over(cx, live!{ visible: false });
+        self.view.widget(ids!(regularity_dow)).apply_over(cx, live!{ visible: false });
+        self.view.widget(ids!(regularity_dom)).apply_over(cx, live!{ visible: false });
+        self.view.widget(ids!(regularity_goal)).apply_over(cx, live!{ visible: false });
+
+        // Set evaluation dropdown to "Yes/No" (index 1)
+        self.view.drop_down(ids!(evaluation_dropdown)).set_selected_item(cx, 1);
+
+        // Show yes/no evaluation view, hide others
+        self.view.widget(ids!(evaluation_numeric)).apply_over(cx, live!{ visible: false });
+        self.view.widget(ids!(evaluation_yesno)).apply_over(cx, live!{ visible: true });
+        self.view.widget(ids!(evaluation_time)).apply_over(cx, live!{ visible: false });
+
+        // Uncheck reverse behavior
+        if let Some(mut check) = self.view.widget(ids!(eval_yesno_reverse)).borrow_mut::<Check>() {
+            check.set_checked(cx, false);
+        }
+
+        // Update header
+        let uid = self.widget_uid();
+        cx.widget_action(uid, &scope.path, HeaderAction::SetTitle("Create Activity".into()));
+        cx.widget_action(uid, &scope.path, HeaderAction::ShowBack(true));
+        cx.widget_action(uid, &scope.path, HeaderAction::SetMenu(
+            vec![MenuItem { id: live_id!(log), label: "Log Create".into() }]
+        ));
+    }
+
     fn handle_form_actions(&mut self, cx: &mut Cx, actions: &Actions) {
         let uid = self.widget_uid();
 
