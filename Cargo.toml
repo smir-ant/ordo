@@ -9,7 +9,6 @@ edition = "2024"
 name = "Ordo"
 identifier = "com.smirant.ordo"
 icon = ["icon/AppIcon.icns"]
-version = "0.1.0"
 copyright = "Copyright (c) 2026 smir-ant"
 category = "Productivity"
 short_description = "A productivity application"

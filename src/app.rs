@@ -82,12 +82,27 @@ live_design! {
 
                             back_wrap = <View> {
                                 width: Fit, height: Fit
-                                visible: false
-                                btn_back = <IconButton> {
-                                    icon_walk: { width: 24.0, height: 24.0 }
-                                    draw_icon: {
-                                        color: (THEME_COLOR_TEXT_SECONDARY)
-                                        svg_file: dep("crate://self/resources/img/icon_back.svg")
+
+                                sidebar_btn_wrap = <View> {
+                                    width: Fit, height: Fit
+                                    btn_sidebar = <IconButton> {
+                                        icon_walk: { width: 24.0, height: 24.0 }
+                                        draw_icon: {
+                                            color: (THEME_COLOR_TEXT_SECONDARY)
+                                            svg_file: dep("crate://self/resources/img/icon_menu.svg")
+                                        }
+                                    }
+                                }
+
+                                back_btn_wrap = <View> {
+                                    width: Fit, height: Fit
+                                    visible: false
+                                    btn_back = <IconButton> {
+                                        icon_walk: { width: 24.0, height: 24.0 }
+                                        draw_icon: {
+                                            color: (THEME_COLOR_TEXT_SECONDARY)
+                                            svg_file: dep("crate://self/resources/img/icon_back.svg")
+                                        }
                                     }
                                 }
                             }
@@ -292,6 +307,143 @@ live_design! {
                     }
                 }
 
+                // === Sidebar drawer ===
+                sidebar_overlay = <View> {
+                    width: Fill, height: Fill
+                    visible: false
+                    flow: Right
+
+                    sidebar_panel = <View> {
+                        width: 240.0, height: Fill
+                        flow: Down
+                        spacing: 0.0
+                        show_bg: true
+                        draw_bg: { color: #1c1c1c }
+
+                        // Safe area top
+                        <View> { width: Fill, height: 32.0 }
+
+                        // App title
+                        <View> {
+                            width: Fill, height: 56.0
+                            align: {y: 0.5}
+                            padding: {left: 20.0}
+                            <Text> {
+                                text: "Ordo"
+                                draw_text: {
+                                    color: (THEME_COLOR_TEXT_PRIMARY)
+                                    text_style: { font_size: 22.0 }
+                                }
+                            }
+                        }
+
+                        // Separator
+                        <View> {
+                            width: Fill, height: 1.0
+                            margin: {left: 20.0, right: 20.0, bottom: 8.0}
+                            show_bg: true
+                            draw_bg: { color: #2e2e2e }
+                        }
+
+                        // Menu items
+                        sidebar_data = <Btn> {
+                            text: "Data"
+                            width: Fill, height: Fit
+                            align: {x: 0.0, y: 0.5}
+                            padding: {top: 14.0, bottom: 14.0, left: 20.0, right: 20.0}
+                            margin: 0.0
+                            draw_bg: {
+                                color: #0000
+                                color_hover: #ffffff08
+                                color_down: #ffffff15
+                                border_size: 0.0
+                                border_radius: 0.0
+                            }
+                            draw_text: {
+                                color: (THEME_COLOR_TEXT_PRIMARY)
+                                text_style: { font_size: 15.0 }
+                            }
+                        }
+                        sidebar_settings = <Btn> {
+                            text: "Settings"
+                            width: Fill, height: Fit
+                            align: {x: 0.0, y: 0.5}
+                            padding: {top: 14.0, bottom: 14.0, left: 20.0, right: 20.0}
+                            margin: 0.0
+                            draw_bg: {
+                                color: #0000
+                                color_hover: #ffffff08
+                                color_down: #ffffff15
+                                border_size: 0.0
+                                border_radius: 0.0
+                            }
+                            draw_text: {
+                                color: (THEME_COLOR_TEXT_PRIMARY)
+                                text_style: { font_size: 15.0 }
+                            }
+                        }
+                        sidebar_contact = <Btn> {
+                            text: "Contact"
+                            width: Fill, height: Fit
+                            align: {x: 0.0, y: 0.5}
+                            padding: {top: 14.0, bottom: 14.0, left: 20.0, right: 20.0}
+                            margin: 0.0
+                            draw_bg: {
+                                color: #0000
+                                color_hover: #ffffff08
+                                color_down: #ffffff15
+                                border_size: 0.0
+                                border_radius: 0.0
+                            }
+                            draw_text: {
+                                color: (THEME_COLOR_TEXT_PRIMARY)
+                                text_style: { font_size: 15.0 }
+                            }
+                        }
+                        sidebar_achievements = <Btn> {
+                            text: "Achievements"
+                            width: Fill, height: Fit
+                            align: {x: 0.0, y: 0.5}
+                            padding: {top: 14.0, bottom: 14.0, left: 20.0, right: 20.0}
+                            margin: 0.0
+                            draw_bg: {
+                                color: #0000
+                                color_hover: #ffffff08
+                                color_down: #ffffff15
+                                border_size: 0.0
+                                border_radius: 0.0
+                            }
+                            draw_text: {
+                                color: (THEME_COLOR_TEXT_PRIMARY)
+                                text_style: { font_size: 15.0 }
+                            }
+                        }
+
+                        // Spacer
+                        <View> { width: Fill, height: Fill }
+
+                        // Version
+                        <View> {
+                            width: Fill, height: Fit
+                            padding: {left: 20.0, bottom: 20.0}
+                            sidebar_version = <Text> {
+                                text: ""
+                                draw_text: {
+                                    color: #444
+                                    text_style: { font_size: 11.0 }
+                                }
+                            }
+                        }
+                    }
+
+                    // Dim area — click to close
+                    sidebar_dim = <View> {
+                        width: Fill, height: Fill
+                        show_bg: true
+                        draw_bg: { color: #00000088 }
+                    }
+                }
+
                 // === Global DatePicker (overlay above everything) ===
                 global_date_picker = <DatePicker> {}
 
@@ -365,6 +517,7 @@ pub struct App {
     #[rust] initialized: bool,
     #[rust] menu_items: Vec<MenuItem>,
     #[rust] menu_open: bool,
+    #[rust] sidebar_open: bool,
     #[rust] screen_states: Vec<ScreenState>,
 }
 
@@ -384,6 +537,9 @@ impl AppMain for App {
                 });
             }
             self.activate_screen(cx, Screen::Activity);
+            self.ui.widget(ids!(sidebar_version)).set_text(
+                cx, &format!("v{}", env!("CARGO_PKG_VERSION"))
+            );
         }
 
         // Check if modal is open BEFORE handling event (so modal state is pre-close)
@@ -416,6 +572,7 @@ impl AppMain for App {
             self.handle_nav(cx, actions, scope);
             self.handle_header_actions(cx, actions);
             self.handle_menu(cx, actions);
+            self.handle_sidebar_actions(cx, actions);
             self.handle_app_actions(cx, actions);
         }
 
@@ -425,7 +582,9 @@ impl AppMain for App {
         let is_back = event.back_pressed() || is_escape;
 
         if is_back && !modal_was_open {
-            if self.menu_open {
+            if self.sidebar_open {
+                self.close_sidebar(cx);
+            } else if self.menu_open {
                 self.close_menu(cx);
             } else {
                 let screen_ids = [
@@ -448,6 +607,26 @@ impl AppMain for App {
                 Event::TouchUpdate(te) => {
                     if te.touches.iter().any(|t| matches!(t.state, TouchState::Stop)) {
                         self.close_menu(cx);
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        // Close sidebar when clicking the dim area
+        if self.sidebar_open {
+            let dim_area = self.ui.widget(ids!(sidebar_dim)).area();
+            match event {
+                Event::MouseUp(mu) => {
+                    if dim_area.rect(cx).contains(mu.abs) {
+                        self.close_sidebar(cx);
+                    }
+                }
+                Event::TouchUpdate(te) => {
+                    if te.touches.iter().any(|t| {
+                        matches!(t.state, TouchState::Stop) && dim_area.rect(cx).contains(t.abs)
+                    }) {
+                        self.close_sidebar(cx);
                     }
                 }
                 _ => {}
@@ -574,7 +753,8 @@ impl App {
 
         self.ui.widget(ids!(header_title)).set_text(cx, &title);
         self.update_menu_config(cx, menu);
-        self.ui.widget(ids!(back_wrap)).apply_over(cx, live!{ visible: (back_visible) });
+        self.ui.widget(ids!(back_btn_wrap)).apply_over(cx, live!{ visible: (back_visible) });
+        self.ui.widget(ids!(sidebar_btn_wrap)).apply_over(cx, live!{ visible: (!back_visible) });
 
         // Radio behavior: sync nav button states
         let nav = [
@@ -632,7 +812,8 @@ impl App {
                 }
                 HeaderAction::ShowBack(show) => {
                     self.screen_states[i].back_visible = show;
-                    self.ui.widget(ids!(back_wrap)).apply_over(cx, live!{ visible: (show) });
+                    self.ui.widget(ids!(back_btn_wrap)).apply_over(cx, live!{ visible: (show) });
+                    self.ui.widget(ids!(sidebar_btn_wrap)).apply_over(cx, live!{ visible: (!show) });
                 }
                 _ => {}
             }
@@ -644,6 +825,46 @@ impl App {
         self.menu_open = false;
         self.ui.widget(ids!(menu_overlay)).apply_over(cx, live!{ visible: false });
         self.ui.redraw(cx);
+    }
+
+    fn open_sidebar(&mut self, cx: &mut Cx) {
+        if self.sidebar_open { return; }
+        self.sidebar_open = true;
+        self.ui.widget(ids!(sidebar_overlay)).apply_over(cx, live!{ visible: true });
+        self.ui.redraw(cx);
+    }
+
+    fn close_sidebar(&mut self, cx: &mut Cx) {
+        if !self.sidebar_open { return; }
+        self.sidebar_open = false;
+        self.ui.widget(ids!(sidebar_overlay)).apply_over(cx, live!{ visible: false });
+        self.ui.redraw(cx);
+    }
+
+    fn handle_sidebar_actions(&mut self, cx: &mut Cx, actions: &Actions) {
+        // Hamburger button → open sidebar
+        if let Some(btn) = self.ui.widget(ids!(btn_sidebar)).borrow::<IconButton>() {
+            if btn.clicked(actions) {
+                drop(btn);
+                self.open_sidebar(cx);
+                return;
+            }
+        }
+
+        // Sidebar items (stub — just close for now)
+        let sidebar_ids = [
+            ids!(sidebar_data), ids!(sidebar_settings),
+            ids!(sidebar_contact), ids!(sidebar_achievements),
+        ];
+        for id in sidebar_ids {
+            if let Some(btn) = self.ui.widget(id).borrow::<Button>() {
+                if btn.clicked(actions) {
+                    drop(btn);
+                    self.close_sidebar(cx);
+                    break;
+                }
+            }
+        }
     }
 
     fn update_menu_config(&mut self, cx: &mut Cx, items: Vec<MenuItem>) {
